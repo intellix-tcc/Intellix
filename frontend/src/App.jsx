@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { perguntar } from "./api";
+import GraficoBarra from "./GraficoBarra";
 
 function Resultado({ r }) {
   if (r.tipo_visualizacao === "numero") {
-    const [coluna, valor] = [r.colunas[1], r.linhas[0][1]];
+    const valor = r.linhas[0][1]; 
     return (
       <div className="resultado resultado-numero">
         <p className="resultado-titulo">{r.titulo}</p>
@@ -16,35 +17,42 @@ function Resultado({ r }) {
     );
   }
 
-  if (r.tipo_visualizacao === "barra" || r.tipo_visualizacao === "tabela") {
-    return (
-      <div className="resultado resultado-tabela">
-        <p className="resultado-titulo">{r.titulo}</p>
-        <table>
-          <thead>
-            <tr>
-              {r.colunas.map((c) => (
-                <th key={c}>{c}</th>
+  if (r.tipo_visualizacao === "barra") {
+  return (
+    <div className="resultado resultado-grafico">
+      <p className="resultado-titulo">{r.titulo}</p>
+      <GraficoBarra r={r} />
+    </div>
+  );
+}
+
+if (r.tipo_visualizacao === "tabela") {
+  return (
+    <div className="resultado resultado-tabela">
+      <p className="resultado-titulo">{r.titulo}</p>
+      <table>
+        <thead>
+          <tr>
+            {r.colunas.map((c) => (
+              <th key={c}>{c}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {r.linhas.map((linha, i) => (
+            <tr key={i}>
+              {linha.map((v, j) => (
+                <td key={j}>
+                  {typeof v === "number" ? v.toLocaleString("pt-BR") : v}
+                </td>
               ))}
             </tr>
-          </thead>
-          <tbody>
-            {r.linhas.map((linha, i) => (
-              <tr key={i}>
-                {linha.map((v, j) => (
-                  <td key={j}>
-                    {typeof v === "number" ? v.toLocaleString("pt-BR") : v}
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    );
-  }
-
-  return <p>Tipo de visualização não reconhecido: {r.tipo_visualizacao}</p>;
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
 }
 
 function Mensagem({ msg }) {
