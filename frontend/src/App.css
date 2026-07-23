@@ -1,0 +1,222 @@
+.app {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  padding: 0 24px 24px;
+  box-sizing: border-box;
+}
+
+/* ---- Chat ---- */
+.chat {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 8px 4px;
+  text-align: left;
+}
+
+.mensagem {
+  max-width: 720px;
+  width: 100%;
+  border-radius: 12px;
+  line-height: 1.4;
+}
+
+.mensagem-usuario {
+  align-self: flex-end;
+  background: var(--accent);
+  color: #fff;
+  padding: 10px 16px;
+  max-width: 70%;
+  border-bottom-right-radius: 4px;
+}
+
+.mensagem-erro {
+  align-self: flex-start;
+  background: var(--accent-bg);
+  border: 1px solid var(--accent-border);
+  color: var(--text-h);
+  padding: 14px 18px;
+}
+.mensagem-erro ul {
+  margin: 8px 0 0;
+  padding-left: 20px;
+}
+
+.mensagem-resultado {
+  align-self: flex-start;
+}
+
+/* ---- Resultado ---- */
+.resultado {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px 24px;
+  box-shadow: var(--shadow);
+}
+
+.resultado-cabecalho {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.resultado-titulo {
+  font-weight: 600;
+  color: var(--text-h);
+}
+
+.resultado-valor {
+  font-size: 40px;
+  font-weight: 500;
+  letter-spacing: -1px;
+  color: var(--accent);
+  margin: 8px 0;
+}
+
+.resultado-incerto {
+  background: var(--accent-bg);
+  border: 1px dashed var(--accent-border);
+}
+.resultado-incerto ul {
+  margin: 8px 0 0;
+  padding-left: 20px;
+}
+
+.resultado-tabela table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 15px;
+}
+.resultado-tabela th,
+.resultado-tabela td {
+  text-align: left;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+}
+.resultado-tabela th {
+  color: var(--text-h);
+  font-weight: 600;
+}
+.resultado-tabela td:not(:first-child) {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- Indicador de confiança (D12) ---- */
+.confianca {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.confianca-alta {
+  background: rgba(34, 197, 94, 0.15);
+  color: #16a34a;
+}
+.confianca-media {
+  background: rgba(234, 179, 8, 0.18);
+  color: #b45309;
+}
+.confianca-baixa {
+  background: rgba(239, 68, 68, 0.15);
+  color: #dc2626;
+}
+
+/* ---- Exportar (D8) ---- */
+.exportar {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+}
+.exportar button {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+.exportar button:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* ---- Tela inicial (D7) ---- */
+.tela-inicial {
+  margin: auto;
+  text-align: center;
+  color: var(--text);
+}
+.exemplos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+  margin-top: 16px;
+}
+.exemplo {
+  background: var(--accent-bg);
+  border: 1px solid var(--accent-border);
+  color: var(--text-h);
+  padding: 12px 20px;
+  border-radius: 999px;
+  font-size: 15px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.exemplo:hover {
+  background: var(--accent);
+  color: #fff;
+}
+
+/* ---- Estado de carregamento (D6 #1) ---- */
+.carregando {
+  align-self: flex-start;
+  color: var(--text);
+  font-style: italic;
+  padding: 8px 4px;
+}
+
+/* ---- Formulário ---- */
+.form-pergunta {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+}
+.form-pergunta input {
+  flex: 1;
+  padding: 14px 18px;
+  font-size: 16px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+  color: var(--text-h);
+  font-family: var(--sans);
+}
+.form-pergunta input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+.form-pergunta button {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  padding: 0 24px;
+  font-size: 16px;
+  border-radius: 10px;
+  cursor: pointer;
+}
+.form-pergunta button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
