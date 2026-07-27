@@ -1,12 +1,23 @@
 :root {
   --text: #6b6375;
-  --text-h: #08060d;
-  --bg: #fff;
+  --text-h: #000000;
+  --bg: #ffffff;
   --border: #e5e4e7;
   --code-bg: #f4f3ec;
-  --accent: #aa3bff;
-  --accent-bg: rgba(170, 59, 255, 0.1);
-  --accent-border: rgba(170, 59, 255, 0.5);
+
+  /* Identidade Intellix — roxo (primária), âmbar (destaque), azul (terciária) */
+  --accent: #47247f;
+  --accent-bg: rgba(71, 36, 127, 0.08);
+  --accent-border: rgba(71, 36, 127, 0.35);
+
+  --accent-2: #eca72c;
+  --accent-2-bg: rgba(236, 167, 44, 0.14);
+  --accent-2-border: rgba(236, 167, 44, 0.55);
+
+  --accent-3: #003d73;
+  --accent-3-bg: rgba(0, 61, 115, 0.08);
+  --accent-3-border: rgba(0, 61, 115, 0.4);
+
   --social-bg: rgba(244, 243, 236, 0.5);
   --shadow:
     rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
@@ -37,9 +48,20 @@
     --bg: #16171d;
     --border: #2e303a;
     --code-bg: #1f2028;
-    --accent: #c084fc;
-    --accent-bg: rgba(192, 132, 252, 0.15);
-    --accent-border: rgba(192, 132, 252, 0.5);
+
+    /* mesmas cores da marca, aclaradas para contraste em fundo escuro */
+    --accent: #a480db;
+    --accent-bg: rgba(164, 128, 219, 0.16);
+    --accent-border: rgba(164, 128, 219, 0.5);
+
+    --accent-2: #eca72c;
+    --accent-2-bg: rgba(236, 167, 44, 0.18);
+    --accent-2-border: rgba(236, 167, 44, 0.55);
+
+    --accent-3: #3c92dd;
+    --accent-3-bg: rgba(60, 146, 221, 0.18);
+    --accent-3-border: rgba(60, 146, 221, 0.5);
+
     --social-bg: rgba(47, 48, 58, 0.5);
     --shadow:
       rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
@@ -50,19 +72,58 @@
   }
 }
 
+/* Overrides explícitos do botão de tema — têm mais especificidade que a
+   media query acima, então vencem a preferência do sistema quando presentes. */
+:root[data-theme="light"] {
+  --text: #6b6375;
+  --text-h: #000000;
+  --bg: #ffffff;
+  --border: #e5e4e7;
+  --code-bg: #f4f3ec;
+  --accent: #47247f;
+  --accent-bg: rgba(71, 36, 127, 0.08);
+  --accent-border: rgba(71, 36, 127, 0.35);
+  --accent-2: #eca72c;
+  --accent-2-bg: rgba(236, 167, 44, 0.14);
+  --accent-2-border: rgba(236, 167, 44, 0.55);
+  --accent-3: #003d73;
+  --accent-3-bg: rgba(0, 61, 115, 0.08);
+  --accent-3-border: rgba(0, 61, 115, 0.4);
+  --shadow:
+    rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
+}
+
+:root[data-theme="dark"] {
+  --text: #9ca3af;
+  --text-h: #f3f4f6;
+  --bg: #16171d;
+  --border: #2e303a;
+  --code-bg: #1f2028;
+  --accent: #a480db;
+  --accent-bg: rgba(164, 128, 219, 0.16);
+  --accent-border: rgba(164, 128, 219, 0.5);
+  --accent-2: #eca72c;
+  --accent-2-bg: rgba(236, 167, 44, 0.18);
+  --accent-2-border: rgba(236, 167, 44, 0.55);
+  --accent-3: #3c92dd;
+  --accent-3-bg: rgba(60, 146, 221, 0.18);
+  --accent-3-border: rgba(60, 146, 221, 0.5);
+  --shadow:
+    rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
+}
+
 body {
   margin: 0;
 }
 
 #root {
-  width: 1126px;
+  width: 1280px;
   max-width: 100%;
   margin: 0 auto;
-  text-align: center;
   border-inline: 1px solid var(--border);
   min-height: 100svh;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   box-sizing: border-box;
 }
 

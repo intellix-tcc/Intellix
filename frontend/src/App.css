@@ -1,10 +1,130 @@
+/* ---- Sidebar: histórico + novo chat ---- */
+.sidebar {
+  width: 260px;
+  flex-shrink: 0;
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 12px;
+  box-sizing: border-box;
+  text-align: left;
+}
+
+.novo-chat {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+.novo-chat:hover {
+  opacity: 0.9;
+}
+
+.historico {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.historico-vazio {
+  color: var(--text);
+  opacity: 0.7;
+  font-size: 13px;
+  padding: 8px 10px;
+}
+
+.historico-item {
+  background: transparent;
+  border: none;
+  color: var(--text);
+  text-align: left;
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 14px;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.historico-item:hover {
+  background: var(--accent-bg);
+  color: var(--text-h);
+}
+.historico-item.ativo {
+  background: var(--accent-bg);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* ---- Área principal ---- */
 .app {
   display: flex;
   flex-direction: column;
   flex: 1;
+  min-width: 0;
   min-height: 0;
   padding: 0 24px 24px;
   box-sizing: border-box;
+  text-align: left;
+}
+
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.app-header h1 {
+  color: var(--accent);
+}
+
+.tema-toggle {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-h);
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border-radius: 999px;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.tema-toggle:hover {
+  border-color: var(--accent);
+}
+
+@media (max-width: 768px) {
+  #root {
+    flex-direction: column;
+  }
+  .sidebar {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+    flex-direction: row;
+    align-items: center;
+  }
+  .historico {
+    flex-direction: row;
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+  .historico-item {
+    flex-shrink: 0;
+  }
 }
 
 /* ---- Chat ---- */
@@ -147,8 +267,8 @@
   transition: border-color 0.15s, color 0.15s;
 }
 .exportar button:hover {
-  border-color: var(--accent);
-  color: var(--accent);
+  border-color: var(--accent-3);
+  color: var(--accent-3);
 }
 
 /* ---- Tela inicial (D7) ---- */
@@ -165,18 +285,18 @@
   margin-top: 16px;
 }
 .exemplo {
-  background: var(--accent-bg);
-  border: 1px solid var(--accent-border);
+  background: var(--accent-2-bg);
+  border: 1px solid var(--accent-2-border);
   color: var(--text-h);
   padding: 12px 20px;
   border-radius: 999px;
   font-size: 15px;
   cursor: pointer;
-  transition: background 0.15s;
+  transition: background 0.15s, color 0.15s;
 }
 .exemplo:hover {
-  background: var(--accent);
-  color: #fff;
+  background: var(--accent-2);
+  color: #000000;
 }
 
 /* ---- Estado de carregamento (D6 #1) ---- */
