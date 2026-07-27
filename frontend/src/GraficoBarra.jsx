@@ -12,7 +12,7 @@ export default function GraficoBarra({ r }) {
         <XAxis dataKey={r.colunas[0]} />
         <YAxis />
         <Tooltip formatter={(v) => Number(v).toLocaleString("pt-BR")} />
-        <Bar dataKey={r.colunas[2]} fill="#4f46e5" />
+        <Bar dataKey={r.colunas[2]} fill="#ECA72C" />
       </BarChart>
     </ResponsiveContainer>
   );
