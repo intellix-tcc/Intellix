@@ -187,6 +187,14 @@ export default function App() {
     setMensagens(c.mensagens);
   }
 
+  function excluirConversa(id) {
+    setConversas((atual) => atual.filter((c) => c.id !== id));
+    if (atualId === id) {
+      setAtualId(null);
+      setMensagens([]);
+    }
+  }
+
   // Salva/atualiza a conversa atual no histórico a cada troca de mensagens.
   function sincronizarHistorico(id, novasMensagens, tituloNovo) {
     setConversas((atual) => {
@@ -252,6 +260,7 @@ export default function App() {
         atualId={atualId}
         onNovoChat={novoChat}
         onSelecionar={selecionarConversa}
+        onExcluir={excluirConversa}
       />
       <div className="app">
         <div className="app-header">

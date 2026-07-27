@@ -1,4 +1,4 @@
-export default function Sidebar({ conversas, atualId, onNovoChat, onSelecionar }) {
+export default function Sidebar({ conversas, atualId, onNovoChat, onSelecionar, onExcluir }) {
   return (
     <aside className="sidebar">
       <button type="button" className="novo-chat" onClick={onNovoChat}>
@@ -9,15 +9,28 @@ export default function Sidebar({ conversas, atualId, onNovoChat, onSelecionar }
           <p className="historico-vazio">Nenhuma conversa ainda</p>
         )}
         {conversas.map((c) => (
-          <button
+          <div
             key={c.id}
-            type="button"
             className={`historico-item${c.id === atualId ? " ativo" : ""}`}
-            onClick={() => onSelecionar(c.id)}
-            title={c.titulo}
           >
-            {c.titulo}
-          </button>
+            <button
+              type="button"
+              className="historico-titulo"
+              onClick={() => onSelecionar(c.id)}
+              title={c.titulo}
+            >
+              {c.titulo}
+            </button>
+            <button
+              type="button"
+              className="historico-excluir"
+              onClick={() => onExcluir(c.id)}
+              aria-label="Excluir conversa"
+              title="Excluir conversa"
+            >
+              ×
+            </button>
+          </div>
         ))}
       </div>
     </aside>
