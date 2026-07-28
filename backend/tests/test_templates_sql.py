@@ -4,10 +4,25 @@ from app.sql.templates import TEMPLATES
 
 CHAVES_ESPERADAS = {"sql", "obrigatorios", "titulo", "visual"}
 
+# As 12 intencoes definidas em `ia training/moldes.py`.
+INTENCOES_ESPERADAS = {
+    "comparacao_periodos",
+    "desempenho_vendedor",
+    "produtos_sem_saida",
+    "quantidade_vendas",
+    "ticket_medio",
+    "top_clientes",
+    "top_produtos",
+    "total_vendas_periodo",
+    "variacao_periodo",
+    "vendas_por_canal",
+    "vendas_por_categoria",
+    "vendas_por_pagamento",
+}
 
-def test_templates_essenciais_existem():
-    for nome in ("total_vendas_periodo", "top_produtos", "ticket_medio"):
-        assert nome in TEMPLATES
+
+def test_todas_as_12_intencoes_tem_template():
+    assert TEMPLATES.keys() == INTENCOES_ESPERADAS
 
 
 def test_templates_tem_formato_correto():
