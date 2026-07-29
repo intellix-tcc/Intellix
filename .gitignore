@@ -1,9 +1,30 @@
-# Python
-venv/
-.venv/
-__pycache__/
-*.pyc
-.pytest_cache/
-
-# Segredos
+# Segredos — NUNCA versionar
 .env
+.env.*
+!.env.example
+
+# Ambientes virtuais
+.venv/
+venv/
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+
+# Node / frontend
+node_modules/
+dist/
+build/
+
+# Artefatos de modelo (pesados)
+ml/artefatos/
+*.pt
+*.pth
+*.onnx
+
+# SO / editores
+.DS_Store
+.idea/
+.vscode/
