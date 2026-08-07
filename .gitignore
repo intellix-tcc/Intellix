@@ -7,3 +7,9 @@ __pycache__/
 
 # Segredos
 .env
+
+# Mockups locais (não fazem parte do app, só referência de design)
+docs/wizard_upload_mockup.html
+
+# Notas locais de contexto do projeto
+CLAUDE.md
