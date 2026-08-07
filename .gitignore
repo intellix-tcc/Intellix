@@ -1,15 +1,67 @@
-# Python
-venv/
-.venv/
-__pycache__/
-*.pyc
-.pytest_cache/
-
-# Segredos
+# ============================================================
+# Segredos — NUNCA versionar
+# ============================================================
 .env
+.env.*
+!.env.example
+# (cobre também backend/.env e frontend/.env.local, em qualquer nível)
 
-# Mockups locais (não fazem parte do app, só referência de design)
-docs/wizard_upload_mockup.html
+# ============================================================
+# Python / backend
+# ============================================================
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
 
-# Notas locais de contexto do projeto
+# ============================================================
+# Node / frontend
+# ============================================================
+node_modules/
+dist/
+build/
+.vite/
+*.local
+npm-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ============================================================
+# Deploy
+# ============================================================
+.vercel
+
+# ============================================================
+# Artefatos de modelo (pesados — Render tem 256–512MB de RAM)
+# ============================================================
+ml/artefatos/
+*.pt
+*.pth
+*.onnx
+
+# ============================================================
+# SO / editores
+# ============================================================
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+.vscode/
+
+# ============================================================
+# Notas de contexto e material local
+# Documentação de trabalho de cada dev — fica na máquina de quem
+# escreveu, não no repositório. Vale em qualquer nível: CLAUDE.md
+# da raiz, backend/CLAUDE.md, e qualquer outro que venha depois.
+# ============================================================
 CLAUDE.md
+
+# Mockup do wizard de upload (D13) — referência de design, não é
+# parte do app. Abrir direto no navegador.
+docs/wizard_upload_mockup.html
