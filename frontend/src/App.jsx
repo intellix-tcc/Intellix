@@ -3,6 +3,7 @@ import { perguntar } from "./api";
 import GraficoBarra from "./GraficoBarra";
 import { baixarExcel, baixarPdf } from "./exportar";
 import Sidebar from "./Sidebar";
+import Logo from "./Logo";
 import Login from "./Login";
 import { carregarSessao, encerrarSessao } from "./auth";
 import { carregarConversas, salvarConversas, novoId, tituloFromPergunta } from "./historico";
@@ -281,7 +282,10 @@ export default function App() {
       />
       <div className="app">
         <div className="app-header">
-          <h1>Intellix</h1>
+          <div className="marca">
+            <Logo size={44} />
+            <h1>Intellix</h1>
+          </div>
           <button
             type="button"
             className="tema-toggle"
