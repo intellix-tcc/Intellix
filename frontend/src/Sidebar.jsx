@@ -1,4 +1,4 @@
-export default function Sidebar({ conversas, atualId, onNovoChat, onSelecionar, onExcluir }) {
+export default function Sidebar({ conversas, atualId, onNovoChat, onSelecionar, onExcluir, usuario, onSair }) {
   return (
     <aside className="sidebar">
       <button type="button" className="novo-chat" onClick={onNovoChat}>
@@ -33,6 +33,17 @@ export default function Sidebar({ conversas, atualId, onNovoChat, onSelecionar, 
           </div>
         ))}
       </div>
+
+      {usuario && (
+        <div className="sidebar-usuario">
+          <span className="sidebar-usuario-nome" title={usuario.email}>
+            {usuario.nome}
+          </span>
+          <button type="button" className="sidebar-sair" onClick={onSair}>
+            Sair
+          </button>
+        </div>
+      )}
     </aside>
   );
 }

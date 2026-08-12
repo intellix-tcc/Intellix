@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from app.db import get_connection, get_empresa_id
 from app.fallbacks import verificar_confianca
@@ -7,6 +8,16 @@ from app.nlu.regras import RuleBasedNLU
 from app.sql.executor import executar_template
 
 app = FastAPI(title="Intellix API")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:5173",                          # dev local do frontend
+        "https://intellix-454e8bjo3-intellix3.vercel.app", # produção na Vercel
+    ],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 nlu = RuleBasedNLU()  # tomada: troca para o modelo treinado na semana 9 (B11)
 
