@@ -1,3 +1,5 @@
+import os
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -9,12 +11,23 @@ from app.sql.executor import executar_template
 
 app = FastAPI(title="Intellix API")
 
+# Origens padrão: dev local + a URL estável de produção da Vercel.
+# CORS_ORIGINS (lista separada por vírgula, configurada no painel do Render)
+# acrescenta outras sem precisar de novo deploy de código — era o que o
+# .env.example já declarava mas o app não lia.
+ORIGENS_PADRAO = [
+    "http://localhost:5173",
+    "https://intellix-lilac.vercel.app",
+]
+ORIGENS_EXTRA = [
+    origem.strip()
+    for origem in os.environ.get("CORS_ORIGINS", "").split(",")
+    if origem.strip()
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",                          # dev local do frontend
-        "https://intellix-454e8bjo3-intellix3.vercel.app", # produção na Vercel
-    ],
+    allow_origins=ORIGENS_PADRAO + ORIGENS_EXTRA,
     allow_methods=["*"],
     allow_headers=["*"],
 )

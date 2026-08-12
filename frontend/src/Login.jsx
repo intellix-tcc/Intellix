@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { entrar, registrar } from "./auth";
+import Logo from "./Logo";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -50,6 +51,9 @@ export default function Login({ onEntrar }) {
   return (
     <div className="auth-tela">
       <div className="auth-card">
+        <div className="auth-marca">
+          <Logo size={64} />
+        </div>
         <h1 className="auth-titulo">Intellix</h1>
         <p className="auth-sub">{modo === "entrar" ? "Entre para ver suas vendas" : "Crie sua conta"}</p>
 

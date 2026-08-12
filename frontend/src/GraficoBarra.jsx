@@ -12,7 +12,8 @@ export default function GraficoBarra({ r }) {
         <XAxis dataKey={r.colunas[0]} />
         <YAxis />
         <Tooltip formatter={(v) => Number(v).toLocaleString("pt-BR")} />
-        <Bar dataKey={r.colunas[2]} fill="#ECA72C" />
+        {/* roxo da marca — é a primeira série nos gráficos da identidade */}
+        <Bar dataKey={r.colunas[2]} fill="#7B3E93" />
       </BarChart>
     </ResponsiveContainer>
   );
