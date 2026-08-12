@@ -24,12 +24,23 @@ const FALSAS = {
     confianca: 0.91,
     gerado_em: new Date().toISOString(),
   },
+  ticket: {
+    titulo: "Ticket médio",
+    // Sem coluna de período: o SQL real (backend/app/sql/templates.py)
+    // devolve só essa coluna, ao contrário de faturamento (periodo + valor).
+    colunas: ["ticket_medio"],
+    linhas: [[142.87]],
+    tipo_visualizacao: "numero",
+    confianca: 0.85,
+    gerado_em: new Date().toISOString(),
+  },
 };
 
 export async function perguntar(pergunta) {
   if (MOCK) {
     await new Promise((r) => setTimeout(r, 600)); // simula a espera real
     if (/produto|vendidos/i.test(pergunta)) return FALSAS.barra;
+    if (/ticket/i.test(pergunta)) return FALSAS.ticket;
     if (/capital|tempo/i.test(pergunta))
       throw {
         mensagem: "Não entendi. Tente reformular.",

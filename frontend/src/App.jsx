@@ -3,6 +3,8 @@ import { perguntar } from "./api";
 import GraficoBarra from "./GraficoBarra";
 import { baixarExcel, baixarPdf } from "./exportar";
 import Sidebar from "./Sidebar";
+import Login from "./Login";
+import { carregarSessao, encerrarSessao } from "./auth";
 import { carregarConversas, salvarConversas, novoId, tituloFromPergunta } from "./historico";
 import "./App.css";
 
@@ -11,6 +13,7 @@ import "./App.css";
 const EXEMPLOS = [
   "Quanto faturei em março?",
   "Quais os 5 produtos mais vendidos?",
+  "Qual o ticket médio em março?",
 ];
 
 // Abaixo disto não adivinhamos o resultado — mostramos exemplos (D6 #3).
@@ -57,7 +60,9 @@ function Resultado({ r }) {
   }
 
   if (r.tipo_visualizacao === "numero") {
-    const valor = r.linhas[0][1];
+    // Última coluna, não índice fixo: "faturamento" vem como [periodo, valor],
+    // mas "ticket_medio" vem sozinho, sem coluna de período antes.
+    const valor = r.linhas[0][r.colunas.length - 1];
     return (
       <div className="resultado resultado-numero">
         <div className="resultado-cabecalho">
@@ -152,6 +157,7 @@ function temaInicial() {
 }
 
 export default function App() {
+  const [usuario, setUsuario] = useState(carregarSessao);
   const [tema, setTema] = useState(temaInicial);
   const [conversas, setConversas] = useState(carregarConversas);
   const [atualId, setAtualId] = useState(null);
@@ -251,6 +257,15 @@ export default function App() {
     perguntarTexto(texto);
   }
 
+  function sair() {
+    encerrarSessao();
+    setUsuario(null);
+  }
+
+  if (!usuario) {
+    return <Login onEntrar={setUsuario} />;
+  }
+
   const vazio = mensagens.length === 0;
 
   return (
@@ -261,6 +276,8 @@ export default function App() {
         onNovoChat={novoChat}
         onSelecionar={selecionarConversa}
         onExcluir={excluirConversa}
+        usuario={usuario}
+        onSair={sair}
       />
       <div className="app">
         <div className="app-header">
