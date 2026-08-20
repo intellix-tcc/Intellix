@@ -1,0 +1,2858 @@
+/* ==========================================================
+   --filtro-logo: a logo oficial é um PNG único, em azul-marinho.
+   No tema escuro esse marinho quase some no fundo (contraste ~2:1),
+   então clareamos com filtro em vez de recolorir — o desenho da marca
+   continua intacto. Se a equipe exportar uma versão clara da logo,
+   troque isto por um segundo arquivo em public/. Não muda com o design
+   system (v2): é da marca, não da paleta de UI — ver --glow-a/--glow-b/
+   --dot em index.css para o véu de luz que substituiu o padrão de cubos.
+   ========================================================== */
+:root {
+  --filtro-logo: none;
+}
+:root[data-theme="dark"] {
+  --filtro-logo: brightness(1.45) saturate(1.04);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --filtro-logo: brightness(1.45) saturate(1.04);
+  }
+}
+
+/* ---- Animações ---- */
+@keyframes entrada {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.anima-entrada {
+  animation: entrada 0.42s cubic-bezier(0.22, 0.68, 0.36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .anima-entrada {
+    animation: none;
+  }
+  * {
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ==========================================================
+   Layout
+   ========================================================== */
+.layout {
+  display: flex;
+  width: 100%;
+  min-height: 100svh;
+}
+
+.conteudo {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 100svh;
+}
+
+/* ----------------------------------------------------------
+   Rolagem da página.
+
+   Aqui estava o bug: `.area` era `flex: 1; min-height: 0`.
+   `flex: 1` significa `flex-basis: 0`, ou seja, "ignore o tamanho do
+   meu conteúdo"; e `min-height: 0` desliga a altura mínima automática
+   que protegeria esse conteúdo. Juntos, travavam a área em exatamente
+   uma tela de altura (100svh menos o topo) em TODAS as páginas —
+   Home, Sobre, Perfil, Importar. O que passasse disso ficava fora da
+   caixa, e o rodapé das páginas longas não era alcançável.
+
+   Padrão agora: a área cresce junto com o conteúdo (`flex-basis: auto`,
+   `flex-shrink: 0`) e quem rola é a página, no navegador.
+   ---------------------------------------------------------- */
+.area {
+  flex: 1 0 auto;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Exceção deliberada: o chat quer o comportamento oposto — altura presa
+   na viewport, lista de mensagens rolando por dentro e campo de pergunta
+   ancorado embaixo. Era essa necessidade que tinha vazado para `.area`
+   e quebrado o resto do site. Agora vale só na rota do chat. */
+.layout.rota-chat .conteudo {
+  height: 100svh;
+  min-height: 0;
+}
+.layout.rota-chat .area {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* ==========================================================
+   Sidebar
+   ========================================================== */
+.sidebar {
+  /* 248px: cabe título de conversa legível sem roubar da conversa. */
+  width: 248px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 10px 12px;
+  box-sizing: border-box;
+  border-right: 1px solid var(--border);
+  background: var(--surface);
+  position: sticky;
+  top: 0;
+  height: 100svh;
+  /* A sidebar em si NÃO rola: quem rola é a lista de conversas, lá dentro.
+     Assim a navegação e o perfil ficam sempre visíveis, por mais conversas
+     que existam — que é a razão de o histórico ter rolagem própria. */
+  overflow: hidden;
+  text-align: left;
+  transition: width 0.32s cubic-bezier(0.22, 0.68, 0.36, 1),
+    padding 0.32s cubic-bezier(0.22, 0.68, 0.36, 1);
+}
+
+/* Região 1 — identidade + navegação. Em modo compacto ela aperta para ceder
+   espaço à lista de conversas (ver .sidebar.compacta). */
+.sidebar-nav {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: gap 0.2s ease;
+}
+
+.sidebar-marca {
+  display: flex;
+  justify-content: center;
+  padding: 2px 4px;
+  transition: transform 0.18s ease;
+}
+.sidebar-marca:hover {
+  transform: scale(1.03);
+}
+.logo {
+  height: auto;
+  max-width: 100%;
+  display: block;
+}
+/* só no arquivo PNG: o SVG de reserva já se recolore sozinho pelos tokens
+   --logo-navy-*, e receberia clareamento duplo se entrasse aqui. */
+img.logo {
+  filter: var(--filtro-logo);
+}
+
+.nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text);
+  text-decoration: none;
+  position: relative;
+  transition: background 0.16s ease, color 0.16s ease, transform 0.16s ease;
+}
+.nav-item:hover {
+  background: var(--hover-bg);
+  color: var(--text-h);
+  transform: translateX(2px);
+}
+.nav-item:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.nav-item.ativo {
+  background: var(--accent-bg);
+  color: var(--accent);
+  font-weight: 600;
+}
+/* marcador do item ativo */
+.nav-item.ativo::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 18%;
+  bottom: 18%;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: var(--accent);
+}
+/* Ícone de linha: em repouso fica um tom abaixo do rótulo, e assume a cor
+   de destaque quando o item está ativo ou sob o cursor. Nada de rotação —
+   um ícone figurativo girando fica estranho, ao contrário do losango antigo. */
+.nav-icone {
+  flex-shrink: 0;
+  color: var(--text);
+  opacity: 0.75;
+  transition: color 0.16s ease, opacity 0.16s ease;
+}
+.nav-item:hover .nav-icone {
+  opacity: 1;
+  color: var(--text-h);
+}
+.nav-item.ativo .nav-icone {
+  opacity: 1;
+  color: var(--accent);
+}
+
+
+
+
+
+
+
+
+/* ---- Perfil no rodapé da sidebar ---- */
+.sidebar-perfil {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
+  margin-top: auto;
+}
+.perfil-link {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 5px;
+  border-radius: 9px;
+  text-decoration: none;
+  transition: background 0.16s ease;
+}
+.perfil-link:hover {
+  background: var(--hover-bg);
+}
+.perfil-link.ativo {
+  background: var(--accent-bg);
+}
+.perfil-link:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.perfil-dados {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+}
+.perfil-nome {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text-h);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.perfil-acao {
+  font-size: 11.5px;
+  color: var(--text);
+}
+/* Só o ícone: o rótulo "Sair" concorria com o nome do usuário ao lado.
+   O nome continua no title e no aria-label. */
+.sidebar-sair {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  background: none;
+  border: none;
+  color: var(--text);
+  opacity: 0.7;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: background 0.14s ease, color 0.14s ease, opacity 0.14s ease;
+}
+.sidebar-sair:hover {
+  background: var(--accent-3-bg);
+  color: var(--accent-3);
+  opacity: 1;
+}
+.sidebar-sair:focus-visible {
+  outline: 2px solid var(--accent-3);
+  outline-offset: 2px;
+}
+
+/* ---- Avatar (foto ou iniciais) ---- */
+.avatar {
+  flex-shrink: 0;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+}
+.avatar-foto {
+  object-fit: cover;
+  border: 2px solid var(--border);
+  background: var(--code-bg);
+}
+.avatar-iniciais {
+  /* cor do texto vem inline (Avatar.jsx) — cada par bg/texto tem seu próprio
+     contraste, branco não serve pra todas as 4 cores da paleta */
+  font-family: var(--heading);
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* ==========================================================
+   Sidebar recolhida — só ícones, largura reduzida.
+   Vale apenas no desktop: abaixo de 860px a sidebar é gaveta
+   e precisa aparecer inteira (ver media query no fim).
+   ========================================================== */
+/* ---- Navegação compacta ----
+   Entra quando há muitas conversas (Sidebar.jsx decide). Nada é removido:
+   a logo diminui, os itens perdem respiro e a fonte cai meio ponto. O ganho
+   vai todo para a lista de conversas. */
+.sidebar.compacta .sidebar-nav {
+  gap: 6px;
+}
+.sidebar.compacta .sidebar-marca {
+  transform: scale(0.85);
+}
+.sidebar.compacta .nav-item {
+  padding: 6px 10px;
+  font-size: 13.5px;
+}
+
+.sidebar.recolhida {
+  width: 62px;
+  padding-left: 8px;
+  padding-right: 8px;
+  gap: 10px;
+}
+.sidebar.recolhida .sidebar-marca {
+  color: var(--accent);
+  justify-content: center;
+}
+.sidebar.recolhida .nav-item {
+  justify-content: center;
+  padding: 9px 0;
+}
+.sidebar.recolhida .nav-rotulo {
+  /* escondido do olho, mas continua lido em voz alta */
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.sidebar.recolhida .nav-item.ativo::before {
+  left: -10px;
+}
+.sidebar.recolhida .nav-icone {
+  font-size: 15px;
+}
+.sidebar.recolhida .sidebar-perfil {
+  flex-direction: column;
+  gap: 8px;
+}
+.sidebar.recolhida .perfil-link {
+  justify-content: center;
+}
+.sidebar.recolhida .perfil-dados {
+  display: none;
+}
+
+.sidebar-backdrop {
+  display: none;
+}
+
+/* ==========================================================
+   Topo
+   ========================================================== */
+.topo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 28px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+
+/* Os dois botões de menu ocupam o mesmo lugar no topo e nunca aparecem
+   juntos: o de gaveta é do mobile, o de recolher é do desktop. */
+.menu-toggle,
+.painel-toggle {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text);
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  border-radius: 9px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.16s ease, color 0.16s ease, border-color 0.16s ease;
+}
+.menu-toggle {
+  display: none;
+}
+.menu-toggle:hover,
+.painel-toggle:hover {
+  background: var(--hover-bg);
+  border-color: var(--text);
+  color: var(--text-h);
+}
+/* Recolhida: o ícone espelha, sugerindo que o painel volta a abrir. */
+.painel-toggle[aria-expanded="false"] .icone {
+  transform: scaleX(-1);
+}
+.painel-toggle .icone {
+  transition: transform 0.22s cubic-bezier(0.22, 0.68, 0.36, 1);
+}
+
+.topo-titulo {
+  font-family: var(--heading);
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--text-h);
+  letter-spacing: -0.2px;
+}
+
+.tema-toggle {
+  margin-left: auto;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text);
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  border-radius: 999px;
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.16s ease, transform 0.16s ease;
+}
+.tema-toggle:hover {
+  /* neutro, como todo hover do projeto — a cor de marca fica reservada
+     para ação principal e estado ativo, não para "o mouse está em cima" */
+  border-color: var(--text);
+  transform: rotate(-12deg);
+}
+.tema-toggle:focus-visible,
+.menu-toggle:focus-visible,
+.painel-toggle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* ==========================================================
+   Páginas (Home / Sobre)
+   ========================================================== */
+/* `1 0 auto` e não `1`: com `flex: 1` a base vira 0 e a página passa a
+   depender da altura mínima automática para não encolher — mesmo problema
+   de `.area`, um nível abaixo. Aqui a base é o próprio conteúdo. */
+.pagina {
+  flex: 1 0 auto;
+  padding: 0 0 72px;
+}
+
+.secao {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 44px 28px 0;
+  box-sizing: border-box;
+}
+
+.secao-titulo {
+  font-family: var(--heading);
+  font-weight: 700;
+  font-size: 22px;
+  color: var(--text-h);
+  margin: 0 0 6px;
+}
+
+.eyebrow {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent-3);
+  margin: 0 0 6px;
+}
+
+/* ---- Início: painel de visão geral (design system v2) ----
+   Deixou de ser tela de entrada de pergunta pra virar leitura: panorama,
+   gráfico, resumo em texto, ranking, observações — tudo isso é conteúdo
+   MOCK enquanto o contrato de dados não existe no backend (ver
+   utils/resumoExemplo.js e a proposta em docs/contratos.md). Por ser um
+   painel com bastante conteúdo, a página rola normalmente — nada de
+   "caber numa tela só" como na versão anterior. */
+.home {
+  background-image: radial-gradient(900px 620px at 12% 0%, var(--glow-a), transparent 68%),
+    radial-gradient(800px 620px at 88% 100%, var(--glow-b), transparent 65%),
+    radial-gradient(var(--dot) 1px, transparent 1.4px);
+  background-size: auto, auto, 26px 26px;
+  background-attachment: fixed;
+}
+.painel-inicio {
+  width: 100%;
+  max-width: 1080px;
+  margin: 0 auto;
+  /* 48px no topo: era o pedido específico — o cabeçalho encostava na barra
+     superior. */
+  padding: 48px 40px 64px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 44px;
+}
+
+.painel-cabecalho {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+.painel-saudacao {
+  font-family: var(--heading);
+  font-weight: 600;
+  font-size: 26px;
+  color: var(--text-h);
+  margin: 0 0 6px;
+}
+.painel-subtitulo {
+  font-size: 15px;
+  color: var(--text);
+  margin: 0 0 8px;
+}
+.painel-status {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  color: var(--text-3);
+}
+.painel-status-ponto {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--ok-texto);
+  flex-shrink: 0;
+}
+.painel-acoes-topo {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.painel-botao-secundario {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: 1px solid var(--border-2);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  padding: 8px 14px;
+  border-radius: 9px;
+  cursor: not-allowed;
+}
+
+.painel-secao {
+  padding-top: 28px;
+  border-top: 1px solid var(--border);
+}
+
+/* Panorama */
+.painel-kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 28px;
+}
+.painel-kpi-valor {
+  font-family: var(--heading);
+  font-weight: 700;
+  font-size: 28px;
+  letter-spacing: -0.6px;
+  color: var(--text-h);
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+.painel-kpi-rotulo {
+  font-size: 13.5px;
+  color: var(--text);
+  margin: 4px 0 0;
+}
+.painel-kpi-variacao {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 12.5px;
+  font-weight: 600;
+  margin: 6px 0 0;
+}
+.painel-kpi-variacao.positiva {
+  color: var(--ok-texto);
+}
+.painel-kpi-variacao.negativa {
+  color: var(--erro-texto);
+}
+
+/* Duas colunas (Vendas+Categoria, Produtos+Observações) */
+.painel-duas-colunas {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 40px;
+}
+
+.painel-legenda {
+  font-size: 12.5px;
+  color: var(--text-3);
+  margin: 10px 0 0;
+}
+
+/* Por categoria */
+.painel-categorias {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.painel-categoria-topo {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13.5px;
+  color: var(--text-h);
+  margin-bottom: 5px;
+}
+.painel-categoria-barra {
+  height: 6px;
+  border-radius: 99px;
+  background: var(--code-bg);
+  overflow: hidden;
+}
+.painel-categoria-barra span {
+  display: block;
+  height: 100%;
+  background: var(--accent-3);
+  border-radius: 99px;
+}
+
+/* Resumo do mês */
+.painel-resumo {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  font-size: 15.5px;
+  line-height: 1.65;
+  color: var(--text);
+  margin-top: 8px;
+}
+.painel-resumo strong {
+  color: var(--text-h);
+}
+
+/* Ranking de produtos */
+.painel-ranking {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+}
+.painel-ranking li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 14px;
+}
+.painel-ranking li:first-child {
+  padding-top: 0;
+}
+.painel-ranking li:last-child {
+  border-bottom: none;
+}
+.painel-ranking-pos {
+  flex-shrink: 0;
+  width: 18px;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+}
+.painel-ranking-nome {
+  flex: 1;
+  min-width: 0;
+  color: var(--text-h);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.painel-ranking-valor {
+  flex-shrink: 0;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+.painel-ranking-pct {
+  flex-shrink: 0;
+  width: 34px;
+  text-align: right;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Observações */
+.painel-observacoes {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.painel-observacoes li {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text-h);
+}
+.painel-observacao-icone {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.painel-observacao-icone.alta {
+  color: var(--ok-texto);
+}
+.painel-observacao-icone.queda {
+  color: var(--erro-texto);
+}
+.painel-observacao-icone.atencao {
+  color: var(--accent-2-text);
+}
+.painel-observacao-icone.padrao {
+  color: var(--accent-3);
+}
+
+/* Atividade recente */
+.painel-atividade {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 28px;
+}
+.painel-atividade li {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 13.5px;
+  color: var(--text-h);
+}
+.painel-atividade-tempo {
+  color: var(--text-3);
+  font-size: 12.5px;
+}
+
+.botao-primario,
+.botao-secundario {
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  padding: 13px 24px;
+  border-radius: 10px;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  transition: transform 0.16s ease, filter 0.16s ease, background 0.16s ease,
+    border-color 0.16s ease, color 0.16s ease;
+}
+.botao-primario {
+  background: var(--accent);
+  color: #fff;
+  border: 1px solid var(--accent);
+}
+.botao-primario:hover {
+  filter: brightness(1.14);
+  transform: translateY(-2px);
+}
+.botao-secundario {
+  background: transparent;
+  color: var(--text-h);
+  border: 1px solid var(--border);
+}
+.botao-secundario:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  transform: translateY(-2px);
+}
+.botao-primario:active,
+.botao-secundario:active {
+  transform: translateY(0);
+}
+.botao-primario:focus-visible,
+.botao-secundario:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+/* ---- Sobre v2 ----
+   Mesmo conteúdo de sempre (o que é → problema/solução → como funciona →
+   diferenciais → como é construído, discreto → por que existe → TCC,
+   discreto → fechamento), agora com ícone de acento e fluxo visual entre
+   os passos — texto continua sendo o conteúdo principal, ícone só decora
+   (sem caixa, sem círculo). 48px de respiro no topo, igual à Início — as
+   duas telas usam a mesma régua vertical de propósito. */
+.sobre-cabecalho {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 48px 28px 0;
+  box-sizing: border-box;
+}
+.sobre-cabecalho-topo {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 32px;
+}
+/* Símbolo da marca (não um ícone inventado — é a mesma logo da sidebar,
+   variante símbolo) como acento ao lado do título. Só na Sobre: nas outras
+   telas a logo já aparece na sidebar em toda navegação, repetir lá seria
+   duplicar identidade sem motivo (ver regra da marca no CLAUDE.md). Aqui
+   é diferente — é uma tela institucional, sem sidebar em foco. */
+.sobre-simbolo {
+  flex-shrink: 0;
+  opacity: 0.9;
+}
+/* Mesma escala do título da Início (34-40px): as duas telas precisam ler
+   como o mesmo produto, não cada uma com sua própria hierarquia de título. */
+.sobre-titulo {
+  font-family: var(--heading);
+  font-weight: 700;
+  font-size: 34px;
+  line-height: 1.2;
+  letter-spacing: -0.8px;
+  color: var(--text-h);
+  margin: 0 0 14px;
+}
+
+/* Coluna de leitura confortável: ~640px, bem mais estreita que a seção de
+   1180px ao redor — reforça a hierarquia editorial (categoria → título →
+   resumo estreito → seção) em vez de deixar o texto atravessar a tela. */
+.coluna-leitura {
+  max-width: 640px;
+}
+.sobre-lead {
+  font-size: 16.5px;
+  line-height: 1.62;
+  color: var(--text);
+}
+/* Peso, não cor nova: o negrito já separa a frase-chave do resto — mesmo
+   raciocínio já usado em .resultado-destaque strong no Chat. */
+.sobre-destaque-acao {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.texto-longo {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  font-size: 16px;
+  line-height: 1.62;
+}
+
+/* ---- Problema / Solução: texto lado a lado, ícone só de acento ---- */
+.sobre-dupla {
+  max-width: 1180px;
+  margin: 44px auto 0;
+  padding: 0 28px;
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 28px;
+}
+.sobre-cartao {
+  display: flex;
+  gap: 16px;
+}
+.sobre-cartao-icone {
+  flex-shrink: 0;
+  color: var(--accent-3);
+  margin-top: 3px;
+}
+.sobre-cartao h2 {
+  font-family: var(--heading);
+  font-weight: 700;
+  font-size: 18px;
+  color: var(--text-h);
+  margin: 0 0 8px;
+}
+.sobre-cartao p {
+  font-size: 14.5px;
+  line-height: 1.6;
+  color: var(--text);
+}
+
+/* ---- Fluxo: "Como funciona", "O que torna diferente" e "Como está
+   montado" compartilham a mesma estrutura — ícone grande de acento ao lado
+   do texto, ligados por uma linha fina em cima e setas entre os itens. O
+   ícone nunca fica numa caixa ou círculo: ele decora, o texto que carrega
+   a informação. Discreto (.fluxo-discreto) muda só a escala e a cor. ---- */
+.fluxo {
+  list-style: none;
+  margin: 28px 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 28px 20px;
+}
+.fluxo-item {
+  position: relative;
+  display: flex;
+  gap: 12px;
+  padding: 18px 20px 0 0;
+  border-top: 2px solid var(--border);
+}
+.fluxo-icone {
+  flex-shrink: 0;
+  color: var(--accent-3);
+  margin-top: 1px;
+}
+.fluxo-icone.cor-marinho {
+  color: var(--marinho);
+}
+.fluxo-icone.cor-roxo {
+  color: var(--accent-3);
+}
+.fluxo-icone.cor-teal {
+  color: var(--teal);
+}
+.fluxo-icone.cor-ambar {
+  color: var(--accent-2);
+}
+.fluxo-texto {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.etapa-num {
+  font-family: var(--heading);
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  color: var(--accent-3);
+}
+.fluxo-item h3 {
+  font-family: var(--heading);
+  font-weight: 700;
+  font-size: 16px;
+  color: var(--text-h);
+  margin: 0;
+}
+.fluxo-item p {
+  font-size: 14.5px;
+  color: var(--text);
+  line-height: 1.5;
+  margin: 0;
+}
+/* Seta entre um passo e o próximo — só existe nos itens que não são o
+   último (ver JSX), posicionada na régua de cima, no vão entre colunas. */
+.fluxo-seta {
+  position: absolute;
+  top: -9px;
+  right: -16px;
+  color: var(--accent-3);
+  background: var(--bg);
+}
+
+/* Versão discreta — "Como está montado": mesma estrutura, mais compacta e
+   num tom quieto (cinza, não roxo), porque esta seção é contexto para quem
+   quiser, não a primeira coisa que a página conta. */
+.fluxo-discreto {
+  gap: 20px;
+}
+.fluxo-discreto .fluxo-item {
+  padding-top: 14px;
+  gap: 10px;
+}
+.fluxo-discreto .fluxo-icone {
+  color: var(--text-3);
+}
+.camada-num {
+  font-family: var(--heading);
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: var(--text-3);
+}
+.fluxo-discreto .fluxo-item h3 {
+  font-size: 14.5px;
+  font-weight: 600;
+}
+.fluxo-discreto .fluxo-item p {
+  font-size: 13.5px;
+}
+.fluxo-discreto .fluxo-seta {
+  color: var(--text-3);
+  width: 14px;
+  height: 14px;
+}
+
+/* Seções de baixo da página: quem só queria entender o produto já leu o
+   que precisava — aqui a informação continua completa, só mais quieta. */
+.secao-discreta {
+  padding-top: 40px;
+  border-top: 1px solid var(--border);
+}
+.secao-discreta .sobre-cartao-icone {
+  color: var(--text-3);
+}
+.sobre-academico {
+  display: flex;
+  gap: 14px;
+}
+
+.sobre-tecnologias {
+  margin: 22px 0 0;
+  font-size: 13.5px;
+  color: var(--text);
+}
+.sobre-tecnologias span {
+  color: var(--text-h);
+  font-weight: 600;
+  margin-right: 8px;
+}
+
+/* ---- Fechamento ---- */
+.sobre-fechamento {
+  max-width: 1180px;
+  margin: 8px auto 0;
+  padding: 32px 28px 0;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  border-top: 1px solid var(--border);
+}
+.sobre-fechamento p {
+  font-size: 15px;
+  color: var(--text-h);
+  font-weight: 600;
+}
+
+/* ==========================================================
+   Chat
+   ========================================================== */
+/* Coluna única: a conversa ocupa a área toda que a sidebar deixa.
+   `1180px` é a medida de leitura — mais largo que isso a linha da resposta
+   fica cansativa, mesmo com espaço sobrando. */
+.chat-pagina {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 12px 28px 24px;
+  box-sizing: border-box;
+}
+
+
+.chat {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  /* 28px embaixo, não 12px: era pouco respiro entre o fim da última resposta
+     (gráfico, lista, botões de exportar) e o campo de pergunta logo abaixo —
+     dava sensação de conteúdo cortado ao rolar até o fim. */
+  padding: 12px 4px 28px;
+  text-align: left;
+}
+/* Pergunta nova depois de uma resposta ganha um respiro extra em cima do
+   gap padrão — separa uma pergunta da resposta anterior sem precisar de
+   outra régua visual, só espaçamento. */
+.linha-ia + .mensagem-usuario {
+  margin-top: 8px;
+}
+/* O foco vem do tabindex em Chat.jsx, que é o que dá rolagem por teclado
+   nesta lista. Sem o anel, o foco apareceria do nada ao apertar Tab. */
+.chat:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+  border-radius: 8px;
+}
+
+/* ---- Barra de rolagem fina, nos três painéis que rolam por dentro ----
+   Sem isso o navegador desenha a barra do sistema: grossa, com setinhas nas
+   pontas, cinza destacado do resto da interface — em `.chat` ela ficava
+   longe da conversa (a coluna do texto é mais estreita que o painel) e
+   parecia um elemento solto, "perdido". Fina e na cor do tema, ela para de
+   competir com o conteúdo mesmo ficando na borda do painel. */
+.chat,
+.hist-lista,
+.tabela-scroll {
+  scrollbar-width: thin; /* Firefox */
+  scrollbar-color: var(--border) transparent;
+}
+.chat::-webkit-scrollbar,
+.hist-lista::-webkit-scrollbar,
+.tabela-scroll::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.chat::-webkit-scrollbar-track,
+.hist-lista::-webkit-scrollbar-track,
+.tabela-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.chat::-webkit-scrollbar-thumb,
+.hist-lista::-webkit-scrollbar-thumb,
+.tabela-scroll::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 999px;
+}
+.chat::-webkit-scrollbar-thumb:hover,
+.hist-lista::-webkit-scrollbar-thumb:hover,
+.tabela-scroll::-webkit-scrollbar-thumb:hover {
+  background: var(--text);
+}
+
+.mensagem {
+  max-width: 760px;
+  width: 100%;
+  border-radius: 12px;
+  line-height: 1.45;
+  animation: entrada 0.34s cubic-bezier(0.22, 0.68, 0.36, 1) both;
+}
+
+.mensagem-usuario {
+  /* Neutro, não azul de marca: era a cor que mais se repetia na tela — toda
+     pergunta enviada somava mais uma bolha de --accent, mesmo a bolha não
+     sendo uma ação (item 8 do redesign, revisitado). `--border` já dá
+     contraste bom com `--text-h` nos dois temas, sem cor nova. */
+  align-self: flex-end;
+  background: var(--border);
+  color: var(--text-h);
+  padding: 11px 16px;
+  max-width: 70%;
+  width: auto;
+  border-bottom-right-radius: 4px;
+}
+
+/* ---- Linha de resposta do Intellix: avatar + conteúdo ----
+   O avatar é a própria marca (Logo, variante símbolo) — nunca um ícone
+   inventado. `.mensagem` continua controlando a largura de leitura; aqui só
+   move o align-self do filho para a linha, porque agora quem é o item flex
+   direto de `.chat` é `.linha-ia`, não `.mensagem-erro`/`.mensagem-resultado`. */
+.linha-ia {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  max-width: 760px;
+  width: 100%;
+  align-self: flex-start;
+}
+.linha-ia .mensagem {
+  max-width: none;
+  flex: 1;
+  min-width: 0;
+}
+.avatar-marca {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  margin-top: 2px; /* alinha opticamente com a primeira linha do texto ao lado */
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+.mensagem-erro {
+  background: var(--accent-bg);
+  border: 1px solid var(--accent-border);
+  color: var(--text-h);
+  padding: 14px 18px;
+}
+.mensagem-erro ul {
+  margin: 8px 0 0;
+  padding-left: 20px;
+}
+
+/* ---- Resultado ---- */
+.resultado {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 20px 24px;
+  box-shadow: var(--shadow);
+}
+
+.resultado-titulo {
+  font-family: var(--heading);
+  font-weight: 700;
+  color: var(--text-h);
+  margin: 0 0 8px;
+}
+
+.resultado-valor {
+  font-family: var(--heading);
+  font-size: 40px;
+  font-weight: 700;
+  letter-spacing: -1.2px;
+  color: var(--accent);
+  margin: 8px 0;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Número e gráfico não têm moldura própria — fluem como texto da resposta,
+   não como widget separado. Só a tabela e o aviso de baixa confiança ganham
+   uma caixa, porque ali ela cumpre função (limite de rolagem, sinalização de
+   exceção), não decoração. Precisa anular background/border/shadow aqui:
+   herdam de `.resultado` (base), que continua dando moldura a todo mundo —
+   sem isso, sobrava borda em volta de um conteúdo sem padding lateral (o
+   texto colava na borda dos dois lados). */
+.resultado-numero,
+.resultado-grafico {
+  background: none;
+  border: none;
+  box-shadow: none;
+  padding: 4px 0;
+}
+
+.resultado-abertura {
+  color: var(--text);
+  font-size: 14.5px;
+  margin: 2px 0 12px;
+}
+
+/* Lista com o valor exato de cada barra — o gráfico já compara visualmente,
+   aqui é só para quem quer o número sem passar o mouse na barra. Divisor
+   sutil em vez de linha zebrada: é uma lista, não uma segunda tabela. */
+.resultado-lista {
+  list-style: none;
+  margin: 14px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+.resultado-lista li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 14.5px;
+}
+.resultado-lista li:first-child {
+  padding-top: 0;
+}
+.resultado-lista li:last-child {
+  border-bottom: none;
+}
+.resultado-lista-rotulo {
+  color: var(--text-h);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.resultado-lista-valor {
+  flex-shrink: 0;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+.resultado-destaque {
+  color: var(--text-h);
+  font-size: 14.5px;
+  margin: 12px 0 0;
+}
+.resultado-destaque strong {
+  /* peso, não cor: o negrito já separa o dado da frase — não precisa de
+     azul em cima disso (item 8 do redesign: hierarquia por tipografia) */
+  color: var(--text-h);
+  font-weight: 700;
+}
+
+.resultado-incerto {
+  background: var(--accent-bg);
+  border: 1px dashed var(--accent-border);
+  border-radius: 12px;
+  padding: 16px 18px;
+}
+.resultado-incerto ul {
+  margin: 8px 0 0;
+  padding-left: 20px;
+}
+
+.resultado-tabela {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px 18px 18px;
+}
+.tabela-scroll {
+  overflow-x: auto;
+}
+.resultado-tabela table {
+  width: 100%;
+  min-width: 420px;
+  border-collapse: collapse;
+  font-size: 15px;
+}
+.resultado-tabela th,
+.resultado-tabela td {
+  text-align: left;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+}
+.resultado-tabela th {
+  color: var(--text-h);
+  font-weight: 600;
+}
+.resultado-tabela td:not(:first-child) {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- "Como cheguei nessa resposta" ----
+   <details> nativo: acessibilidade e teclado de graça, sem estado em React.
+   Fechado por padrão — é contexto para quem quiser conferir, não faz parte
+   da leitura principal da resposta. */
+.como-cheguei {
+  margin-top: 12px;
+  font-size: 13px;
+  color: var(--text);
+}
+.como-cheguei summary {
+  cursor: pointer;
+  color: var(--accent-3);
+  font-weight: 600;
+  list-style: none;
+}
+.como-cheguei summary::-webkit-details-marker {
+  display: none;
+}
+.como-cheguei summary::before {
+  content: "▸";
+  display: inline-block;
+  width: 12px;
+  transition: transform 0.16s ease;
+}
+.como-cheguei[open] summary::before {
+  transform: rotate(90deg);
+}
+.como-cheguei ul {
+  margin: 8px 0 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* ---- Linha de meta ----
+   Confiança, quantidade de registros e exportar (D8), numa linha só — texto
+   discreto no fim da resposta, não um selo em badge e botões separados.
+   O ponto colorido já diz "confiança"; não precisa de uma caixa em volta
+   pra parecer importante (mesmo raciocínio de ".resultado-numero" acima:
+   menos caixa, mais tipografia). */
+.linha-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 16px;
+  font-size: 13px;
+  color: var(--text);
+}
+.meta-confianca {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+}
+.meta-ponto {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.meta-confianca-alta {
+  color: var(--ok-texto);
+}
+.meta-confianca-alta .meta-ponto {
+  background: var(--ok-texto);
+}
+.meta-confianca-media {
+  /* âmbar da marca — verde/vermelho ficam semânticos (semáforo), não de marca */
+  color: var(--accent-2-text);
+}
+.meta-confianca-media .meta-ponto {
+  background: var(--accent-2);
+}
+.meta-sep {
+  color: var(--border);
+}
+.meta-acao {
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: inherit;
+  font-size: 13px;
+  color: var(--text);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+.meta-acao:hover {
+  color: var(--accent-3);
+}
+.meta-acao:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+
+/* ---- Tela inicial do chat (D7) ---- */
+.tela-inicial {
+  margin: auto;
+  text-align: center;
+  color: var(--text);
+}
+.exemplos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+  margin-top: 16px;
+}
+/* Pílula de sugestão (design system v2): contorno fino, não preenchida —
+   era âmbar sólido, mas isso gastava a cor de "reserva" da paleta num
+   elemento que aparece toda vez que o chat abre vazio. Hover recebe o azul
+   de ação, o mesmo idioma de foco usado no composer logo abaixo. */
+.exemplo {
+  background: transparent;
+  border: 1px solid var(--border-2);
+  color: var(--text);
+  font-family: inherit;
+  padding: 12px 20px;
+  border-radius: 999px;
+  font-size: 15px;
+  cursor: pointer;
+  transition: border-color 0.16s ease, color 0.16s ease, transform 0.16s ease;
+}
+/* Âmbar no hover, não azul: era o papel original do âmbar na hierarquia de
+   cor do projeto ("destaque pontual, perguntas de exemplo") — o azul aqui
+   ficaria redundante com o resto da tela, que já usa azul pra ação. */
+.exemplo:hover {
+  border-color: var(--accent-2);
+  color: var(--accent-2-text);
+  transform: translateY(-1px);
+}
+.exemplo:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* ---- Estado de carregamento (D6 #1) ---- */
+.bolha-carregando,
+.bolha-revelando {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 13px 18px;
+  box-shadow: var(--shadow);
+}
+/* Passo intermediário entre os pontinhos e a resposta completa — uma
+   confirmação rápida ("Encontrei N registros"), não o resultado em si, por
+   isso continua com a mesma caixa transitória do carregamento. */
+.bolha-revelando {
+  color: var(--text);
+  font-size: 14px;
+}
+
+.pontinhos {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.pontinhos span {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent-3);
+  animation: pontinho 1.1s ease-in-out infinite both;
+}
+.pontinhos span:nth-child(2) {
+  animation-delay: 0.15s;
+}
+.pontinhos span:nth-child(3) {
+  animation-delay: 0.3s;
+}
+@keyframes pontinho {
+  0%,
+  60%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.35;
+  }
+  30% {
+    transform: translateY(-4px);
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  /* o guarda-chuva global cobre `transition`; `animation` é outra
+     propriedade e precisa da própria regra. */
+  .pontinhos span {
+    animation: none;
+    opacity: 0.7;
+  }
+}
+
+/* Some visualmente por padrão (o texto real está em `.sr-only`, no
+   componente); aparece só quando o Render está hibernando — é a única
+   causa de espera longa que vale avisar por escrito. */
+.carregando-texto {
+  color: var(--text);
+  font-size: 14px;
+}
+
+/* ---- Formulário ---- */
+/* shrink 0: o campo de pergunta fica ancorado embaixo e nunca é espremido
+   pela lista de mensagens, por mais longa que ela fique. */
+.form-pergunta {
+  display: flex;
+  flex-shrink: 0;
+  gap: 12px;
+  margin-top: 16px;
+}
+.form-pergunta input {
+  flex: 1;
+  min-width: 0;
+  padding: 14px 18px;
+  font-size: 16px;
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  background: var(--surface);
+  color: var(--text-h);
+  font-family: var(--sans);
+  transition: border-color 0.16s ease, box-shadow 0.16s ease;
+}
+.form-pergunta input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-bg);
+}
+.form-pergunta button {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  font-family: inherit;
+  font-weight: 600;
+  padding: 0 26px;
+  font-size: 15px;
+  border-radius: 11px;
+  cursor: pointer;
+  transition: filter 0.16s ease, transform 0.16s ease;
+}
+.form-pergunta button:hover:not(:disabled) {
+  filter: brightness(1.14);
+  transform: translateY(-1px);
+}
+.form-pergunta button:disabled,
+.form-pergunta input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ==========================================================
+   Login / registro (UI mock, ver src/auth.js)
+   ========================================================== */
+.auth-tela {
+  position: relative;
+  overflow: hidden;
+  min-height: 100svh;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  /* `safe` protege o caso do cartão ficar mais alto que a tela (modo criar
+     conta, numa janela baixa): com `center` puro o excesso sai pelos dois
+     lados e o topo — logo e título — fica inalcançável, porque não dá para
+     rolar acima do início do contêiner. Navegador sem suporte a `safe`
+     ignora esta linha e fica com a de cima. */
+  align-items: safe center;
+  justify-content: center;
+  padding: 24px;
+  box-sizing: border-box;
+}
+/* Véu de luz (design system v2), numa camada própria — separado do
+   conteúdo, para o degradê de `.auth-tela::after` poder esmaecer só o
+   fundo sem tocar no cartão. Dois brilhos nos cantos (ação e confiança)
+   e uma textura de pontos quase invisível por cima; o centro, onde o
+   cartão fica, permanece calmo por construção. */
+.auth-tela::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(1100px 720px at 8% -12%, var(--glow-a), transparent 60%),
+    radial-gradient(1000px 720px at 104% 118%, var(--glow-b), transparent 58%),
+    radial-gradient(var(--dot) 1px, transparent 1.4px);
+  background-size: auto, auto, 26px 26px;
+}
+/* Esmaece o padrão perto do centro, onde o cartão fica — sem isso os cubos
+   apareciam por baixo/ao redor da borda do cartão de um jeito que parecia
+   sujeira em vez de textura. Nas pontas da tela ele continua visível. */
+.auth-tela::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse at center,
+    var(--bg) 0%,
+    transparent 68%
+  );
+}
+
+.auth-card {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 390px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 32px 28px;
+  box-shadow: var(--shadow);
+  text-align: left;
+  box-sizing: border-box;
+  animation: entrada 0.42s cubic-bezier(0.22, 0.68, 0.36, 1) both;
+}
+
+/* A logo é o bloco de identidade e precisa respirar longe do título, senão
+   os dois viram um agrupamento só. A linha divisória abaixo separa
+   "quem é o produto" de "o que esta tela faz".
+   O PNG já traz ~10% de área transparente em volta, então a margem visível
+   é maior do que o número aqui sugere. */
+.auth-marca {
+  display: flex;
+  justify-content: center;
+  padding-bottom: 18px;
+  margin-bottom: 26px;
+  border-bottom: 1px solid var(--border);
+}
+
+
+/* É um <h1>, mas com aparência de frase: quem lê vê uma linha explicativa,
+   quem navega por leitor de tela encontra o cabeçalho da página. */
+h1.auth-sub {
+  text-align: center;
+  color: var(--text-h);
+  font-family: var(--sans);
+  font-weight: 500;
+  margin: 0 0 24px;
+  font-size: 15px;
+  line-height: 1.45;
+  letter-spacing: 0;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.auth-campo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-h);
+}
+.auth-campo input {
+  font: inherit;
+  font-weight: 400;
+  padding: 11px 14px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface);
+  color: var(--text-h);
+  transition: border-color 0.16s ease, box-shadow 0.16s ease;
+}
+.auth-campo input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-bg);
+}
+
+.auth-erro {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--erro-texto);
+  background: var(--erro-bg);
+  border-radius: 8px;
+  padding: 8px 12px;
+  animation: entrada 0.24s ease both;
+}
+
+.auth-botao {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  font-family: inherit;
+  padding: 13px;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 10px;
+  transition: filter 0.16s ease, transform 0.16s ease;
+}
+.auth-botao:hover:not(:disabled) {
+  filter: brightness(1.14);
+  transform: translateY(-1px);
+}
+.auth-botao:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ---- Rótulo, dica e erro por campo ---- */
+.auth-campo-topo {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+.auth-campo-dica,
+.auth-campo-erro {
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.35;
+}
+.auth-campo-dica {
+  color: var(--text);
+}
+.auth-campo-erro {
+  color: var(--erro-texto);
+}
+.auth-campo.com-erro input,
+.auth-campo input[aria-invalid="true"] {
+  border-color: var(--erro-borda);
+}
+.auth-campo.com-erro input:focus,
+.auth-campo input[aria-invalid="true"]:focus {
+  border-color: var(--erro-texto);
+  box-shadow: 0 0 0 3px var(--erro-bg);
+}
+.auth-campo input:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+  background: var(--code-bg);
+}
+
+/* ---- Links de texto (trocar modo, mostrar senha, remover foto) ---- */
+.link {
+  font-size: 13px;
+  text-decoration: underline;
+  background: none;
+  border: none;
+  font-family: inherit;
+  color: var(--accent-3);
+  font-weight: 600;
+  cursor: pointer;
+  border-radius: 6px;
+  padding: 4px 6px;
+  transition: background 0.14s ease;
+}
+.link:hover {
+  background: var(--accent-3-bg);
+}
+.link:focus-visible {
+  outline: 2px solid var(--accent-3);
+  outline-offset: 1px;
+}
+.link:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ---- Medidor de força da senha ---- */
+.forca {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: -6px;
+}
+.forca-barra {
+  flex: 1;
+  height: 5px;
+  border-radius: 99px;
+  background: var(--border);
+  position: relative;
+  overflow: hidden;
+}
+.forca-barra::after {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: 99px;
+  transition: width 0.25s ease, background 0.25s ease;
+}
+.forca-0::after,
+.forca-1::after {
+  width: 33%;
+  background: var(--erro-texto);
+}
+.forca-2::after {
+  width: 66%;
+  background: var(--accent-2);
+}
+.forca-3::after {
+  width: 100%;
+  background: var(--ok-texto);
+}
+.forca-rotulo {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text);
+  min-width: 62px;
+  text-align: right;
+}
+
+/* ---- Avisos da tela de autenticação ---- */
+.auth-sucesso,
+.auth-aviso,
+.auth-codigo-aviso {
+  margin: 0 0 16px;
+  font-size: 13px;
+  line-height: 1.45;
+  border-radius: 8px;
+  padding: 10px 12px;
+  animation: entrada 0.24s ease both;
+}
+.auth-sucesso {
+  color: var(--ok-texto);
+  background: var(--ok-bg);
+}
+.auth-aviso {
+  color: var(--accent-2-text);
+  background: var(--accent-2-bg);
+}
+.auth-codigo-aviso {
+  color: var(--text);
+  background: var(--code-bg);
+  border: 1px dashed var(--border);
+  margin-bottom: 0;
+}
+.auth-codigo-aviso strong {
+  font-family: var(--mono);
+  font-size: 17px;
+  letter-spacing: 3px;
+  color: var(--accent);
+}
+
+.auth-esqueci {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: -6px;
+}
+
+.auth-rodape {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 2px;
+  margin-top: 20px;
+  font-size: 13.5px;
+  color: var(--text);
+}
+.auth-rodape p {
+  margin: 0;
+}
+.auth-nota {
+  margin: 16px 0 0;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--text);
+  text-align: center;
+}
+
+/* ==========================================================
+   Páginas internas: cabeçalho + painéis (perfil, importação)
+   ========================================================== */
+.pagina-cabecalho {
+  padding: 40px 40px 0;
+  max-width: 1180px;
+  margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
+}
+.pagina-titulo {
+  font-family: var(--heading);
+  font-weight: 700;
+  font-size: 32px;
+  letter-spacing: -0.9px;
+  color: var(--text-h);
+  margin: 0 0 8px;
+}
+.pagina-sub {
+  color: var(--text);
+  font-size: 15.5px;
+  line-height: 1.5;
+  max-width: 62ch;
+}
+
+/* min(): mesma linha de leitura das outras páginas (1180px) e o mesmo
+   respiro lateral de 40px quando a tela é menor que isso. */
+.painel {
+  width: min(1180px, 100% - 80px);
+  margin: 24px auto 0;
+  box-sizing: border-box;
+  padding: 26px 28px 28px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: var(--shadow);
+}
+.painel:last-child {
+  margin-bottom: 40px;
+}
+.painel-titulo {
+  font-family: var(--heading);
+  font-weight: 700;
+  font-size: 19px;
+  color: var(--text-h);
+  margin: 0 0 6px;
+}
+.painel-texto {
+  font-size: 14px;
+  color: var(--text);
+  line-height: 1.5;
+  margin: 0 0 18px;
+}
+.painel-acoes {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+.botao-perigo {
+  background: none;
+  border: 1px solid var(--erro-borda);
+  color: var(--erro-texto);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 10px 18px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.16s ease;
+}
+.botao-perigo:hover {
+  background: var(--erro-bg);
+}
+.botao-perigo:focus-visible {
+  outline: 2px solid var(--erro-texto);
+  outline-offset: 2px;
+}
+
+.input-escondido {
+  display: none;
+}
+
+/* ==========================================================
+   Perfil
+   ========================================================== */
+.perfil-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 520px;
+}
+.perfil-foto {
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
+  padding-bottom: 4px;
+}
+.perfil-foto-acoes {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+.perfil-foto-dica {
+  font-size: 12px;
+  color: var(--text);
+  line-height: 1.45;
+  margin: 0;
+  max-width: 34ch;
+}
+
+/* ==========================================================
+   Importação de planilha
+   ========================================================== */
+.passos {
+  list-style: none;
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin: 22px auto 0;
+  padding: 0;
+  width: min(1180px, 100% - 80px);
+}
+.passo {
+  flex: 1 1 210px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+.passo > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.passo strong {
+  font-size: 14px;
+  color: var(--text-h);
+}
+.passo span {
+  font-size: 13px;
+  color: var(--text);
+  line-height: 1.45;
+}
+.passo-numero {
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent-3-bg);
+  color: var(--accent-3);
+  font-family: var(--heading);
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.area-solta {
+  border: 2px dashed var(--border);
+  border-radius: 14px;
+  padding: 42px 24px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg);
+  transition: border-color 0.2s ease, background 0.2s ease, transform 0.2s ease;
+}
+.area-solta.arrastando {
+  border-color: var(--accent-3);
+  background: var(--accent-3-bg);
+  transform: scale(1.006);
+}
+.area-solta-icone {
+  color: var(--accent-3);
+}
+.area-solta-titulo {
+  font-family: var(--heading);
+  font-weight: 700;
+  font-size: 17px;
+  color: var(--text-h);
+  margin: 0;
+}
+.area-solta-texto {
+  font-size: 13.5px;
+  color: var(--text);
+  margin: 0 0 10px;
+}
+
+.arquivo {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.arquivo-linha {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg);
+}
+.arquivo-icone {
+  flex-shrink: 0;
+  color: var(--accent-3);
+}
+.arquivo-dados {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.arquivo-nome {
+  font-size: 14px;
+  color: var(--text-h);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.arquivo-meta {
+  font-size: 12.5px;
+  color: var(--text);
+}
+.arquivo-remover {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 7px;
+  background: none;
+  color: var(--text);
+  font-size: 19px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.14s ease, color 0.14s ease;
+}
+.arquivo-remover:hover {
+  background: var(--erro-bg);
+  color: var(--erro-texto);
+}
+.arquivo-remover:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.progresso {
+  position: relative;
+  height: 26px;
+  border-radius: 99px;
+  background: var(--code-bg);
+  overflow: hidden;
+}
+/* Turquesa: é a cor de dado em movimento da paleta oficial — o preenchimento
+   é área, não texto, então tem contraste de sobra mesmo sendo uma cor clara.
+   Só vira verde quando a barra termina (ver .aviso-sucesso, confiança). */
+.progresso-barra {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: var(--teal);
+  transition: width 0.2s ease;
+}
+.progresso-rotulo {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-h);
+}
+
+/* ---- Avisos de resultado (erro, sucesso, pendente) ---- */
+.aviso {
+  margin-top: 16px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  font-size: 14px;
+  line-height: 1.5;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  animation: entrada 0.28s ease both;
+}
+.aviso p {
+  margin: 0;
+}
+.aviso-erro {
+  background: var(--erro-bg);
+  color: var(--erro-texto);
+}
+.aviso-sucesso {
+  background: var(--ok-bg);
+  color: var(--ok-texto);
+}
+.aviso-pendente {
+  background: var(--accent-2-bg);
+  color: var(--text-h);
+  border: 1px solid var(--accent-2-border);
+}
+.aviso-tecnico {
+  font-size: 12.5px;
+  color: var(--text);
+}
+.aviso-tecnico code {
+  font-size: 12px;
+  padding: 2px 5px;
+}
+
+/* Selo de confirmação que "estoura" ao aparecer — só uma vez, na primeira
+   pintura do estado de sucesso (design system v2, seção Importar). */
+.check-sucesso {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--ok-texto);
+  color: var(--surface);
+}
+@keyframes pop {
+  0% {
+    transform: scale(0.5);
+    opacity: 0;
+  }
+  65% {
+    transform: scale(1.1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+.anima-pop {
+  animation: pop 0.36s cubic-bezier(0.22, 0.7, 0.2, 1) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .anima-pop {
+    animation: none;
+  }
+}
+
+/* Estatísticas do envio, separadas por linha fina — não caixas, só a
+   quantidade real do que a leitura local (e o servidor, quando responde)
+   confirmaram. */
+.stats-sucesso {
+  list-style: none;
+  margin: 2px 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  font-size: 13px;
+  font-weight: 600;
+}
+.stats-sucesso li {
+  padding: 0 14px;
+}
+.stats-sucesso li:first-child {
+  padding-left: 0;
+}
+.stats-sucesso li:not(:first-child) {
+  border-left: 1px solid var(--ok-texto);
+}
+
+/* ---- Conferência das colunas ---- */
+.conferencia {
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid var(--border);
+}
+.conferencia-titulo {
+  font-family: var(--heading);
+  font-size: 15px;
+  color: var(--text-h);
+  margin: 0 0 10px;
+}
+.conferencia-subtitulo {
+  font-family: var(--heading);
+  font-size: 13.5px;
+  color: var(--text-h);
+  margin: 18px 0 8px;
+}
+.conferencia-nota {
+  font-size: 12.5px;
+  color: var(--text);
+  margin: 10px 0 0;
+}
+.etiquetas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.etiqueta {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 99px;
+  font-family: var(--mono);
+}
+.etiqueta-ok {
+  background: var(--ok-bg);
+  color: var(--ok-texto);
+}
+.etiqueta-falta {
+  background: var(--erro-bg);
+  color: var(--erro-texto);
+}
+.conferencia table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.conferencia th,
+.conferencia td {
+  text-align: left;
+  padding: 7px 12px;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+.conferencia th {
+  color: var(--text-h);
+  font-weight: 600;
+  background: var(--code-bg);
+}
+
+/* ==========================================================
+   Campo de senha com o olho
+   ========================================================== */
+.campo-senha {
+  position: relative;
+  display: flex;
+}
+.campo-senha input {
+  width: 100%;
+  /* espaço à direita para o olho não cobrir o que foi digitado */
+  padding-right: 44px;
+}
+.olho {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 7px;
+  background: none;
+  color: var(--text);
+  opacity: 0.65;
+  cursor: pointer;
+  transition: opacity 0.16s ease, background 0.16s ease, color 0.16s ease;
+}
+.olho:hover {
+  opacity: 1;
+  background: var(--hover-bg);
+  color: var(--text-h);
+}
+/* pressionado = senha à mostra; o roxo reforça o ícone cortado */
+.olho[aria-pressed="true"] {
+  opacity: 1;
+  color: var(--accent-3);
+}
+.olho:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+  opacity: 1;
+}
+.olho:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+/* ==========================================================
+   Responsivo
+   ========================================================== */
+/* Mesmo corte de 1440px do :root/h1/h2 em index.css — notebook comum
+   (1366×768) cai aqui, não só monitor pequeno. */
+@media (max-width: 1440px) {
+  .sobre-titulo {
+    font-size: 26px;
+  }
+  .secao {
+    padding: 36px 24px 0;
+  }
+  .sobre-cabecalho,
+  .sobre-dupla,
+  .sobre-fechamento {
+    padding-left: 24px;
+    padding-right: 24px;
+  }
+  .fluxo {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 28px 24px;
+  }
+  .fluxo-seta {
+    display: none;
+  }
+  .chat-pagina {
+    padding: 12px 24px 20px;
+  }
+  .pagina-cabecalho {
+    padding: 32px 24px 0;
+  }
+  .painel,
+  .passos {
+    width: min(1180px, 100% - 48px);
+  }
+}
+
+@media (max-width: 860px) {
+  .painel-inicio {
+    padding: 32px 22px 48px;
+    gap: 36px;
+  }
+  .painel-duas-colunas {
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
+  /* sidebar vira gaveta sobreposta */
+  .sidebar {
+    position: fixed;
+    z-index: 40;
+    left: 0;
+    top: 0;
+    transform: translateX(-100%);
+    transition: transform 0.26s cubic-bezier(0.22, 0.68, 0.36, 1);
+    box-shadow: var(--shadow);
+  }
+  .sidebar.aberta {
+    transform: none;
+  }
+  /* No mobile a gaveta abre inteira: ícone sem rótulo não faz sentido num
+     menu que já ocupa a tela toda, e o botão de recolher some. */
+  /* Na gaveta a sidebar abre inteira — com navegação, pesquisa e histórico.
+     É o painel lateral que o mobile pede: some por padrão, aparece a pedido. */
+  .sidebar.recolhida {
+    width: 248px;
+    padding-left: 10px;
+    padding-right: 10px;
+    gap: 12px;
+  }
+  .sidebar.recolhida .nav-item {
+    justify-content: flex-start;
+    padding: 10px 12px;
+  }
+  .sidebar.recolhida .nav-rotulo {
+    position: static;
+    width: auto;
+    height: auto;
+    clip-path: none;
+  }
+  .sidebar.recolhida .perfil-dados {
+    display: flex;
+  }
+  .sidebar.recolhida .sidebar-perfil {
+    flex-direction: row;
+  }
+  /* No mobile quem manda é a gaveta; recolher não faz sentido. */
+  .painel-toggle {
+    display: none;
+  }
+  .sidebar-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 30;
+    background: rgba(6, 16, 26, 0.45);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.24s ease;
+  }
+  .sidebar-backdrop.visivel {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  .menu-toggle {
+    display: flex;
+  }
+  .topo {
+    padding: 12px 18px;
+  }
+  .secao,
+  .sobre-cabecalho,
+  .sobre-dupla,
+  .sobre-fechamento {
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+  .sobre-cabecalho-topo {
+    flex-direction: column-reverse;
+    gap: 12px;
+  }
+  .sobre-simbolo {
+    opacity: 0.7;
+  }
+  .sobre-dupla {
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
+  .chat-pagina {
+    padding: 10px 18px 18px;
+  }
+  .mensagem-usuario {
+    max-width: 85%;
+  }
+  .pagina-cabecalho {
+    padding: 26px 18px 0;
+  }
+  .painel,
+  .passos {
+    width: min(1180px, 100% - 36px);
+  }
+  .painel {
+    padding: 20px 18px 22px;
+  }
+}
+
+@media (max-width: 560px) {
+  .fluxo {
+    grid-template-columns: 1fr;
+  }
+  .sobre-fechamento {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .exemplos {
+    flex-direction: column;
+  }
+  .exemplo {
+    width: 100%;
+  }
+  .resultado {
+    padding: 16px 16px 18px;
+  }
+  .resultado-valor {
+    font-size: 32px;
+  }
+  .form-pergunta button {
+    padding: 0 18px;
+  }
+
+  /* --- Novas telas no celular --- */
+  .pagina-titulo {
+    font-size: 25px;
+  }
+  .auth-card {
+    padding: 26px 20px 22px;
+  }
+  .perfil-foto {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 14px;
+  }
+  .perfil-foto-acoes {
+    align-items: center;
+  }
+  .painel-acoes {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .painel-acoes .botao-primario,
+  .painel-acoes .botao-secundario {
+    width: 100%;
+  }
+  .area-solta {
+    padding: 30px 16px;
+  }
+  .passos {
+    flex-direction: column;
+    gap: 12px;
+  }
+  .aviso .botao-primario,
+  .aviso .botao-secundario {
+    width: 100%;
+    justify-content: center;
+  }
+  /* nome de arquivo longo não pode empurrar o botão de remover para fora */
+  .arquivo-linha {
+    padding: 12px;
+  }
+  /* no toque não existe hover: o excluir fica sempre visível */
+  .hist-item-excluir {
+    opacity: 1;
+  }
+  /* logo e título já ficam mais perto no celular, então o respiro encolhe
+     junto — sem encostar um no outro. */
+  .auth-marca {
+    padding-bottom: 14px;
+    margin-bottom: 20px;
+  }
+  h1.auth-sub {
+    margin-bottom: 20px;
+  }
+}
+
+/* ==========================================================
+   Região 2 da sidebar: pesquisa + histórico
+   Tem a prioridade de espaço — `flex: 1` e rolagem própria, para
+   centenas de conversas não esticarem a sidebar nem empurrarem o
+   perfil para fora.
+   ========================================================== */
+.hist {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.hist-titulo {
+  font-family: var(--heading);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text);
+  opacity: 0.7;
+  margin: 2px 0 0 4px;
+}
+
+/* botão de nova conversa, entre a navegação e a pesquisa */
+.hist-novo {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  background: var(--accent-3-bg);
+  color: var(--accent-3);
+  border: 1px solid var(--accent-3-border);
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.16s ease, color 0.16s ease;
+}
+.hist-novo:hover {
+  background: var(--accent-3);
+  color: #fff;
+}
+.hist-novo:focus-visible {
+  outline: 2px solid var(--accent-3);
+  outline-offset: 2px;
+}
+.hist-novo-icone {
+  padding: 8px 0;
+}
+
+/* ---- Pesquisa de conversas ---- */
+.hist-busca {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 6px 0 9px;
+  height: 34px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  transition: border-color 0.16s ease, box-shadow 0.16s ease;
+}
+.hist-busca:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-bg);
+}
+.hist-busca-icone {
+  flex-shrink: 0;
+  color: var(--text);
+  opacity: 0.6;
+}
+.hist-busca input {
+  flex: 1;
+  min-width: 0;
+  font: inherit;
+  font-size: 13px;
+  border: none;
+  background: none;
+  color: var(--text-h);
+  outline: none;
+  /* o X nativo do type=search duplicaria o nosso botão de limpar */
+  -webkit-appearance: none;
+  appearance: none;
+}
+.hist-busca input::-webkit-search-cancel-button {
+  display: none;
+}
+.hist-busca-limpar {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 5px;
+  background: none;
+  color: var(--text);
+  cursor: pointer;
+}
+.hist-busca-limpar:hover {
+  background: var(--hover-bg);
+  color: var(--text-h);
+}
+
+/* ---- Lista de conversas: a única coisa que rola na sidebar ---- */
+.hist-lista {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-right: -4px;
+  padding-right: 4px;
+}
+.hist-aviso {
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--text);
+  opacity: 0.8;
+  padding: 8px 4px;
+  margin: 0;
+}
+
+.hist-item {
+  display: flex;
+  align-items: center;
+  border-radius: 8px;
+  transition: background 0.14s ease;
+}
+.hist-item:hover {
+  background: var(--hover-bg);
+}
+.hist-item.ativo {
+  background: var(--accent-bg);
+}
+.hist-item-abrir {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: left;
+  font-family: inherit;
+  background: none;
+  border: none;
+  padding: 7px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.hist-item-abrir:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+.hist-item-topo {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+.hist-item-titulo {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.hist-item:hover .hist-item-titulo {
+  color: var(--text-h);
+}
+.hist-item.ativo .hist-item-titulo {
+  color: var(--accent);
+}
+.hist-item-data {
+  flex-shrink: 0;
+  font-size: 10.5px;
+  color: var(--text);
+  opacity: 0.7;
+}
+.hist-item-previa {
+  font-size: 11.5px;
+  color: var(--text);
+  opacity: 0.8;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.hist-item-excluir {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  margin-right: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 6px;
+  background: none;
+  color: var(--text);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.14s ease, background 0.14s ease, color 0.14s ease;
+}
+.hist-item:hover .hist-item-excluir,
+.hist-item-excluir:focus-visible {
+  opacity: 1;
+}
+.hist-item-excluir:hover {
+  background: var(--erro-bg);
+  color: var(--erro-texto);
+}
