@@ -12,11 +12,15 @@ from app.sql.executor import executar_template
 app = FastAPI(title="Intellix API")
 
 # Origens padrão: dev local + a URL estável de produção da Vercel.
+# 5173 e 5174: o Vite sobe na primeira porta livre — com dois `npm run dev`
+# ao mesmo tempo (comum durante o trabalho no frontend), o segundo cai na
+# 5174, e sem isso aqui a Dev D toma erro de CORS sem entender por quê.
 # CORS_ORIGINS (lista separada por vírgula, configurada no painel do Render)
 # acrescenta outras sem precisar de novo deploy de código — era o que o
 # .env.example já declarava mas o app não lia.
 ORIGENS_PADRAO = [
     "http://localhost:5173",
+    "http://localhost:5174",
     "https://intellix-lilac.vercel.app",
 ]
 ORIGENS_EXTRA = [

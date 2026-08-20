@@ -36,6 +36,18 @@ const FALSAS = {
   },
 };
 
+// Erro no formato que a UI entende: { mensagem, exemplos? }. O contrato do
+// backend (docs/contratos.md) devolve isso em `detail`; erros de rede não
+// devolvem nada, então traduzimos aqui — sem jargão (heurística 2 de Nielsen).
+function erroDeRede(causa) {
+  return {
+    mensagem:
+      "Não consegui falar com o servidor. Verifique sua conexão e tente de novo " +
+      "em alguns segundos.",
+    tecnico: causa,
+  };
+}
+
 export async function perguntar(pergunta) {
   if (MOCK) {
     await new Promise((r) => setTimeout(r, 600)); // simula a espera real
@@ -49,12 +61,41 @@ export async function perguntar(pergunta) {
     return FALSAS.numero;
   }
 
-  const r = await fetch(`${API}/chat`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ pergunta }),
-  });
-  const dados = await r.json();
-  if (!r.ok) throw dados.detail || { mensagem: "Algo deu errado." };
+  if (!API) {
+    throw {
+      mensagem:
+        "O endereço da API não está configurado. Avise a equipe: falta " +
+        "VITE_API_URL no ambiente.",
+    };
+  }
+
+  // Servidor fora do ar, DNS, CORS: fetch rejeita com TypeError, não com uma
+  // resposta. Sem este try o erro cru subia e a UI só dizia "Algo deu errado".
+  let r;
+  try {
+    r = await fetch(`${API}/chat`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ pergunta }),
+    });
+  } catch (err) {
+    throw erroDeRede(err?.message);
+  }
+
+  // 500 do servidor ou proxy costuma devolver HTML, não JSON — r.json()
+  // rebentaria aqui e o usuário veria um erro de parser.
+  let dados;
+  try {
+    dados = await r.json();
+  } catch {
+    throw {
+      mensagem: r.ok
+        ? "O servidor respondeu num formato que não reconheço."
+        : "O servidor está com problemas no momento. Tente de novo em instantes.",
+      tecnico: `HTTP ${r.status}`,
+    };
+  }
+
+  if (!r.ok) throw dados.detail || dados || { mensagem: "Algo deu errado." };
   return dados;
 }

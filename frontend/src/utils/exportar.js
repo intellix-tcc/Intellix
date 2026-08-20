@@ -31,7 +31,7 @@ export async function baixarPdf(r) {
     head: [r.colunas],
     body: r.linhas.map((linha) => linha.map(celula)),
     styles: { fontSize: 10 },
-    headStyles: { fillColor: [170, 59, 255] },
+    headStyles: { fillColor: [25, 62, 96] }, // #193E60, o marinho da marca
   });
   doc.save(`${nomeArquivo(r)}.pdf`);
 }

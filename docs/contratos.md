@@ -107,6 +107,54 @@ O frontend espera `err.mensagem` e `err.exemplos` no corpo de erro (ver
 [`frontend/src/api.js`](../frontend/src/api.js)) — por isso o fallback
 sempre populua esses dois campos dentro de `detail`.
 
+### `GET /resumo` — proposta, não implementado
+
+Sugestão para viabilizar o painel de panorama + destaques proativos da
+Início (ver `intellix-home-screen.md`). **Nada disto existe ainda** — nem
+rota, nem geração de destaque — e o frontend não vai simular com número
+inventado só para preencher a tela; a seção fica de fora até este contrato
+ser avaliado e implementado pelo Dev B (destaques dependem também do Dev A,
+já que "identificar o que mudou" é trabalho de modelo/regra, não só SQL).
+
+Requisição — período opcional, mês corrente por padrão:
+```
+GET /resumo?periodo_inicio=2026-03-01&periodo_fim=2026-03-31
+```
+
+Resposta proposta:
+```json
+{
+  "periodo": { "inicio": "2026-03-01", "fim": "2026-03-31" },
+  "kpis": [
+    { "chave": "faturamento", "rotulo": "Faturamento", "valor": 128430.50, "variacao_pct": 12.0 },
+    { "chave": "ticket_medio", "rotulo": "Ticket médio", "valor": 375.52, "variacao_pct": null },
+    { "chave": "vendas", "rotulo": "Vendas", "valor": 342, "variacao_pct": 8.0 },
+    { "chave": "produtos_ativos", "rotulo": "Produtos ativos", "valor": 38, "variacao_pct": null }
+  ],
+  "destaques": [
+    {
+      "texto": "Smartwatch puxou o faturamento — +18% na semana, 28% do topo.",
+      "pergunta_semente": "Mostre a evolução do Smartwatch nas últimas semanas",
+      "confianca": 0.88
+    }
+  ],
+  "atualizado_em": "2026-08-19T14:32:00Z",
+  "total_registros": 1248
+}
+```
+
+Regras que valem pra este endpoint tanto quanto pro `/chat`:
+- `valor` sempre número cru, nunca string formatada (mesma regra do
+  `ResultSet` acima) — formatação de moeda é responsabilidade do frontend.
+- `variacao_pct` é `null` quando não há período anterior pra comparar —
+  o frontend não desenha seta de variação nesse caso, não estima.
+- **Sem destaque de baixa confiança**: se o Dev A/B não tiverem certeza
+  de um padrão, o item simplesmente não entra no array — mesma regra do
+  fallback de baixa confiança do `/chat`, "não adivinhar" vale aqui também.
+- `recentes` (conversas recentes pra "continue de onde parou") **não faz
+  parte deste contrato** — o histórico é só local (`localStorage`, ver
+  `frontend/src/utils/historico.js`), o backend não guarda conversa hoje.
+
 ## Regra de ouro: a pergunta nunca vira SQL diretamente
 
 O NLU só escolhe **qual** template usar (uma chave fixa de

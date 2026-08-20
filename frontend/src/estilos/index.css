@@ -1,0 +1,309 @@
+:root {
+  --text: #4c5d6b;
+  --text-h: #16232f;
+  --text-3: #8796a2;
+  /* Fundo creme + cartões brancos: é como a folha de identidade monta as
+     peças (dashboard, papelaria). Pra voltar ao branco puro, --bg: #ffffff. */
+  --bg: #f5f2ea;
+  --surface: #ffffff;
+  --surface-2: #fbf9f3;
+  --border: #eae6da;
+  --border-2: #e0dbcc;
+  --code-bg: #fbf9f3;
+
+  /* Identidade Intellix
+     ação: azul #1F5C93 · destaque: roxo #7B3E93 · confiança: verde #1F9E93
+     reserva: âmbar #D9A03A (só quando falta um terceiro dado no gráfico) */
+  --accent: #1f5c93;
+  --accent-bg: rgba(31, 92, 147, 0.08);
+  --accent-border: rgba(31, 92, 147, 0.35);
+
+  --accent-2: #d9a03a;
+  --accent-2-bg: rgba(217, 160, 58, 0.14);
+  --accent-2-border: rgba(217, 160, 58, 0.55);
+  --accent-2-text: #8a6015; /* âmbar escurecido — legível sobre fundo claro */
+
+  --accent-3: #7b3e93;
+  --accent-3-bg: rgba(123, 62, 147, 0.08);
+  --accent-3-border: rgba(123, 62, 147, 0.4);
+
+  /* Só decorativas — acento dos 4 cards de "diferencial" na Sobre, não são
+     papel funcional da paleta (ação/destaque/confiança já são --accent/
+     --accent-3/--ok-texto). --marinho é o azul original da identidade,
+     antes da troca pro azul de ação mais claro; --teal é o turquesa
+     oficial da folha de identidade. */
+  --marinho: #193e60;
+  --teal: #26c9c5;
+
+  /* Hover neutro. Faltava: todo estado de passagem usava tinta do azul,
+     o que somava muita área azul numa tela só. Hover é feedback, não
+     hierarquia — não precisa de cor de marca. */
+  --hover-bg: rgba(22, 35, 47, 0.055);
+
+  /* Semáforo semântico — não são cores de marca (ver CLAUDE.md).
+     Usadas em erro de formulário, sucesso e validação de planilha. */
+  --erro-texto: #b3261e;
+  --erro-bg: rgba(239, 68, 68, 0.1);
+  --erro-borda: rgba(179, 38, 30, 0.45);
+  --ok-texto: #1f9e93;
+  --ok-bg: rgba(31, 158, 147, 0.1);
+
+  /* tons da caixa/lupa da logo (src/Logo.jsx) — não mudam com a paleta:
+     são da marca, não do sistema de cor da UI. */
+  --logo-navy-1: #193e60;
+  --logo-navy-2: #2c5a85;
+  --logo-navy-3: #12243a;
+
+  /* Sombra quase imperceptível — presença vem de borda + espaço, não de
+     sombra pesada. --shadow-2 é a exceção rara (hover de ação, tooltip). */
+  --shadow: 0 1px 2px rgba(19, 36, 51, 0.05);
+  --shadow-2: 0 6px 20px rgba(19, 36, 51, 0.08);
+
+  /* Véu de luz suave no lugar do padrão de cubos denso: dois brilhos nos
+     cantos (ação e confiança) + uma textura de pontos quase invisível.
+     Só em fundos de tela ampla (Início, Login) — nunca atrás de leitura
+     densa (conversa, formulário). */
+  --glow-a: rgba(31, 92, 147, 0.09);
+  --glow-b: rgba(31, 158, 147, 0.07);
+  --dot: rgba(25, 62, 96, 0.05);
+
+  --sans: 'Poppins', system-ui, 'Segoe UI', sans-serif;
+  --heading: 'Poppins', system-ui, 'Segoe UI', sans-serif;
+  --mono: ui-monospace, Consolas, monospace;
+
+  font: 18px/145% var(--sans);
+  letter-spacing: 0.18px;
+  color-scheme: light dark;
+  color: var(--text);
+  background: var(--bg);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  /* 1440px, não 1024px: notebook comum (1366×768, 1280×800) cai nessa faixa
+     e renderizava a escala pensada para monitor grande — texto sem
+     font-size próprio (ex.: .resultado-titulo) saía maior do que cabia
+     confortavelmente na janela, como um zoom involuntário. */
+  @media (max-width: 1440px) {
+    font-size: 16px;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* fundo puxado para o azul-marinho da marca, não cinza neutro */
+    --text: #9db0bf;
+    --text-h: #e9f0f6;
+    --text-3: #647787;
+    --bg: #0b1622;
+    --surface: #0f2131;
+    --surface-2: #0d1c2a;
+    --border: #1c2e3f;
+    --border-2: #25394c;
+    --code-bg: #0d1c2a;
+
+    /* mesmas cores da marca, aclaradas para contraste em fundo escuro */
+    --accent: #4c86c6;
+    --accent-bg: rgba(76, 134, 198, 0.16);
+    --accent-border: rgba(76, 134, 198, 0.5);
+
+    --accent-2: #e7b24e;
+    --accent-2-bg: rgba(231, 178, 78, 0.18);
+    --accent-2-border: rgba(231, 178, 78, 0.55);
+    --accent-2-text: #e7b24e; /* no escuro o próprio âmbar já contrasta */
+
+    --accent-3: #c58bda;
+    --accent-3-bg: rgba(197, 139, 218, 0.18);
+    --accent-3-border: rgba(197, 139, 218, 0.5);
+
+    --marinho: #4c7ab8;
+    --teal: #3fdbd7;
+
+    --hover-bg: rgba(230, 240, 250, 0.07);
+    /* semáforo aclarado para fundo escuro */
+    --erro-texto: #ff9a92;
+    --erro-bg: rgba(255, 106, 95, 0.14);
+    --erro-borda: rgba(255, 154, 146, 0.45);
+    --ok-texto: #3fbfb0;
+    --ok-bg: rgba(63, 191, 176, 0.13);
+
+    /* logo aclarada: o marinho original desapareceria no fundo escuro */
+    --logo-navy-1: #6ba3d9;
+    --logo-navy-2: #8fbce4;
+    --logo-navy-3: #3b6d96;
+
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    --shadow-2: 0 10px 30px rgba(0, 0, 0, 0.4);
+
+    --glow-a: rgba(76, 134, 198, 0.13);
+    --glow-b: rgba(63, 191, 176, 0.1);
+    --dot: rgba(150, 180, 205, 0.05);
+  }
+}
+
+/* Overrides explícitos do botão de tema — têm mais especificidade que a
+   media query acima, então vencem a preferência do sistema quando presentes. */
+:root[data-theme="light"] {
+  --text: #4c5d6b;
+  --text-h: #16232f;
+  --text-3: #8796a2;
+  --bg: #f5f2ea;
+  --surface: #ffffff;
+  --surface-2: #fbf9f3;
+  --border: #eae6da;
+  --border-2: #e0dbcc;
+  --code-bg: #fbf9f3;
+  --accent: #1f5c93;
+  --accent-bg: rgba(31, 92, 147, 0.08);
+  --accent-border: rgba(31, 92, 147, 0.35);
+  --accent-2: #d9a03a;
+  --accent-2-bg: rgba(217, 160, 58, 0.14);
+  --accent-2-border: rgba(217, 160, 58, 0.55);
+  --accent-2-text: #8a6015; /* âmbar escurecido — legível sobre fundo claro */
+  --accent-3: #7b3e93;
+  --accent-3-bg: rgba(123, 62, 147, 0.08);
+  --accent-3-border: rgba(123, 62, 147, 0.4);
+
+  --marinho: #193e60;
+  --teal: #26c9c5;
+
+  /* Hover neutro. Faltava: todo estado de passagem usava tinta do azul,
+     o que somava muita área azul numa tela só. Hover é feedback, não
+     hierarquia — não precisa de cor de marca. */
+  --hover-bg: rgba(22, 35, 47, 0.055);
+
+  /* Semáforo semântico — não são cores de marca (ver CLAUDE.md).
+     Usadas em erro de formulário, sucesso e validação de planilha. */
+  --erro-texto: #b3261e;
+  --erro-bg: rgba(239, 68, 68, 0.1);
+  --erro-borda: rgba(179, 38, 30, 0.45);
+  --ok-texto: #1f9e93;
+  --ok-bg: rgba(31, 158, 147, 0.1);
+
+  /* tons da caixa/lupa da logo (src/Logo.jsx) */
+  --logo-navy-1: #193e60;
+  --logo-navy-2: #2c5a85;
+  --logo-navy-3: #12243a;
+  --shadow: 0 1px 2px rgba(19, 36, 51, 0.05);
+  --shadow-2: 0 6px 20px rgba(19, 36, 51, 0.08);
+  --glow-a: rgba(31, 92, 147, 0.09);
+  --glow-b: rgba(31, 158, 147, 0.07);
+  --dot: rgba(25, 62, 96, 0.05);
+}
+
+:root[data-theme="dark"] {
+  --text: #9db0bf;
+  --text-h: #e9f0f6;
+  --text-3: #647787;
+  --bg: #0b1622;
+  --surface: #0f2131;
+  --surface-2: #0d1c2a;
+  --border: #1c2e3f;
+  --border-2: #25394c;
+  --code-bg: #0d1c2a;
+  --accent: #4c86c6;
+  --accent-bg: rgba(76, 134, 198, 0.16);
+  --accent-border: rgba(76, 134, 198, 0.5);
+  --accent-2: #e7b24e;
+  --accent-2-bg: rgba(231, 178, 78, 0.18);
+  --accent-2-border: rgba(231, 178, 78, 0.55);
+  --accent-2-text: #e7b24e; /* no escuro o próprio âmbar já contrasta */
+  --accent-3: #c58bda;
+  --accent-3-bg: rgba(197, 139, 218, 0.18);
+  --accent-3-border: rgba(197, 139, 218, 0.5);
+
+  --marinho: #4c7ab8;
+  --teal: #3fdbd7;
+
+  --hover-bg: rgba(230, 240, 250, 0.07);
+
+  /* semáforo aclarado para fundo escuro */
+  --erro-texto: #ff9a92;
+  --erro-bg: rgba(255, 106, 95, 0.14);
+  --erro-borda: rgba(255, 154, 146, 0.45);
+  --ok-texto: #3fbfb0;
+  --ok-bg: rgba(63, 191, 176, 0.13);
+
+  /* logo aclarada: o marinho original desapareceria no fundo escuro */
+  --logo-navy-1: #6ba3d9;
+  --logo-navy-2: #8fbce4;
+  --logo-navy-3: #3b6d96;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-2: 0 10px 30px rgba(0, 0, 0, 0.4);
+  --glow-a: rgba(76, 134, 198, 0.13);
+  --glow-b: rgba(63, 191, 176, 0.1);
+  --dot: rgba(150, 180, 205, 0.05);
+}
+
+body {
+  margin: 0;
+}
+
+/* Presente no DOM (leitor de tela lê, `aria-live` anuncia), invisível na
+   tela. Não usar `display:none`/`visibility:hidden` — os dois tiram o
+   elemento da leitura também. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Largura total: a sidebar ancora a esquerda e o conteúdo ocupa o resto.
+   Cada página limita a própria linha de leitura por dentro — em vez de
+   espremer a interface inteira numa coluna estreita no meio da tela. */
+#root {
+  width: 100%;
+  min-height: 100svh;
+  display: flex;
+  box-sizing: border-box;
+}
+
+h1,
+h2 {
+  font-family: var(--heading);
+  font-weight: 700; /* Poppins Bold */
+  color: var(--text-h);
+}
+
+h1 {
+  font-size: 56px;
+  letter-spacing: -1.68px;
+  margin: 32px 0;
+  @media (max-width: 1440px) {
+    font-size: 36px;
+    margin: 20px 0;
+  }
+}
+h2 {
+  font-size: 24px;
+  line-height: 118%;
+  letter-spacing: -0.24px;
+  margin: 0 0 8px;
+  @media (max-width: 1440px) {
+    font-size: 20px;
+  }
+}
+p {
+  margin: 0;
+}
+
+code {
+  font-family: var(--mono);
+  display: inline-flex;
+  border-radius: 4px;
+  color: var(--text-h);
+}
+
+code {
+  font-size: 15px;
+  line-height: 135%;
+  padding: 4px 8px;
+  background: var(--code-bg);
+}
