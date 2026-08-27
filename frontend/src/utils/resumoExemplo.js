@@ -46,7 +46,7 @@ export const RESUMO_EXEMPLO = {
 
   resumoTexto: [
     "Março fechou em R$ 128.430,50, 12% acima de fevereiro e o melhor mês do trimestre. O crescimento veio principalmente de eletrônicos: o Smartwatch, sozinho, respondeu por 28% do faturamento do topo e cresceu 18% na última semana do mês.",
-    "O ticket médio ficou praticamente estável (R$ 375,52), o que indica que o ganho veio de volume, não de preço — foram 342 vendas, 8% a mais que em fevereiro. As terças concentraram os melhores dias; os sábados, os mais fracos.",
+    "O ticket médio ficou praticamente estável (R$ 375,52), o que indica que o ganho veio de volume, não de preço: foram 342 vendas, 8% a mais que em fevereiro. As terças concentraram os melhores dias; os sábados, os mais fracos.",
     "No lado de atenção, a Bota de couro caiu 9% e saiu do top 3 pela primeira vez, e 3 produtos não tiveram nenhuma venda no mês. Vale revisar estoque e exposição desses itens.",
   ],
 

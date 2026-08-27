@@ -231,7 +231,9 @@ export default function App() {
   // Guarda de rota: sem sessão, nenhuma tela interna renderiza. O hash é
   // preservado, então depois de entrar a pessoa cai na página que pediu.
   if (!usuario) {
-    return <Login onEntrar={aoEntrar} aviso={avisoSessao} />;
+    return (
+      <Login onEntrar={aoEntrar} aviso={avisoSessao} tema={tema} onAlternarTema={alternarTema} />
+    );
   }
 
   return (

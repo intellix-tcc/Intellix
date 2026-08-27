@@ -121,7 +121,7 @@ export default function Importar({ onIrParaChat }) {
             <Icone nome="importar" size={30} className="area-solta-icone" />
             <p className="area-solta-titulo">Arraste sua planilha para cá</p>
             <p className="area-solta-texto">
-              ou escolha um arquivo do computador — .xlsx ou .xls, até{" "}
+              ou escolha um arquivo do computador (.xlsx ou .xls), até{" "}
               {TAMANHO_MAX_MB} MB
             </p>
             <button
@@ -240,14 +240,14 @@ export default function Importar({ onIrParaChat }) {
         {estado === "pendente" && (
           <div className="aviso aviso-pendente" role="status">
             <p>
-              <strong>Sua planilha está válida</strong> — {analise?.totalLinhas} linhas
+              <strong>Sua planilha está válida:</strong> {analise?.totalLinhas} linhas
               lidas, colunas conferidas. O envio para o servidor ainda não
               acontece porque o endpoint de importação não existe no backend.
             </p>
             <p className="aviso-tecnico">
               Depende do Dev B/C: <code>POST /import</code>. As tabelas{" "}
               <code>importacao</code> e <code>staging_venda</code> já existem no
-              banco, mas estão dormentes. O frontend está pronto — quando a rota
+              banco, mas estão dormentes. O frontend está pronto: quando a rota
               subir, o envio funciona sem mudar código.
             </p>
             <p>
@@ -289,7 +289,7 @@ function Conferencia({ analise }) {
           <p>
             Faltam colunas obrigatórias:{" "}
             <strong>{colunasFaltando.join(", ")}</strong>. Renomeie o cabeçalho
-            da planilha e envie de novo — aceitamos variações como “data”,
+            da planilha e envie de novo. Aceitamos variações como “data”,
             “qtd”, “preço unitário” e “total”.
           </p>
         </div>

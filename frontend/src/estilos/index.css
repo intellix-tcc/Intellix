@@ -240,6 +240,28 @@ body {
   margin: 0;
 }
 
+/* Barra de rolagem fina também na página inteira — Início/Sobre/vitrine do
+   login rolam no documento, não num painel interno, e sem isto a barra
+   grossa do sistema (cinza claro, sempre) destoava do tema escuro. Mesmo
+   tratamento de `.chat`/`.hist-lista`/`.tabela-scroll` em App.css. */
+html {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+html::-webkit-scrollbar {
+  width: 8px;
+}
+html::-webkit-scrollbar-track {
+  background: transparent;
+}
+html::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 999px;
+}
+html::-webkit-scrollbar-thumb:hover {
+  background: var(--text);
+}
+
 /* Presente no DOM (leitor de tela lê, `aria-live` anuncia), invisível na
    tela. Não usar `display:none`/`visibility:hidden` — os dois tiram o
    elemento da leitura também. */
