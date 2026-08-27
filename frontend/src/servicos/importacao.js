@@ -224,7 +224,7 @@ export function enviarPlanilha(arquivo, onProgresso) {
       if ([404, 405, 501].includes(xhr.status)) {
         reject({
           mensagem:
-            "O envio para o servidor ainda não está disponível — falta o endpoint de importação no backend. Sua planilha foi lida e validada aqui no navegador.",
+            "O envio para o servidor ainda não está disponível: falta o endpoint de importação no backend. Sua planilha foi lida e validada aqui no navegador.",
           motivo: "sem-endpoint",
         });
         return;

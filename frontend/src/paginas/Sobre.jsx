@@ -1,5 +1,6 @@
 import Logo from "../componentes/Logo";
 import Icone from "../componentes/Icone";
+import { DIFERENCIAIS } from "../utils/diferenciais";
 
 const PASSOS = [
   { titulo: "Seus dados", texto: "Você importa a planilha de vendas (.xlsx).", icone: "importar" },
@@ -18,36 +19,11 @@ const CAMADAS = [
   { nome: "Dados", texto: "PostgreSQL em modelagem estrela, para consulta analítica rápida.", icone: "banco" },
 ];
 
-// Era "O que o Intellix faz" na Home antiga; aqui vira diferencial — mesmo
-// conteúdo, contexto diferente (institucional, não convite de produto). A
-// cor troca por item só no ícone (não numa caixa): é o único lugar da tela
-// com mais de uma cor de destaque ao mesmo tempo, e de propósito contido.
-const DIFERENCIAIS = [
-  {
-    titulo: "Pergunte em português",
-    texto: "Nada de menu, filtro ou relatório pronto. Você digita como falaria.",
-    icone: "idioma",
-    cor: "cor-marinho",
-  },
-  {
-    titulo: "Gráfico na medida",
-    texto: "A resposta escolhe sozinha o formato: valor, gráfico ou tabela.",
-    icone: "grafico",
-    cor: "cor-roxo",
-  },
-  {
-    titulo: "Leve para onde precisar",
-    texto: "Todo resultado sai em Excel ou PDF com um clique.",
-    icone: "exportar",
-    cor: "cor-teal",
-  },
-  {
-    titulo: "Confiança visível",
-    texto: "Cada resposta mostra o quanto o sistema entendeu. Se a certeza for baixa, ele não inventa.",
-    icone: "selo",
-    cor: "cor-ambar",
-  },
-];
+// DIFERENCIAIS (utils/diferenciais.js): era "O que o Intellix faz" na Home
+// antiga; aqui vira diferencial — mesmo conteúdo, contexto diferente
+// (institucional, não convite de produto). A cor troca por item só no ícone
+// (não numa caixa): é o único lugar da tela com mais de uma cor de destaque
+// ao mesmo tempo, e de propósito contido.
 
 // Ordem: o que é → problema/solução → como funciona → diferenciais →
 // como é construído (discreto) → por que existe → TCC (discreto) →
@@ -64,7 +40,7 @@ export default function Sobre({ onIrParaImportar }) {
             <h1 className="sobre-titulo">Suas vendas viram respostas, não relatórios.</h1>
             <p className="coluna-leitura sobre-lead">
               O Intellix é uma ferramenta de análise de vendas em que você conversa com
-              seus dados em português — e recebe número, gráfico ou tabela na hora, sem
+              seus dados em português e recebe número, gráfico ou tabela na hora, sem
               montar relatório.
             </p>
           </div>
@@ -161,15 +137,17 @@ export default function Sobre({ onIrParaImportar }) {
         <h2 className="secao-titulo">Por que o Intellix existe</h2>
         <p className="coluna-leitura sobre-lead">
           O Intellix nasce para <strong>encurtar a distância entre a dúvida e o número</strong>.
-          Não é sobre ter mais um painel — é sobre não precisar de nenhum. Quem conhece o
+          Não é sobre ter mais um painel. É sobre não precisar de nenhum. Quem conhece o
           negócio nem sempre conhece ferramenta de dados; aqui, conhecer o negócio basta.
         </p>
       </section>
 
       <section className="secao secao-discreta anima-entrada sobre-academico">
-        <Icone nome="capelo" size={24} className="sobre-cartao-icone" />
+        <h2 className="secao-titulo sobre-academico-titulo">
+          <Icone nome="capelo" size={20} className="sobre-cartao-icone" />
+          Trabalho acadêmico
+        </h2>
         <div className="coluna-leitura texto-longo">
-          <h2 className="secao-titulo">Trabalho acadêmico</h2>
           <p>
             O Intellix é o Trabalho de Conclusão de Curso de Ciência da Computação
             da UNIP, dividido em quatro frentes: modelo de linguagem, backend e

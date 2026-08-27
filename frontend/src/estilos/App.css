@@ -1037,9 +1037,14 @@ img.logo {
 .secao-discreta .sobre-cartao-icone {
   color: var(--text-3);
 }
-.sobre-academico {
+/* O ícone entra na própria linha do título (não numa coluna à esquerda
+   empurrando o parágrafo): essa seção é largura cheia, ao lado de outras
+   seções sem ícone, então o texto do parágrafo precisa começar na mesma
+   margem de todas as outras, sem um vão extra sobrando na lateral. */
+.sobre-academico-titulo {
   display: flex;
-  gap: 14px;
+  align-items: center;
+  gap: 8px;
 }
 
 .sobre-tecnologias {
@@ -1610,31 +1615,256 @@ img.logo {
 }
 
 /* ==========================================================
-   Login / registro (UI mock, ver src/auth.js)
+   Landing (vitrine antes do login)
    ========================================================== */
-.auth-tela {
-  position: relative;
-  overflow: hidden;
-  min-height: 100svh;
+/* Primeira coisa que quem chega sem sessão vê: o que o Intellix faz, antes
+   de pedir entrar ou criar conta. Página normal, com rolagem do documento
+   (não `.auth-tela`, que é de altura fixa). */
+.landing-tela {
+  /* `#root` é `display: flex` (linha), sem largura explícita este bloco
+     encolhia para o conteúdo (1180px) em vez de ocupar a tela toda, e
+     sobrava uma faixa clara do fundo do body na lateral direita. Mesma
+     regra que `.layout` (tela autenticada) já tem por este motivo. */
   width: 100%;
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Grade de dados: fundo fixo (não segue o tema claro/escuro, igual à faixa
+   azul abaixo dela) — três camadas sobre o marinho 900: nó teal a cada
+   128px, malha de linhas a cada 32px. O nó vem primeiro na lista de
+   camadas de propósito: em `background-image` a primeira fica na frente, e
+   a malha atrás dela cortava o nó ao meio quando a ordem era o contrário.
+   `.landing-hero` por dentro continua centralizado (max-width 1180px); este
+   wrapper existe só pra a grade cobrir a largura toda. */
+.landing-hero-fundo {
+  flex: 1 0 auto;
+  --bg: #0f2a44;
+  --surface: #163757;
+  --text: #a9bdd9;
+  --text-h: #ffffff;
+  --text-3: #7d93b8;
+  --border: rgba(255, 255, 255, 0.14);
+  --accent: #4c86c6;
+  --accent-2: #e7b24e;
+  --accent-3: #9fb8e0;
+  --marinho: #5a8ecb;
+  --teal: #26c9c5;
+  --hover-bg: rgba(255, 255, 255, 0.08);
+  --shadow-2: 0 10px 30px rgba(0, 0, 0, 0.35);
+  background-color: var(--bg);
+  background-image: radial-gradient(circle, rgba(38, 201, 197, 0.4) 1.5px, transparent 1.7px),
+    linear-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.06) 1px, transparent 1px);
+  background-size: 128px 128px, 32px 32px, 32px 32px;
+}
+/* Na referência o eyebrow do hero é teal, não roxo (`--accent-3`, cor
+   padrão de `.eyebrow` no resto do site) — fundo aqui é sempre escuro
+   agora, então teal sempre tem contraste (a ressalva de "teal não serve
+   como texto" no CLAUDE.md é sobre fundo claro, que este bloco não usa). */
+.landing-hero-texto .eyebrow {
+  color: var(--teal);
+}
+
+/* Faixa de cabeçalho — mesmo tratamento do `.topo` autenticado (fundo
+   sólido, régua embaixo, fixo no topo ao rolar), não o logo flutuando
+   solto sobre o fundo pontilhado do hero. */
+.landing-topo {
   display: flex;
   align-items: center;
-  /* `safe` protege o caso do cartão ficar mais alto que a tela (modo criar
-     conta, numa janela baixa): com `center` puro o excesso sai pelos dois
-     lados e o topo — logo e título — fica inalcançável, porque não dá para
-     rolar acima do início do contêiner. Navegador sem suporte a `safe`
-     ignora esta linha e fica com a de cima. */
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding: 14px 28px;
+  box-sizing: border-box;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+.landing-topo-acoes {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+/* Entrar e Criar conta do cabeçalho: mesmo par botão primário/secundário
+   do resto do site, só que menor, pra caber numa faixa de uma linha só. */
+.landing-botao-topo {
+  padding: 8px 16px;
+  font-size: 13.5px;
+}
+
+.landing-hero {
+  display: flex;
+  align-items: center;
+  gap: 56px;
+  max-width: 1180px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 24px 40px 72px;
+  box-sizing: border-box;
+}
+.landing-hero-texto {
+  flex: 1 1 480px;
+}
+.landing-titulo {
+  font-family: var(--heading);
+  font-weight: 700;
+  font-size: 42px;
+  line-height: 1.12;
+  letter-spacing: -1px;
+  color: var(--text-h);
+  margin: 0 0 16px;
+}
+.landing-hero-texto .sobre-lead {
+  margin: 0 0 28px;
+}
+.landing-cta {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+/* ---- Preview de conversa: decorativo, mesmo dado de exemplo do painel de
+   marca (auth-painel-mockup) — aqui em versão que segue o tema, já que a
+   landing (diferente do painel do formulário) não é fixa em escuro. ---- */
+.landing-mockup {
+  position: relative;
+  flex: 1 1 380px;
+  max-width: 420px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 20px;
+  box-shadow: var(--shadow-2);
+}
+.landing-mockup-pergunta {
+  background: var(--accent);
+  color: #fff;
+  padding: 10px 15px;
+  border-radius: 10px 10px 4px 10px;
+  font-size: 14px;
+  margin: 0 0 14px auto;
+  width: fit-content;
+  max-width: 85%;
+}
+.landing-mockup-resposta {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+.landing-mockup-avatar {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  margin-top: 2px;
+  border-radius: 50%;
+  background: #fff;
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.landing-mockup-bolha {
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--text);
+  margin: 0;
+}
+.landing-mockup-bolha strong {
+  font-family: var(--heading);
+  color: var(--text-h);
+}
+.landing-mockup-etiqueta {
+  position: absolute;
+  top: -10px;
+  right: 16px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text-3);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  padding: 3px 9px;
+  border-radius: 999px;
+}
+
+/* Faixa azul: fundo sólido fixo, não acompanha o tema claro/escuro, como o
+   painel de marca do formulário (auth-painel-marca) — mesma exceção
+   documentada lá, aqui pelo mesmo motivo (é o tom usado no material de
+   marketing de referência). Reaproveita `.secao`, `.fluxo`, `.sobre-fechamento`
+   e o rodapé de sempre: como esses componentes já leem cor via variável, só
+   redefinir as variáveis aqui dentro basta, sem duplicar nenhuma regra. */
+.landing-faixa {
+  --bg: #0b1622;
+  --surface: #0f2131;
+  --text: #9db0bf;
+  --text-h: #e9f0f6;
+  --text-3: #647787;
+  --border: #1c2e3f;
+  --accent: #4c86c6;
+  --accent-2: #e7b24e;
+  --accent-3: #c58bda;
+  --marinho: #4c7ab8;
+  --teal: #3fdbd7;
+  --hover-bg: rgba(230, 240, 250, 0.07);
+  background: var(--bg);
+  padding-bottom: 8px;
+}
+
+/* Rodapé: só o essencial (marca + contexto acadêmico), sem links pra
+   página que não existe (Segurança/Privacidade/Status ainda não têm
+   conteúdo real por trás). */
+.landing-rodape {
+  max-width: 1180px;
+  margin: 40px auto 0;
+  padding: 20px 28px 32px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-top: 1px solid var(--border);
+  color: var(--text-3);
+  font-size: 12.5px;
+}
+.landing-rodape img {
+  opacity: 0.8;
+}
+
+/* ==========================================================
+   Login / registro (UI mock, ver src/auth.js)
+   ========================================================== */
+/* Duas colunas: painel de marca (fixo, sempre escuro — não segue o tema
+   claro/escuro do resto do site, é o único lugar da interface que não
+   segue) + painel do formulário. Abaixo de 861px o painel de marca some
+   (ver media query) e a tela volta a ser só o card, centralizado. */
+.auth-tela {
+  height: 100svh;
+  width: 100%;
+  display: flex;
+}
+
+.auth-formulario-painel {
+  position: relative;
+  overflow: hidden;
+  flex: 1 1 54%;
+  display: flex;
   align-items: safe center;
   justify-content: center;
   padding: 24px;
   box-sizing: border-box;
 }
 /* Véu de luz (design system v2), numa camada própria — separado do
-   conteúdo, para o degradê de `.auth-tela::after` poder esmaecer só o
-   fundo sem tocar no cartão. Dois brilhos nos cantos (ação e confiança)
-   e uma textura de pontos quase invisível por cima; o centro, onde o
-   cartão fica, permanece calmo por construção. */
-.auth-tela::before {
+   conteúdo, para o degradê de `.auth-formulario-painel::after` poder
+   esmaecer só o fundo sem tocar no cartão. Dois brilhos nos cantos (ação e
+   confiança) e uma textura de pontos quase invisível por cima; o centro,
+   onde o cartão fica, permanece calmo por construção. */
+.auth-formulario-painel::before {
   content: "";
   position: absolute;
   inset: 0;
@@ -1646,7 +1876,7 @@ img.logo {
 /* Esmaece o padrão perto do centro, onde o cartão fica — sem isso os cubos
    apareciam por baixo/ao redor da borda do cartão de um jeito que parecia
    sujeira em vez de textura. Nas pontas da tela ele continua visível. */
-.auth-tela::after {
+.auth-formulario-painel::after {
   content: "";
   position: absolute;
   inset: 0;
@@ -1655,6 +1885,160 @@ img.logo {
     var(--bg) 0%,
     transparent 68%
   );
+}
+
+/* ---- Painel de marca ----
+   Cores fixas (não usam os tokens de tema): mesmo com o site em claro, este
+   painel fica marinho escuro, como a folha de identidade usa no material de
+   marketing. É por isso que a logo aqui recebe o filtro de clareamento
+   direto, sem depender de --filtro-logo (que só clareia no tema escuro). */
+/* Grade de dados: mesmo fundo fixo da vitrine do login (landing-hero-fundo)
+   — nó teal a cada 128px, malha de linhas a cada 32px, nó na frente
+   (primeira camada) pra malha não cortar o nó ao meio. */
+.auth-painel-marca {
+  --p-bg: #0f2a44;
+  --p-text: #a9bdd9;
+  --p-text-h: #ffffff;
+  --p-teal: #26c9c5;
+
+  position: relative;
+  overflow: hidden;
+  flex: 1 1 46%;
+  max-width: 640px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 56px 48px;
+  box-sizing: border-box;
+  background-color: var(--p-bg);
+  background-image: radial-gradient(circle, rgba(38, 201, 197, 0.4) 1.5px, transparent 1.7px),
+    linear-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.06) 1px, transparent 1px);
+  background-size: 128px 128px, 32px 32px, 32px 32px;
+}
+.auth-painel-conteudo {
+  position: relative;
+  z-index: 1;
+  max-width: 420px;
+  width: 100%;
+}
+.auth-painel-logo {
+  margin-bottom: 40px;
+  /* clareamento fixo: este painel nunca fica claro, então não depende do
+     tema para saber se a logo precisa clarear */
+  filter: brightness(1.45) saturate(1.04);
+}
+.auth-painel-eyebrow {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--p-teal);
+  margin: 0 0 10px;
+}
+.auth-painel-titulo {
+  font-family: var(--heading);
+  font-weight: 700;
+  font-size: 34px;
+  line-height: 1.16;
+  letter-spacing: -0.6px;
+  color: var(--p-text-h);
+  margin: 0 0 14px;
+}
+.auth-painel-texto {
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--p-text);
+  margin: 0 0 32px;
+  max-width: 40ch;
+}
+
+/* ---- Preview de conversa: decorativo, dados de exemplo já usados na
+   Início (ver comentário em Login.jsx) ---- */
+.auth-painel-mockup {
+  position: relative;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  padding: 18px;
+}
+.mockup-pergunta {
+  background: rgba(255, 255, 255, 0.09);
+  color: var(--p-text-h);
+  padding: 9px 14px;
+  border-radius: 10px 10px 4px 10px;
+  font-size: 13.5px;
+  margin: 0 0 12px auto;
+  width: fit-content;
+  max-width: 85%;
+}
+.mockup-resposta {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+.mockup-avatar {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  margin-top: 2px;
+  border-radius: 50%;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.mockup-bolha {
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--p-text);
+  margin: 0;
+}
+.mockup-bolha strong {
+  font-family: var(--heading);
+  color: var(--p-text-h);
+}
+.mockup-etiqueta {
+  position: absolute;
+  top: -9px;
+  right: 14px;
+  background: #0a2036;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: var(--p-text);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  padding: 3px 9px;
+  border-radius: 999px;
+}
+
+/* Volta pra vitrine (landing). `.auth-formulario-painel` já é
+   `position: relative`, então isto flutua no canto sem empurrar o cartão. */
+.auth-voltar {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  z-index: 2;
+  font-size: 13px;
+  font-weight: 600;
+  background: none;
+  border: none;
+  font-family: inherit;
+  color: var(--text-3);
+  cursor: pointer;
+  border-radius: 6px;
+  padding: 6px 8px;
+  transition: color 0.14s ease, background 0.14s ease;
+}
+.auth-voltar:hover {
+  color: var(--text-h);
+  background: var(--hover-bg);
+}
+.auth-voltar:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
 }
 
 .auth-card {
@@ -1683,6 +2067,13 @@ img.logo {
   padding-bottom: 18px;
   margin-bottom: 26px;
   border-bottom: 1px solid var(--border);
+}
+/* Acima de 860px o painel de marca (auth-painel-marca) já mostra a logo —
+   repeti-la dentro do card seria redundante nessa largura. */
+@media (min-width: 861px) {
+  .auth-marca {
+    display: none;
+  }
 }
 
 
@@ -2448,6 +2839,39 @@ h1.auth-sub {
 }
 
 @media (max-width: 860px) {
+  /* Sem espaço para as duas colunas: o painel de marca some e a tela volta
+     a ser só o card, centralizado — como era antes da versão split. */
+  .auth-painel-marca {
+    display: none;
+  }
+  .auth-formulario-painel {
+    flex: 1 1 100%;
+  }
+
+  /* Landing: hero empilha (texto em cima, preview embaixo) em vez de lado
+     a lado — não sobra largura para as duas colunas. `flex: 0 0 auto` porque
+     o `flex-basis` de 480px/380px do layout em linha, herdado aqui, reservava
+     altura vazia demais quando os dois viram blocos empilhados. */
+  .landing-hero {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 12px 24px 56px;
+    gap: 36px;
+  }
+  .landing-hero-texto,
+  .landing-mockup {
+    flex: 0 0 auto;
+  }
+  .landing-mockup {
+    max-width: 100%;
+  }
+  .landing-topo {
+    padding: 18px 24px;
+  }
+  .landing-titulo {
+    font-size: 34px;
+  }
+
   .painel-inicio {
     padding: 32px 22px 48px;
     gap: 36px;
@@ -2558,6 +2982,26 @@ h1.auth-sub {
 @media (max-width: 560px) {
   .fluxo {
     grid-template-columns: 1fr;
+  }
+  .landing-topo {
+    padding: 16px 18px;
+  }
+  .landing-topo-acoes {
+    gap: 10px;
+  }
+  .landing-hero {
+    padding: 8px 18px 44px;
+  }
+  .landing-titulo {
+    font-size: 28px;
+  }
+  .landing-cta {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .landing-cta .botao-primario,
+  .landing-cta .botao-secundario {
+    justify-content: center;
   }
   .sobre-fechamento {
     flex-direction: column;

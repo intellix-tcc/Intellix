@@ -63,7 +63,7 @@ export default function Sidebar({
             className="sidebar-marca"
             href="#/"
             onClick={onFechar}
-            title={recolhida ? "Intellix — início" : undefined}
+            title={recolhida ? "Intellix, início" : undefined}
           >
             {recolhida ? (
               <Logo largura={30} variante="simbolo" />
@@ -126,7 +126,7 @@ export default function Sidebar({
               className={`perfil-link${rota === "perfil" ? " ativo" : ""}`}
               onClick={onFechar}
               aria-current={rota === "perfil" ? "page" : undefined}
-              title={recolhida ? `${usuario.nome} — meu perfil` : undefined}
+              title={recolhida ? `${usuario.nome}, meu perfil` : undefined}
             >
               <Avatar usuario={usuario} size={recolhida ? 32 : 34} />
               <span className="perfil-dados">
