@@ -65,3 +65,8 @@ CLAUDE.md
 # Mockup do wizard de upload (D13) — referência de design, não é
 # parte do app. Abrir direto no navegador.
 docs/wizard_upload_mockup.html
+
+# Exceção: modelo NLU do TCC (1,1 MB) versionado no repo de propósito.
+# A regra *.pt acima existe para modelos pesados; este é leve e cabe no
+# Render sem precisar de download externo. Ver B11.
+!backend/app/nlu/intellix_nlu_v1.0.0.pt

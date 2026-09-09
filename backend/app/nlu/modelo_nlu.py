@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 modelo_nlu.py — Módulo de inferência do Intellix NLU (para o backend)
 
@@ -39,8 +38,7 @@ import re
 import unicodedata
 
 import torch
-import torch.nn as nn
-
+from torch import nn
 
 # =============================================================================
 # 1. TOKENIZADOR  (cópia EXATA do gerar_dataset.py — não divergir!)
