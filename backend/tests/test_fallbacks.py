@@ -1,8 +1,7 @@
 import pytest
-from fastapi import HTTPException
-
 from app.fallbacks import verificar_confianca
 from app.models import Interpretacao
+from fastapi import HTTPException
 
 
 def test_confianca_baixa_levanta_422():
