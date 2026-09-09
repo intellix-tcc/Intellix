@@ -647,6 +647,8 @@ img.logo {
    4 cores da identidade) + leve elevação no hover — antes era só número e
    rótulo soltos no grid, sem nenhuma fronteira nem reação ao mouse. */
 .painel-kpi {
+  box-sizing: border-box;
+  min-width: 0;
   padding: 14px 16px 16px;
   border-radius: 12px;
   border: 1px solid var(--border);
@@ -1022,15 +1024,21 @@ img.logo {
 .sobre-cartao {
   display: flex;
   gap: 16px;
-  padding: 18px;
-  margin: -18px;
   border-radius: 14px;
-  transition: background-color 0.2s ease, transform 0.2s ease;
+  transition: background-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
 }
+/* Sem margem negativa: a versão anterior "vazava" a caixa pra fora do
+   próprio grid pra ganhar respiro no hover, e isso é o tipo de técnica que
+   quebra fácil em telas estreitas (cartão colando no vizinho ou estourando
+   a largura da tela). Aqui o hover fica inteiramente contido na própria
+   caixa do cartão — sem contrapartida em nenhuma largura de tela. */
 .sobre-cartao:hover {
   background: var(--surface);
   box-shadow: var(--shadow);
   transform: translateY(-2px);
+}
+.sobre-cartao > div {
+  min-width: 0;
 }
 .sobre-cartao-icone {
   flex-shrink: 0;
