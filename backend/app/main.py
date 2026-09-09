@@ -36,7 +36,19 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-nlu = RuleBasedNLU()  # tomada: troca para o modelo treinado na semana 9 (B11)
+
+def _criar_nlu():
+    """Interruptor NLU_BACKEND (ver regras.py). 'regras' = baseline/seguro de
+    vida; 'modelo' = rede treinada. Import do torch é preguiçoso: só ocorre
+    com NLU_BACKEND=modelo, para o baseline não pagar RAM à toa."""
+    backend = os.environ.get("NLU_BACKEND", "regras").lower()
+    if backend == "modelo":
+        from app.nlu.adaptador_modelo import ModeloTreinadoNLU
+        return ModeloTreinadoNLU()
+    return RuleBasedNLU()
+
+
+nlu = _criar_nlu()  # B11: definir NLU_BACKEND=modelo no Render ativa a rede
 
 
 @app.get("/health")
