@@ -69,8 +69,12 @@ export default function Home({ usuario }) {
         <section className="painel-secao anima-entrada">
           <p className="eyebrow">Panorama</p>
           <div className="painel-kpis">
-            {r.kpis.map((kpi) => (
-              <div key={kpi.chave}>
+            {r.kpis.map((kpi, i) => (
+              <div
+                key={kpi.chave}
+                className={`painel-kpi painel-kpi-cor-${i % 4} anima-entrada`}
+                style={{ animationDelay: `${i * 60}ms` }}
+              >
                 <p className="painel-kpi-valor">{formatarValorKpi(kpi)}</p>
                 <p className="painel-kpi-rotulo">{kpi.rotulo}</p>
                 {kpi.variacaoPct != null && (
@@ -85,7 +89,7 @@ export default function Home({ usuario }) {
         </section>
 
         <div className="painel-duas-colunas">
-          <section className="painel-secao anima-entrada">
+          <section className="painel-secao anima-entrada" style={{ animationDelay: "60ms" }}>
             <p className="eyebrow">Vendas no período</p>
             <ResponsiveContainer width="100%" height={200}>
               <BarChart data={r.serieVendas} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
@@ -112,17 +116,17 @@ export default function Home({ usuario }) {
             </p>
           </section>
 
-          <section className="painel-secao anima-entrada">
+          <section className="painel-secao anima-entrada" style={{ animationDelay: "110ms" }}>
             <p className="eyebrow">Por categoria</p>
             <ul className="painel-categorias">
-              {r.categorias.map((c) => (
-                <li key={c.nome}>
+              {r.categorias.map((c, i) => (
+                <li key={c.nome} className="anima-entrada" style={{ animationDelay: `${160 + i * 60}ms` }}>
                   <div className="painel-categoria-topo">
                     <span>{c.nome}</span>
                     <span>{c.pct}%</span>
                   </div>
                   <div className="painel-categoria-barra">
-                    <span style={{ width: `${c.pct}%`, background: c.cor }} />
+                    <span className="painel-categoria-preenchimento" style={{ width: `${c.pct}%`, background: c.cor }} />
                   </div>
                 </li>
               ))}
@@ -130,7 +134,7 @@ export default function Home({ usuario }) {
           </section>
         </div>
 
-        <section className="painel-secao anima-entrada">
+        <section className="painel-secao anima-entrada" style={{ animationDelay: "80ms" }}>
           <p className="eyebrow">Resumo do mês</p>
           <div className="painel-resumo coluna-leitura">
             {r.resumoTexto.map((paragrafo, i) => (
@@ -144,7 +148,7 @@ export default function Home({ usuario }) {
             <p className="eyebrow">Produtos mais vendidos</p>
             <ol className="painel-ranking">
               {r.topProdutos.map((p, i) => (
-                <li key={p.nome}>
+                <li key={p.nome} className="anima-entrada" style={{ animationDelay: `${i * 55}ms` }}>
                   <span className="painel-ranking-pos">{i + 1}</span>
                   <span className="painel-ranking-nome">{p.nome}</span>
                   <span className="painel-ranking-valor">{formatarMoeda(p.faturamento)}</span>
@@ -154,16 +158,14 @@ export default function Home({ usuario }) {
             </ol>
           </section>
 
-          <section className="painel-secao anima-entrada">
+          <section className="painel-secao anima-entrada" style={{ animationDelay: "60ms" }}>
             <p className="eyebrow">Observações</p>
             <ul className="painel-observacoes">
               {r.observacoes.map((o, i) => (
-                <li key={i}>
-                  <Icone
-                    nome={ICONE_OBSERVACAO[o.tipo]}
-                    size={15}
-                    className={`painel-observacao-icone ${o.tipo}`}
-                  />
+                <li key={i} className="anima-entrada" style={{ animationDelay: `${60 + i * 55}ms` }}>
+                  <span className={`painel-observacao-badge ${o.tipo}`}>
+                    <Icone nome={ICONE_OBSERVACAO[o.tipo]} size={14} />
+                  </span>
                   <span>{o.texto}</span>
                 </li>
               ))}
@@ -175,7 +177,7 @@ export default function Home({ usuario }) {
           <p className="eyebrow">Atividade recente</p>
           <ul className="painel-atividade">
             {r.atividade.map((a, i) => (
-              <li key={i}>
+              <li key={i} className="anima-entrada" style={{ animationDelay: `${i * 55}ms` }}>
                 <span>{a.texto}</span>
                 <span className="painel-atividade-tempo">{a.quando}</span>
               </li>
