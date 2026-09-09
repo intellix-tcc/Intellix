@@ -106,7 +106,7 @@ export default function PainelHistorico({
                 aria-label={`Excluir conversa ${c.titulo}`}
                 title="Excluir conversa"
               >
-                <Icone nome="fechar" size={13} />
+                <Icone nome="fechar" size={16} />
               </button>
             </div>
           );
