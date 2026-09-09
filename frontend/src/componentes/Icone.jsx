@@ -184,6 +184,15 @@ const DESENHOS = {
       <path d="M4.4 12c0 1.5 3.4 2.8 7.6 2.8s7.6-1.3 7.6-2.8" />
     </>
   ),
+  // documento com canto dobrado — arquivo exportado (PDF), mesma família do
+  // ícone "planilha" (Excel), lado a lado nos botões de exportar do chat
+  pdf: (
+    <>
+      <path d="M6.4 3.8h8.2l4 4v11.2a1.2 1.2 0 0 1-1.2 1.2H6.4a1.2 1.2 0 0 1-1.2-1.2V5a1.2 1.2 0 0 1 1.2-1.2Z" />
+      <path d="M14.6 3.8V7a1 1 0 0 0 1 1h3.2" />
+      <path d="M8.4 13.4h7.2M8.4 16.6h7.2" />
+    </>
+  ),
   // capelo — trabalho acadêmico
   capelo: (
     <>

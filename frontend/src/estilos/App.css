@@ -1114,6 +1114,13 @@ img.logo {
 .linha-ia + .mensagem-usuario {
   margin-top: 8px;
 }
+/* Régua fina entre a pergunta e a resposta que vem logo em seguida —
+   separação mínima, só a linha, sem repetir moldura em volta do texto. */
+.mensagem-usuario + .linha-ia {
+  margin-top: 4px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
 /* O foco vem do tabindex em Chat.jsx, que é o que dá rolagem por teclado
    nesta lista. Sem o anel, o foco apareceria do nada ao apertar Tab. */
 .chat:focus-visible {
@@ -1437,25 +1444,56 @@ img.logo {
 .meta-sep {
   color: var(--border);
 }
-.meta-acao {
-  background: none;
-  border: none;
-  padding: 0;
-  font-family: inherit;
-  font-size: 13px;
-  color: var(--text);
-  text-decoration: underline;
-  text-underline-offset: 2px;
-  cursor: pointer;
-  transition: color 0.15s ease;
+/* Excel e PDF empurrados pra ponta da linha: separa a informação (confiança,
+   registros) da ação (exportar) sem precisar de mais uma régua. */
+.meta-acoes {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
 }
-.meta-acao:hover {
-  color: var(--accent-3);
+/* Pill colorida, não link sublinhado — a cor do programa (verde/vermelho)
+   já diz o que cada botão exporta, então "mais visível" é literal aqui,
+   diferente do resto da linha de meta, que fica discreta de propósito. */
+.meta-acao {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: 999px;
+  padding: 4px 10px 4px 8px;
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+}
+.meta-acao .icone {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+.meta-acao-excel {
+  background: var(--excel-bg);
+  border: 1px solid var(--excel-borda);
+  color: var(--excel-texto);
+}
+.meta-acao-excel:hover {
+  background: var(--excel-borda);
+}
+.meta-acao-pdf {
+  background: var(--pdf-bg);
+  border: 1px solid var(--pdf-borda);
+  color: var(--pdf-texto);
+}
+.meta-acao-pdf:hover {
+  background: var(--pdf-borda);
+}
+.meta-acao:active {
+  transform: scale(0.96);
 }
 .meta-acao:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
-  border-radius: 3px;
 }
 
 /* ---- Tela inicial do chat (D7) ---- */

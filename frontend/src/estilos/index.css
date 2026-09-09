@@ -48,6 +48,16 @@
   --ok-texto: #1f9e93;
   --ok-bg: rgba(31, 158, 147, 0.1);
 
+  /* Reconhecimento de formato nos botões de exportar do chat (verde do
+     Excel, vermelho do PDF) — não é o semáforo de estado acima, é a cor que
+     o usuário já associa a cada programa. */
+  --excel-texto: #1f7a3d;
+  --excel-bg: rgba(31, 122, 61, 0.1);
+  --excel-borda: rgba(31, 122, 61, 0.35);
+  --pdf-texto: #c22b1f;
+  --pdf-bg: rgba(194, 43, 31, 0.1);
+  --pdf-borda: rgba(194, 43, 31, 0.35);
+
   /* tons da caixa/lupa da logo (src/Logo.jsx) — não mudam com a paleta:
      são da marca, não do sistema de cor da UI. */
   --logo-navy-1: #193e60;
@@ -128,6 +138,14 @@
     --ok-texto: #3fbfb0;
     --ok-bg: rgba(63, 191, 176, 0.13);
 
+    /* reconhecimento de formato, aclarado para fundo escuro */
+    --excel-texto: #4caf72;
+    --excel-bg: rgba(76, 175, 114, 0.16);
+    --excel-borda: rgba(76, 175, 114, 0.45);
+    --pdf-texto: #ff8a75;
+    --pdf-bg: rgba(255, 106, 95, 0.16);
+    --pdf-borda: rgba(255, 106, 95, 0.45);
+
     /* logo aclarada: o marinho original desapareceria no fundo escuro */
     --logo-navy-1: #6ba3d9;
     --logo-navy-2: #8fbce4;
@@ -181,6 +199,13 @@
   --ok-texto: #1f9e93;
   --ok-bg: rgba(31, 158, 147, 0.1);
 
+  --excel-texto: #1f7a3d;
+  --excel-bg: rgba(31, 122, 61, 0.1);
+  --excel-borda: rgba(31, 122, 61, 0.35);
+  --pdf-texto: #c22b1f;
+  --pdf-bg: rgba(194, 43, 31, 0.1);
+  --pdf-borda: rgba(194, 43, 31, 0.35);
+
   /* tons da caixa/lupa da logo (src/Logo.jsx) */
   --logo-navy-1: #193e60;
   --logo-navy-2: #2c5a85;
@@ -224,6 +249,13 @@
   --erro-borda: rgba(255, 154, 146, 0.45);
   --ok-texto: #3fbfb0;
   --ok-bg: rgba(63, 191, 176, 0.13);
+
+  --excel-texto: #4caf72;
+  --excel-bg: rgba(76, 175, 114, 0.16);
+  --excel-borda: rgba(76, 175, 114, 0.45);
+  --pdf-texto: #ff8a75;
+  --pdf-bg: rgba(255, 106, 95, 0.16);
+  --pdf-borda: rgba(255, 106, 95, 0.45);
 
   /* logo aclarada: o marinho original desapareceria no fundo escuro */
   --logo-navy-1: #6ba3d9;
