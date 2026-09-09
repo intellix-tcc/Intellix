@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import GraficoBarra from "../componentes/GraficoBarra";
+import Icone from "../componentes/Icone";
 import Logo from "../componentes/Logo";
 import { baixarExcel, baixarPdf } from "../utils/exportar";
 import { EXEMPLOS } from "../utils/exemplos";
@@ -46,13 +47,24 @@ function LinhaMeta({ r }) {
       <span className="meta-registros">
         {n === 1 ? "1 registro" : `${n} registros`}
       </span>
-      <span className="meta-sep" aria-hidden="true">·</span>
-      <button type="button" className="meta-acao" onClick={() => baixarExcel(r)}>
-        Excel
-      </button>
-      <button type="button" className="meta-acao" onClick={() => baixarPdf(r)}>
-        PDF
-      </button>
+      <span className="meta-acoes">
+        <button
+          type="button"
+          className="meta-acao meta-acao-excel"
+          onClick={() => baixarExcel(r)}
+        >
+          <Icone nome="planilha" size={14} />
+          Excel
+        </button>
+        <button
+          type="button"
+          className="meta-acao meta-acao-pdf"
+          onClick={() => baixarPdf(r)}
+        >
+          <Icone nome="pdf" size={14} />
+          PDF
+        </button>
+      </span>
     </div>
   );
 }
