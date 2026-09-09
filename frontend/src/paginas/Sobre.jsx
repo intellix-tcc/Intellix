@@ -3,7 +3,7 @@ import Icone from "../componentes/Icone";
 import { DIFERENCIAIS } from "../utils/diferenciais";
 
 const PASSOS = [
-  { titulo: "Seus dados", texto: "Você importa a planilha de vendas (.xlsx).", icone: "importar" },
+  { titulo: "Seus dados", texto: "Sua planilha de vendas (.xlsx) entra no sistema.", icone: "planilha" },
   { titulo: "Sua pergunta", texto: "Você pergunta usando linguagem natural.", icone: "perguntar" },
   { titulo: "A análise", texto: "O Intellix interpreta a intenção e consulta os dados.", icone: "lupa" },
   { titulo: "A resposta", texto: "Volta como número, gráfico ou tabela, pronta para exportar.", icone: "grafico" },
@@ -30,7 +30,7 @@ const CAMADAS = [
 // fechamento. Texto é o conteúdo principal em toda seção; ícone é só
 // acento ao lado do texto, sem caixa nem círculo em volta — e nenhum deles
 // é a marca: a marca continua sendo só a logo (ver regra no CLAUDE.md).
-export default function Sobre({ onIrParaImportar }) {
+export default function Sobre({ onComecar }) {
   return (
     <div className="pagina sobre">
       <section className="sobre-cabecalho anima-entrada">
@@ -159,8 +159,8 @@ export default function Sobre({ onIrParaImportar }) {
 
       <section className="sobre-fechamento anima-entrada">
         <p>Pronto para ver isso funcionando com os seus dados?</p>
-        <button type="button" className="botao-primario" onClick={onIrParaImportar}>
-          Importar dados
+        <button type="button" className="botao-primario" onClick={onComecar}>
+          Começar a perguntar
         </button>
       </section>
     </div>

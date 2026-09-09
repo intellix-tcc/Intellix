@@ -34,12 +34,45 @@
   animation: entrada 0.42s cubic-bezier(0.22, 0.68, 0.36, 1) both;
 }
 
+/* Véu de luz à deriva — desloca bem devagar os dois brilhos de canto
+   (--glow-a/--glow-b) usados em telas amplas (Início, Sobre, Login). Sutil
+   de propósito: é textura de fundo ambiente, não algo que peça atenção. */
+@keyframes flutuar-glow {
+  0% {
+    background-position: 0 0, 0 0, 0 0;
+  }
+  100% {
+    background-position: -60px 40px, 50px -30px, 0 0;
+  }
+}
+.fundo-flutuante {
+  animation: flutuar-glow 22s ease-in-out infinite alternate;
+}
+
+/* Pulso discreto — usado no ponto de confiança alta do chat e no indicador
+   de "digitando"; nunca em algo que precise ser lido, só em sinalização. */
+@keyframes pulso-suave {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.55;
+    transform: scale(1.35);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .anima-entrada {
     animation: none;
   }
+  .fundo-flutuante {
+    animation: none;
+  }
   * {
     transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
   }
 }
 
@@ -182,7 +215,8 @@ img.logo {
   color: var(--accent);
   font-weight: 600;
 }
-/* marcador do item ativo */
+/* marcador do item ativo — gradiente de ação pra destaque, mais sombra
+   suave de cor por trás, coerente com o resto do véu de luz do app. */
 .nav-item.ativo::before {
   content: "";
   position: absolute;
@@ -191,20 +225,24 @@ img.logo {
   bottom: 18%;
   width: 3px;
   border-radius: 0 3px 3px 0;
-  background: var(--accent);
+  background: linear-gradient(180deg, var(--accent), var(--accent-3));
+  box-shadow: 0 0 8px var(--accent-border);
+  transition: top 0.18s ease, bottom 0.18s ease;
 }
 /* Ícone de linha: em repouso fica um tom abaixo do rótulo, e assume a cor
-   de destaque quando o item está ativo ou sob o cursor. Nada de rotação —
-   um ícone figurativo girando fica estranho, ao contrário do losango antigo. */
+   de destaque quando o item está ativo ou sob o cursor. Sem rotação — um
+   ícone figurativo girando fica estranho — mas ganha um leve zoom no hover,
+   feedback rápido de que aquele item é clicável. */
 .nav-icone {
   flex-shrink: 0;
   color: var(--text);
   opacity: 0.75;
-  transition: color 0.16s ease, opacity 0.16s ease;
+  transition: color 0.16s ease, opacity 0.16s ease, transform 0.16s ease;
 }
 .nav-item:hover .nav-icone {
   opacity: 1;
   color: var(--text-h);
+  transform: scale(1.12);
 }
 .nav-item.ativo .nav-icone {
   opacity: 1;
@@ -510,12 +548,23 @@ img.logo {
    utils/resumoExemplo.js e a proposta em docs/contratos.md). Por ser um
    painel com bastante conteúdo, a página rola normalmente — nada de
    "caber numa tela só" como na versão anterior. */
-.home {
+.home,
+.sobre {
   background-image: radial-gradient(900px 620px at 12% 0%, var(--glow-a), transparent 68%),
     radial-gradient(800px 620px at 88% 100%, var(--glow-b), transparent 65%),
     radial-gradient(var(--dot) 1px, transparent 1.4px);
   background-size: auto, auto, 26px 26px;
   background-attachment: fixed;
+}
+.home,
+.sobre {
+  animation: flutuar-glow 22s ease-in-out infinite alternate;
+}
+@media (prefers-reduced-motion: reduce) {
+  .home,
+  .sobre {
+    animation: none;
+  }
 }
 .painel-inicio {
   width: 100%;
@@ -594,6 +643,34 @@ img.logo {
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   gap: 28px;
 }
+/* Cartão de KPI: borda de topo colorida (uma cor por índice, girando pelas
+   4 cores da identidade) + leve elevação no hover — antes era só número e
+   rótulo soltos no grid, sem nenhuma fronteira nem reação ao mouse. */
+.painel-kpi {
+  padding: 14px 16px 16px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  border-top: 3px solid var(--accent);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+}
+.painel-kpi:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-2);
+}
+.painel-kpi-cor-0 {
+  border-top-color: var(--accent);
+}
+.painel-kpi-cor-1 {
+  border-top-color: var(--accent-3);
+}
+.painel-kpi-cor-2 {
+  border-top-color: var(--teal);
+}
+.painel-kpi-cor-3 {
+  border-top-color: var(--accent-2);
+}
 .painel-kpi-valor {
   font-family: var(--heading);
   font-weight: 700;
@@ -658,11 +735,29 @@ img.logo {
   background: var(--code-bg);
   overflow: hidden;
 }
-.painel-categoria-barra span {
+/* Cresce da esquerda pra direita na entrada, em vez de já aparecer cheia —
+   pequeno movimento que dá vida a um dado que, sozinho, é só uma barra. */
+.painel-categoria-preenchimento {
   display: block;
   height: 100%;
-  background: var(--accent-3);
   border-radius: 99px;
+  animation: crescer-barra 0.7s cubic-bezier(0.22, 0.68, 0.36, 1) both;
+  animation-delay: 0.2s;
+}
+@keyframes crescer-barra {
+  from {
+    transform: scaleX(0);
+    transform-origin: left;
+  }
+  to {
+    transform: scaleX(1);
+    transform-origin: left;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .painel-categoria-preenchimento {
+    animation: none;
+  }
 }
 
 /* Resumo do mês */
@@ -689,9 +784,16 @@ img.logo {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 9px 0;
+  padding: 9px 6px;
+  margin: 0 -6px;
+  border-radius: 8px;
   border-bottom: 1px solid var(--border);
   font-size: 14px;
+  transition: background-color 0.16s ease, padding-left 0.16s ease;
+}
+.painel-ranking li:hover {
+  background: var(--hover-bg);
+  padding-left: 12px;
 }
 .painel-ranking li:first-child {
   padding-top: 0;
@@ -743,20 +845,37 @@ img.logo {
   line-height: 1.5;
   color: var(--text-h);
 }
-.painel-observacao-icone {
+/* Selo circular colorido em vez de ícone solto — mesma lógica de cor de
+   antes (alta/queda/atenção/padrão), só que agora com um fundo suave por
+   trás, coerente com o resto do "mais cor" pedido nesta rodada. */
+.painel-observacao-badge {
   flex-shrink: 0;
-  margin-top: 1px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  margin-top: -1px;
+  transition: transform 0.16s ease;
 }
-.painel-observacao-icone.alta {
+.painel-observacoes li:hover .painel-observacao-badge {
+  transform: scale(1.1);
+}
+.painel-observacao-badge.alta {
+  background: var(--ok-bg);
   color: var(--ok-texto);
 }
-.painel-observacao-icone.queda {
+.painel-observacao-badge.queda {
+  background: var(--erro-bg);
   color: var(--erro-texto);
 }
-.painel-observacao-icone.atencao {
+.painel-observacao-badge.atencao {
+  background: var(--accent-2-bg);
   color: var(--accent-2-text);
 }
-.painel-observacao-icone.padrao {
+.painel-observacao-badge.padrao {
+  background: var(--accent-3-bg);
   color: var(--accent-3);
 }
 
@@ -903,11 +1022,36 @@ img.logo {
 .sobre-cartao {
   display: flex;
   gap: 16px;
+  padding: 18px;
+  margin: -18px;
+  border-radius: 14px;
+  transition: background-color 0.2s ease, transform 0.2s ease;
+}
+.sobre-cartao:hover {
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  transform: translateY(-2px);
 }
 .sobre-cartao-icone {
   flex-shrink: 0;
   color: var(--accent-3);
   margin-top: 3px;
+}
+/* Só dentro do cartão problema/solução o ícone vira selo circular colorido
+   — no cabeçalho "Trabalho acadêmico" a mesma classe é reaproveitada como
+   acento inline junto ao texto, sem caixa, então fica de fora daqui. */
+.sobre-cartao .sobre-cartao-icone {
+  width: 28px;
+  height: 28px;
+  padding: 8px;
+  margin-top: 0;
+  box-sizing: content-box;
+  border-radius: 50%;
+  background: var(--accent-3-bg);
+  transition: transform 0.2s ease;
+}
+.sobre-cartao:hover .sobre-cartao-icone {
+  transform: scale(1.08) rotate(-4deg);
 }
 .sobre-cartao h2 {
   font-family: var(--heading);
@@ -941,11 +1085,32 @@ img.logo {
   gap: 12px;
   padding: 18px 20px 0 0;
   border-top: 2px solid var(--border);
+  transition: border-color 0.2s ease, transform 0.2s ease;
+}
+/* A régua de cima assume a cor do próprio ícone no hover — mesma cor que
+   já diferencia cada item em "O que torna o Intellix diferente" (cor-*),
+   só que agora reage ao mouse em vez de ficar estática. */
+.fluxo-item:hover {
+  border-top-color: var(--accent-3);
+  transform: translateY(-2px);
+}
+.fluxo-item:has(.cor-marinho):hover {
+  border-top-color: var(--marinho);
+}
+.fluxo-item:has(.cor-teal):hover {
+  border-top-color: var(--teal);
+}
+.fluxo-item:has(.cor-ambar):hover {
+  border-top-color: var(--accent-2);
 }
 .fluxo-icone {
   flex-shrink: 0;
   color: var(--accent-3);
   margin-top: 1px;
+  transition: transform 0.2s ease;
+}
+.fluxo-item:hover .fluxo-icone {
+  transform: scale(1.15);
 }
 .fluxo-icone.cor-marinho {
   color: var(--marinho);
@@ -1005,8 +1170,18 @@ img.logo {
   padding-top: 14px;
   gap: 10px;
 }
+/* Continua quieta no hover — esta seção é contexto, não convite (ver
+   comentário acima, "num tom quieto"); a régua não deve competir por
+   atenção com "Como funciona" logo acima. */
+.fluxo-discreto .fluxo-item:hover {
+  border-top-color: var(--border-2);
+  transform: none;
+}
 .fluxo-discreto .fluxo-icone {
   color: var(--text-3);
+}
+.fluxo-discreto .fluxo-item:hover .fluxo-icone {
+  transform: none;
 }
 .camada-num {
   font-family: var(--heading);
@@ -1237,6 +1412,11 @@ img.logo {
   border-radius: 14px;
   padding: 20px 24px;
   box-shadow: var(--shadow);
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+.resultado:hover {
+  box-shadow: var(--shadow-2);
+  border-color: var(--border-2);
 }
 
 .resultado-titulo {
@@ -1291,9 +1471,18 @@ img.logo {
   display: flex;
   justify-content: space-between;
   gap: 12px;
-  padding: 7px 0;
+  padding: 7px 6px;
+  margin: 0 -6px;
+  border-radius: 6px;
   border-bottom: 1px solid var(--border);
   font-size: 14.5px;
+  transition: background-color 0.15s ease;
+}
+.resultado-lista li:hover {
+  background: var(--hover-bg);
+}
+.resultado-lista li:hover .resultado-lista-rotulo {
+  color: var(--accent);
 }
 .resultado-lista li:first-child {
   padding-top: 0;
@@ -1307,6 +1496,7 @@ img.logo {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  transition: color 0.15s ease;
 }
 .resultado-lista-valor {
   flex-shrink: 0;
@@ -1423,6 +1613,7 @@ img.logo {
   font-weight: 600;
 }
 .meta-ponto {
+  position: relative;
   width: 6px;
   height: 6px;
   border-radius: 50%;
@@ -1433,6 +1624,32 @@ img.logo {
 }
 .meta-confianca-alta .meta-ponto {
   background: var(--ok-texto);
+}
+/* Anel que se expande e esmaece a partir do ponto — só na confiança alta,
+   pra essa ser a única leitura que "pulsa": um sinal ativo, não decoração
+   solta no meio de uma linha de texto discreta. */
+.meta-confianca-alta .meta-ponto::after {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  border: 1px solid var(--ok-texto);
+  animation: anel-pulso 2.2s ease-out infinite;
+}
+@keyframes anel-pulso {
+  0% {
+    transform: scale(0.6);
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(2.4);
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .meta-confianca-alta .meta-ponto::after {
+    animation: none;
+  }
 }
 .meta-confianca-media {
   /* âmbar da marca — verde/vermelho ficam semânticos (semáforo), não de marca */
@@ -1530,7 +1747,12 @@ img.logo {
 .exemplo:hover {
   border-color: var(--accent-2);
   color: var(--accent-2-text);
-  transform: translateY(-1px);
+  background: var(--accent-2-bg);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-2);
+}
+.exemplo:active {
+  transform: translateY(0);
 }
 .exemplo:focus-visible {
   outline: 2px solid var(--accent);
@@ -1910,6 +2132,12 @@ img.logo {
     radial-gradient(1000px 720px at 104% 118%, var(--glow-b), transparent 58%),
     radial-gradient(var(--dot) 1px, transparent 1.4px);
   background-size: auto, auto, 26px 26px;
+  animation: flutuar-glow 22s ease-in-out infinite alternate;
+}
+@media (prefers-reduced-motion: reduce) {
+  .auth-formulario-painel::before {
+    animation: none;
+  }
 }
 /* Esmaece o padrão perto do centro, onde o cartão fica — sem isso os cubos
    apareciam por baixo/ao redor da borda do cartão de um jeito que parecia
@@ -2391,6 +2619,11 @@ h1.auth-sub {
   border: 1px solid var(--border);
   border-radius: 16px;
   box-shadow: var(--shadow);
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+.painel:hover {
+  box-shadow: var(--shadow-2);
+  border-color: var(--border-2);
 }
 .painel:last-child {
   margin-bottom: 40px;
@@ -3254,10 +3487,11 @@ h1.auth-sub {
   display: flex;
   align-items: center;
   border-radius: 8px;
-  transition: background 0.14s ease;
+  transition: background 0.14s ease, transform 0.14s ease;
 }
 .hist-item:hover {
   background: var(--hover-bg);
+  transform: translateX(2px);
 }
 .hist-item.ativo {
   background: var(--accent-bg);

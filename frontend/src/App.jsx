@@ -7,16 +7,16 @@ import Home from "./paginas/Home";
 import Sobre from "./paginas/Sobre";
 import Chat from "./paginas/Chat";
 import Perfil from "./paginas/Perfil";
-import Importar from "./paginas/Importar";
 import { carregarSessao, encerrarSessao, sessaoExpirou } from "./servicos/auth";
 import { carregarConversas, salvarConversas, novoId, tituloFromPergunta } from "./utils/historico";
 import "./estilos/App.css";
 
-const ROTAS = ["home", "chat", "importar", "sobre", "perfil"];
+// "importar" fica de fora por ora — tela e rota continuam no repositório
+// (paginas/Importar.jsx), só não estão navegáveis daqui.
+const ROTAS = ["home", "chat", "sobre", "perfil"];
 const TITULOS = {
   home: "Início",
   chat: "Perguntar",
-  importar: "Importar dados",
   sobre: "Sobre",
   perfil: "Meu perfil",
 };
@@ -295,8 +295,7 @@ export default function App() {
 
         <main className="area" key={rota}>
           {rota === "home" && <Home usuario={usuario} />}
-          {rota === "sobre" && <Sobre onIrParaImportar={() => irPara("importar")} />}
-          {rota === "importar" && <Importar onIrParaChat={() => irPara("chat")} />}
+          {rota === "sobre" && <Sobre onComecar={() => irPara("chat")} />}
           {rota === "perfil" && (
             <Perfil usuario={usuario} onAtualizar={setUsuario} onSair={sair} />
           )}
