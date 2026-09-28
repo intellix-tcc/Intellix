@@ -1,13 +1,24 @@
 name: CI
 on: [pull_request]
+
 jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
-        with: { python-version: "3.11" }
+        with: { python-version: "3.12" }
       - run: pip install ruff
       - run: ruff check backend/
 
-  # O job de pytest entra quando o Dev B tiver testes (semana 3).
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install -r backend/requirements.txt
+      # Sem DATABASE_URL no CI, os testes de integração se auto-pulam
+      # (pytest.mark.skipif em test_chat_integration.py). Rodam os demais.
+      - run: pytest
+        working-directory: backend
