@@ -107,6 +107,45 @@ O frontend espera `err.mensagem` e `err.exemplos` no corpo de erro (ver
 [`frontend/src/api.js`](../frontend/src/api.js)) — por isso o fallback
 sempre populua esses dois campos dentro de `detail`.
 
+### `POST /import`
+
+**Implementado** (ver [`app/main.py`](../backend/app/main.py) e
+[`app/importacao/`](../backend/app/importacao/)). Recebe a planilha de vendas,
+valida, carrega no star schema e devolve o relatório da carga. Plano completo
+em [`plano-ingestao-dados.md`](plano-ingestao-dados.md).
+
+Requisição — `multipart/form-data`, campo `arquivo` (`.xlsx`):
+```
+POST /import
+Content-Type: multipart/form-data
+arquivo=<planilha.xlsx>
+```
+
+Resposta — `200 OK`:
+```json
+{
+  "importacao_id": "7b1e...",
+  "status": "processada",
+  "linhas_lidas": 1240,
+  "linhas_validas": 1231,
+  "linhas_rejeitadas": 9,
+  "colunas_encontradas": ["data_venda", "produto", "quantidade", "valor_total"],
+  "colunas_ignoradas": ["observacao"]
+}
+```
+`status` é `duplicada` quando o mesmo arquivo (hash) já foi importado.
+
+Planilha inválida (colunas obrigatórias faltando, arquivo ilegível) — `422`:
+```json
+{ "detail": { "tipo": "planilha_invalida", "mensagem": "Faltam colunas obrigatórias..." } }
+```
+Banco fora do ar — `503` com `tipo: "banco_indisponivel"` (mesmo padrão do `/chat`).
+
+Colunas obrigatórias: `data_venda`, `produto`, `quantidade` e pelo menos uma de
+`valor_unitario`/`valor_total`. Sinônimos aceitos (ex.: `qtd`, `preço`, `total`)
+em [`leitor_excel.py`](../backend/app/importacao/leitor_excel.py) — a mesma
+lista do frontend ([`importacao.js`](../frontend/src/servicos/importacao.js)).
+
 ### `GET /resumo` — proposta, não implementado
 
 Sugestão para viabilizar o painel de panorama + destaques proativos da
