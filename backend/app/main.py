@@ -1,10 +1,13 @@
 import os
 
-from fastapi import FastAPI
+import psycopg
+from fastapi import FastAPI, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.db import get_connection, get_empresa_id
 from app.fallbacks import verificar_confianca
+from app.importacao.etl import importar
+from app.importacao.leitor_excel import ErroImportacao
 from app.models import Pergunta, ResultSet
 from app.nlu.regras import RuleBasedNLU
 from app.sql.executor import executar_template
@@ -63,3 +66,28 @@ def chat(pergunta: Pergunta) -> ResultSet:
 
     with get_connection() as conn:
         return executar_template(interpretacao, get_empresa_id(), conn)
+
+
+@app.post("/import")
+async def import_planilha(arquivo: UploadFile) -> dict:
+    """Recebe o .xlsx do frontend (campo `arquivo`), valida e carrega no star
+    schema. A resposta traz linhas_lidas/validas/rejeitadas -- campos que o
+    `frontend/src/paginas/Importar.jsx` já lê. Mesmo padrão de erro do
+    executor.py: nada de stack trace do Postgres vaza para o cliente."""
+    conteudo = await arquivo.read()
+    try:
+        with get_connection() as conn:
+            return importar(conteudo, arquivo.filename or "planilha.xlsx", get_empresa_id(), conn)
+    except ErroImportacao as e:
+        raise HTTPException(
+            status_code=422,
+            detail={"tipo": "planilha_invalida", "mensagem": e.mensagem},
+        )
+    except psycopg.OperationalError:
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "tipo": "banco_indisponivel",
+                "mensagem": "Serviço temporariamente indisponível. Tente novamente em instantes.",
+            },
+        )
