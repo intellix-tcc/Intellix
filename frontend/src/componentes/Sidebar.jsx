@@ -3,12 +3,12 @@ import Avatar from "./Avatar";
 import Icone from "./Icone";
 import PainelHistorico from "./PainelHistorico";
 
-// Navegação curta de propósito. Perfil está logo abaixo, no rodapé.
-// "Importar dados" saiu daqui por ora (a tela continua no repositório, só
-// não está navegável) — ver comentário em App.jsx.
+// Navegação curta de propósito. "Importar dados" é a porta para subir a
+// planilha de vendas; Perfil está logo abaixo, no rodapé.
 const NAV = [
   { rota: "home", href: "#/", rotulo: "Início", icone: "inicio" },
   { rota: "chat", href: "#/chat", rotulo: "Perguntar", icone: "perguntar" },
+  { rota: "importar", href: "#/importar", rotulo: "Importar dados", icone: "importar" },
   { rota: "sobre", href: "#/sobre", rotulo: "Sobre", icone: "sobre" },
 ];
 

@@ -2790,6 +2790,28 @@ h1.auth-sub {
   color: var(--text);
   margin: 0 0 10px;
 }
+/* Link para baixar o modelo oficial (.xlsx) — discreto, abaixo do botão
+   primário de escolher arquivo. Ícone de planilha acompanha o texto. */
+.area-solta-modelo {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent);
+  text-decoration: none;
+  transition: color 0.15s ease, transform 0.15s ease;
+}
+.area-solta-modelo:hover {
+  color: var(--accent-3);
+  transform: translateY(-1px);
+}
+.area-solta-modelo:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
 
 .arquivo {
   display: flex;

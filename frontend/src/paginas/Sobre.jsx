@@ -30,7 +30,7 @@ const CAMADAS = [
 // fechamento. Texto é o conteúdo principal em toda seção; ícone é só
 // acento ao lado do texto, sem caixa nem círculo em volta — e nenhum deles
 // é a marca: a marca continua sendo só a logo (ver regra no CLAUDE.md).
-export default function Sobre({ onComecar }) {
+export default function Sobre({ onIrParaImportar }) {
   return (
     <div className="pagina sobre">
       <section className="sobre-cabecalho anima-entrada">
@@ -159,8 +159,8 @@ export default function Sobre({ onComecar }) {
 
       <section className="sobre-fechamento anima-entrada">
         <p>Pronto para ver isso funcionando com os seus dados?</p>
-        <button type="button" className="botao-primario" onClick={onComecar}>
-          Começar a perguntar
+        <button type="button" className="botao-primario" onClick={onIrParaImportar}>
+          Importar dados
         </button>
       </section>
     </div>
