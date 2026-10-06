@@ -1,0 +1,4 @@
+# Os dumps de dados não vão para o Git (regeneráveis, mudam sempre).
+# A pasta é versionada; os .sql ficam locais / no cofre do grupo.
+*.sql
+!.gitignore
