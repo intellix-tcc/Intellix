@@ -141,9 +141,10 @@ export default function Importar({ onIrParaChat }) {
                 e.target.value = "";
               }}
             />
-            {/* Modelo oficial servido de public/ — mesmos cabeçalhos que o
-                importador do backend espera (leitor_excel.py). */}
-            <a className="area-solta-modelo" href="/template_intellix_vendas.xlsx" download>
+            {/* Modelo oficial (o mesmo de docs/templates/, decisão de equipe
+                da semana 12), servido de public/ para o app poder baixar.
+                Cabeçalhos batem com o importador do backend (leitor_excel.py). */}
+            <a className="area-solta-modelo" href="/template_importacao_intellix.xlsx" download>
               <Icone nome="planilha" size={15} />
               Baixar modelo de planilha (.xlsx)
             </a>
