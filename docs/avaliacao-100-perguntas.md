@@ -3,7 +3,7 @@
 **Projeto:** Intellix, agente inteligente de análise de vendas
 **Atende:** crítica nº 2 do parecer de orientação (*integrar o modelo treinado à API,
 executar as cem perguntas e consolidar taxa funcional, latência e verificação dos objetivos*)
-**Data da execução:** 13/10/2026, 19:19 a 19:53 (UTC−3)
+**Data da execução:** 13/10/2026, 19:19 a 20:34 (UTC−3)
 **Versão:** `main`, commit `9c8c62a`, modelo `intellix_nlu_v1.0.0.pt` (BiLSTM, 1,09 MB)
 **Responsável:** Erik Alves Gonçalves (dados e infraestrutura)
 
@@ -144,6 +144,33 @@ eliminaria a maior parte desse segundo; o tempo típico esperado ficaria abaixo 
 conclusão do deploy, sem reinício por falta de memória. Somada à medição local (222 MB
 com o mesmo código e modelo), isso indica que a aplicação opera dentro do limite de 512 MB.
 
+### 3.4 Depois do pool de conexões
+
+Com base na decomposição acima, o `db.py` passou a usar um pool de conexões
+(`psycopg_pool`, commit `c534341`): a conexão com o banco é aberta uma vez e reaproveitada,
+em vez de ser aberta a cada pergunta. As 100 perguntas foram executadas de novo nos dois
+ambientes. Os acertos não mudaram (58/100, idênticos pergunta a pergunta), como esperado,
+já que o pool não altera nenhuma resposta.
+
+| Ambiente | Mediana | Média | p95 | Máxima | Abaixo de 3 s |
+|---|---:|---:|---:|---:|---:|
+| Local, sem pool (19:30) | 181 ms | 154 ms | 208 ms | 232 ms | 100/100 |
+| **Local, com pool (20:26)** | **62 ms** | **52 ms** | 74 ms | 317 ms | 100/100 |
+| Produção, sem pool (19:53) | 1.900 ms | 1.782 ms | 2.647 ms | 3.276 ms | 99/100 |
+| **Produção, com pool (20:34)** | **992 ms** | **960 ms** | 1.514 ms | 2.100 ms | **100/100** |
+
+Em produção, a resposta típica caiu quase pela metade (−46% na média) e nenhuma resposta
+passou de 3 s. O tempo que resta (~1 s) é latência de rede entre o Render e o banco em
+São Paulo: cada pergunta ainda faz quatro idas e voltas (verificação da conexão, `BEGIN`,
+consulta e `COMMIT`). Usar *autocommit* nas consultas de leitura eliminaria duas delas;
+isso fica como trabalho futuro, porque exige separar as conexões de leitura das usadas
+pela importação de planilhas, que precisa de transação.
+
+Observação: uma rodada às 20:31 coincidiu com a troca de versão no Render. As perguntas 1
+a 31 ainda foram atendidas pela versão antiga, a 32 recebeu HTTP 502 (instância antiga
+saindo de serviço) e as seguintes já pela nova. Ela não entra nas tabelas, mas fica nas
+evidências.
+
 ## 4. Análise dos 42 erros
 
 | Causa | Erros | Onde se corrige |
@@ -199,7 +226,7 @@ de chegar ao banco.
 | Acurácia de intenção (conjunto de teste real) | ≥ 85% | 93,3% | atingida |
 | F1 de entidades (conjunto de teste real) | ≥ 0,80 | 0,838 | atingida |
 | Taxa de acerto funcional ponta a ponta | ≥ 80% | **58,0%** (100 perguntas) | **não atingida** |
-| Tempo médio de resposta | < 3 s | local: 154 ms; **produção: 1,78 s** (p95 2,65 s; 99/100 abaixo de 3 s) | atingida |
+| Tempo médio de resposta | < 3 s | com pool: local 52 ms; **produção 0,96 s** (100/100 abaixo de 3 s) | atingida |
 | Memória em produção | ≤ 512 MB (Render) | 222 MB (local); sem reinício por memória no Render | atingida |
 | 12 intenções reconhecidas | 12 | 12 (todas com ao menos 1 acerto offline) | atingida |
 
@@ -209,7 +236,7 @@ Ordenado por custo. O item 0 melhora a latência; os itens 1 a 3 não exigem ret
 
 | # | Ação | Responsável | Erros endereçados | Taxa esperada |
 |---|---|---|---:|---:|
-| 0 | Pool de conexões no `db.py` e validação dos parâmetros antes de conectar (latência, não acerto) | Dev B/C | n/a | n/a |
+| 0 | ~~Pool de conexões no `db.py`~~ **feito** (seção 3.4); falta validar os parâmetros antes de conectar | Dev C / Dev B | n/a | n/a |
 | 1 | Executor: lista vazia em `produtos_sem_saida` vira 200 com mensagem; linha só com nulos vira 404 | Dev B | 6 | 64% |
 | 2 | Adaptador: resolver "mês anterior/passado", "ano passado", anos e trimestres; vendedor sem nome lista todos | Dev A | 9 a 10 | 73 a 74% |
 | 3 | Filtro de domínio para fora de escopo | Dev A/B | 2 | 75 a 76% |
@@ -224,8 +251,11 @@ avaliação final deve ser repetida com o mesmo conjunto.
 
 - `docs/evidencias/avaliacao_nlu-regras_2026-10-13_1922.{md,csv}`
 - `docs/evidencias/avaliacao_nlu-modelo_2026-10-13_1919.{md,csv}`
-- `docs/evidencias/avaliacao_api_2026-10-13_1953.{md,csv}` (produção, Render)
-- `docs/evidencias/avaliacao_api_2026-10-13_1930.{md,csv}` (local, rodada de referência)
+- `docs/evidencias/avaliacao_api_2026-10-13_2034.{md,csv}` (produção, com pool)
+- `docs/evidencias/avaliacao_api_2026-10-13_2031.{md,csv}` (produção, durante a troca de versão; ver 3.4)
+- `docs/evidencias/avaliacao_api_2026-10-13_2026.{md,csv}` (local, com pool)
+- `docs/evidencias/avaliacao_api_2026-10-13_1953.{md,csv}` (produção, sem pool)
+- `docs/evidencias/avaliacao_api_2026-10-13_1930.{md,csv}` (local, sem pool)
 - `docs/evidencias/avaliacao_api_2026-10-13_1923.{md,csv}` (mesmos acertos; latência afetada pelo `localhost`)
 
 ```bash
@@ -262,11 +292,12 @@ python scripts/avaliar_100_perguntas.py --modo api --url https://intellix-api.on
 >
 > Quanto aos recursos, o processo da API com o modelo carregado ocupou 222 MB de memória,
 > dentro do limite de 512 MB da hospedagem gratuita. O mesmo conjunto foi executado contra a
-> versão publicada no Render, com resultado idêntico de acertos (58/100). O tempo médio de
-> resposta foi de 154 ms no ambiente local e de 1,78 s em produção (99 das 100 respostas
-> abaixo de 3 s), atendendo à meta de 3 segundos. A inferência do modelo levou cerca de
-> 2 ms; em produção, a maior parcela do tempo (cerca de 1,1 s) correspondeu à abertura da
-> conexão com o banco de dados, ponto de melhoria identificado para a versão final.
+> versão publicada no Render, com resultado idêntico de acertos (58/100). A inferência do
+> modelo levou cerca de 2 ms; a decomposição dos tempos mostrou que, em produção, a maior
+> parcela (cerca de 1,1 s por pergunta) correspondia à abertura da conexão com o banco de
+> dados. Com a adoção de um pool de conexões, o tempo médio de resposta caiu de 1,78 s para
+> 0,96 s em produção e de 154 ms para 52 ms no ambiente local, com todas as 100 respostas
+> abaixo da meta de 3 segundos e sem alteração nos acertos.
 >
 > **Tabela 5 – Taxa de acerto por categoria nas 100 perguntas de validação**
 >
