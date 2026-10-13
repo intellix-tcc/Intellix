@@ -3,13 +3,14 @@ import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.db import get_connection, get_empresa_id
+from app.db import fechar_pool, get_connection, get_empresa_id
 from app.fallbacks import verificar_confianca
 from app.models import Pergunta, ResultSet
 from app.nlu.regras import RuleBasedNLU
 from app.sql.executor import executar_template
 
 app = FastAPI(title="Intellix API")
+app.add_event_handler("shutdown", fechar_pool)  # devolve as conexões do pool ao desligar
 
 # Origens padrão: dev local + a URL estável de produção da Vercel.
 # 5173 e 5174: o Vite sobe na primeira porta livre — com dois `npm run dev`
