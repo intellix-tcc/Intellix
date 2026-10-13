@@ -3,7 +3,7 @@
 **Projeto:** Intellix, agente inteligente de análise de vendas
 **Atende:** crítica nº 2 do parecer de orientação (*integrar o modelo treinado à API,
 executar as cem perguntas e consolidar taxa funcional, latência e verificação dos objetivos*)
-**Data da execução:** 13/10/2026, 19:19 a 19:30 (UTC−3)
+**Data da execução:** 13/10/2026, 19:19 a 19:53 (UTC−3)
 **Versão:** `main`, commit `9c8c62a`, modelo `intellix_nlu_v1.0.0.pt` (BiLSTM, 1,09 MB)
 **Responsável:** Erik Alves Gonçalves (dados e infraestrutura)
 
@@ -102,6 +102,48 @@ doméstica. Em produção, a latência depende da região do serviço no Render 
 plano gratuito "dorme" após 15 minutos sem uso (a primeira requisição depois disso é
 lenta). A medição em produção fica como próximo passo.
 
+### 3.3 Produção (Render)
+
+Às 19:50 a variável `NLU_BACKEND=modelo` foi ativada no serviço `intellix-api` do Render
+(plano gratuito: 512 MB de RAM e 0,15 de CPU), que acessa o banco `intellix-prod`.
+
+**Antes e depois.** A pergunta "Quantas vendas eu fiz em março?" devolvia HTTP 422 com o
+NLU por regras. Com o modelo, devolveu HTTP 200: intenção `quantidade_vendas`, período
+de 01/03/2024 a 31/03/2024, 54 vendas, confiança 0,9998.
+
+**As 100 perguntas contra `https://intellix-api.onrender.com` (19:53):** 58/100 acertos,
+**idênticos pergunta a pergunta** aos da execução local. O comportamento do sistema é o
+mesmo nos dois ambientes.
+
+| Resposta | Qtde. | Mediana | Faixa |
+|---|---:|---:|---|
+| 200 (consulta respondida) | 59 | 1.938 ms | 1.850 a 2.817 ms |
+| 404 `sem_resultado` | 12 | 1.901 ms | 1.866 a 3.276 ms |
+| 422 `parametro_faltando` | 15 | 1.406 ms | 1.341 a 2.628 ms |
+| 422 `baixa_confianca` | 14 | 323 ms | 280 a 923 ms |
+| **Total** | **100** | **1.900 ms** | média **1.782 ms**; p95 2.647 ms; 99/100 abaixo de 3 s |
+
+Como os tempos se decompõem (medianas):
+
+| Parcela | Tempo aproximado | Como foi estimada |
+|---|---:|---|
+| Rede do cliente até o Render, mais inferência do modelo | ~320 ms | recusa por baixa confiança, que não toca o banco |
+| Abertura da conexão com o banco | ~1.080 ms | `parametro_faltando` menos `baixa_confianca` |
+| Execução da consulta | ~500 ms | resposta 200 menos `parametro_faltando` |
+
+A meta de tempo médio inferior a 3 s foi atingida também em produção (1,78 s), mas com
+margem menor. Uma resposta (1%) passou de 3 s (3.276 ms). **O principal custo é abrir uma
+conexão nova com o banco a cada pergunta**: o Render não tem região na América do Sul, e
+cada conexão nova exige várias idas e voltas de rede até São Paulo (TCP, TLS e
+autenticação). Com um pool de conexões, a conexão é aberta uma vez e reaproveitada, o que
+eliminaria a maior parte desse segundo; o tempo típico esperado ficaria abaixo de 1 s.
+
+**Memória em produção.** O plano gratuito do Render não exibe métricas de memória
+(recurso de planos pagos). A evidência disponível é indireta: durante o deploy e as mais de
+100 requisições, a linha do tempo de eventos do serviço registrou apenas o início e a
+conclusão do deploy, sem reinício por falta de memória. Somada à medição local (222 MB
+com o mesmo código e modelo), isso indica que a aplicação opera dentro do limite de 512 MB.
+
 ## 4. Análise dos 42 erros
 
 | Causa | Erros | Onde se corrige |
@@ -157,16 +199,17 @@ de chegar ao banco.
 | Acurácia de intenção (conjunto de teste real) | ≥ 85% | 93,3% | atingida |
 | F1 de entidades (conjunto de teste real) | ≥ 0,80 | 0,838 | atingida |
 | Taxa de acerto funcional ponta a ponta | ≥ 80% | **58,0%** (100 perguntas) | **não atingida** |
-| Tempo médio de resposta | < 3 s | 154 ms (mediana 181 ms, máximo 232 ms) | atingida |
-| Memória em produção | ≤ 512 MB (Render) | 222 MB | atingida |
+| Tempo médio de resposta | < 3 s | local: 154 ms; **produção: 1,78 s** (p95 2,65 s; 99/100 abaixo de 3 s) | atingida |
+| Memória em produção | ≤ 512 MB (Render) | 222 MB (local); sem reinício por memória no Render | atingida |
 | 12 intenções reconhecidas | 12 | 12 (todas com ao menos 1 acerto offline) | atingida |
 
 ## 6. Plano de correção e ganho esperado
 
-Ordenado por custo. Os itens 1 e 2 não exigem retreino.
+Ordenado por custo. O item 0 melhora a latência; os itens 1 a 3 não exigem retreino.
 
 | # | Ação | Responsável | Erros endereçados | Taxa esperada |
 |---|---|---|---:|---:|
+| 0 | Pool de conexões no `db.py` e validação dos parâmetros antes de conectar (latência, não acerto) | Dev B/C | n/a | n/a |
 | 1 | Executor: lista vazia em `produtos_sem_saida` vira 200 com mensagem; linha só com nulos vira 404 | Dev B | 6 | 64% |
 | 2 | Adaptador: resolver "mês anterior/passado", "ano passado", anos e trimestres; vendedor sem nome lista todos | Dev A | 9 a 10 | 73 a 74% |
 | 3 | Filtro de domínio para fora de escopo | Dev A/B | 2 | 75 a 76% |
@@ -181,7 +224,8 @@ avaliação final deve ser repetida com o mesmo conjunto.
 
 - `docs/evidencias/avaliacao_nlu-regras_2026-10-13_1922.{md,csv}`
 - `docs/evidencias/avaliacao_nlu-modelo_2026-10-13_1919.{md,csv}`
-- `docs/evidencias/avaliacao_api_2026-10-13_1930.{md,csv}` (rodada de referência)
+- `docs/evidencias/avaliacao_api_2026-10-13_1953.{md,csv}` (produção, Render)
+- `docs/evidencias/avaliacao_api_2026-10-13_1930.{md,csv}` (local, rodada de referência)
 - `docs/evidencias/avaliacao_api_2026-10-13_1923.{md,csv}` (mesmos acertos; latência afetada pelo `localhost`)
 
 ```bash
@@ -191,6 +235,8 @@ python scripts/avaliar_100_perguntas.py --modo nlu --backend modelo
 # ponta a ponta (terminal 1: API; terminal 2: executor)
 cd backend && NLU_BACKEND=modelo uvicorn app.main:app
 python scripts/avaliar_100_perguntas.py --modo api --url http://127.0.0.1:8000
+# produção (com NLU_BACKEND=modelo no Render)
+python scripts/avaliar_100_perguntas.py --modo api --url https://intellix-api.onrender.com
 ```
 
 ---
@@ -215,10 +261,12 @@ python scripts/avaliar_100_perguntas.py --modo api --url http://127.0.0.1:8000
 > a distância entre dados de treino e uso real.
 >
 > Quanto aos recursos, o processo da API com o modelo carregado ocupou 222 MB de memória,
-> dentro do limite de 512 MB da hospedagem gratuita. O tempo médio de resposta foi de
-> 154 ms (mediana de 181 ms e máximo de 232 ms), bem abaixo da meta de 3 segundos; a
-> inferência do modelo levou cerca de 2 ms, e a maior parcela do tempo correspondeu à
-> abertura da conexão com o banco de dados.
+> dentro do limite de 512 MB da hospedagem gratuita. O mesmo conjunto foi executado contra a
+> versão publicada no Render, com resultado idêntico de acertos (58/100). O tempo médio de
+> resposta foi de 154 ms no ambiente local e de 1,78 s em produção (99 das 100 respostas
+> abaixo de 3 s), atendendo à meta de 3 segundos. A inferência do modelo levou cerca de
+> 2 ms; em produção, a maior parcela do tempo (cerca de 1,1 s) correspondeu à abertura da
+> conexão com o banco de dados, ponto de melhoria identificado para a versão final.
 >
 > **Tabela 5 – Taxa de acerto por categoria nas 100 perguntas de validação**
 >
