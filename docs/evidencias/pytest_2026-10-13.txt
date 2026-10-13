@@ -1,0 +1,70 @@
+============================= test session starts =============================
+platform win32 -- Python 3.12.0, pytest-8.3.2, pluggy-1.6.0 -- C:\Users\User\intellix\backend\.venv\Scripts\python.exe
+cachedir: .pytest_cache
+rootdir: C:\Users\User\intellix\backend
+configfile: pytest.ini
+testpaths: tests
+plugins: anyio-4.14.2
+collecting ... collected 28 items
+
+tests/test_chat_integration.py::test_chat_total_vendas_periodo PASSED    [  3%]
+tests/test_chat_integration.py::test_chat_top_produtos_sem_periodo_explicito PASSED [  7%]
+tests/test_chat_integration.py::test_chat_baixa_confianca_nao_toca_banco PASSED [ 10%]
+tests/test_chat_integration.py::test_chat_sem_resultado PASSED           [ 14%]
+tests/test_chat_integration.py::test_valores_decimais_viram_float_serializavel PASSED [ 17%]
+tests/test_fallbacks.py::test_confianca_baixa_levanta_422 PASSED         [ 21%]
+tests/test_fallbacks.py::test_confianca_suficiente_nao_levanta PASSED    [ 25%]
+tests/test_health.py::test_health PASSED                                 [ 28%]
+tests/test_import.py::test_normalizar_tira_acento_e_espaco PASSED        [ 32%]
+tests/test_import.py::test_mapeia_coluna_direta_e_sinonimo PASSED        [ 35%]
+tests/test_import.py::test_le_planilha_valida PASSED                     [ 39%]
+tests/test_import.py::test_coluna_obrigatoria_faltando PASSED            [ 42%]
+tests/test_import.py::test_precisa_de_algum_valor PASSED                 [ 46%]
+tests/test_import.py::test_rejeita_xls_antigo PASSED                     [ 50%]
+tests/test_import.py::test_rejeita_arquivo_nao_excel PASSED              [ 53%]
+tests/test_import.py::test_colunas_extras_sao_listadas PASSED            [ 57%]
+tests/test_import.py::test_parse_numero_pt_br PASSED                     [ 60%]
+tests/test_import.py::test_parse_data_formatos PASSED                    [ 64%]
+tests/test_import.py::test_parse_int_arredonda PASSED                    [ 67%]
+tests/test_nlu_regras.py::test_reconhece_faturamento PASSED              [ 71%]
+tests/test_nlu_regras.py::test_fora_de_escopo PASSED                     [ 75%]
+tests/test_nlu_regras.py::test_top_produtos_com_limite PASSED            [ 78%]
+tests/test_nlu_regras.py::test_top_produtos_limite_padrao PASSED         [ 82%]
+tests/test_nlu_regras.py::test_ticket_medio PASSED                       [ 85%]
+tests/test_templates_sql.py::test_todas_as_12_intencoes_tem_template PASSED [ 89%]
+tests/test_templates_sql.py::test_templates_tem_formato_correto PASSED   [ 92%]
+tests/test_templates_sql.py::test_obrigatorios_aparecem_como_parametros_no_sql PASSED [ 96%]
+tests/test_templates_sql.py::test_sql_nao_usa_f_string_de_valor PASSED   [100%]
+
+=================================== PASSES ====================================
+--- generated xml file: C:\Users\User\intellix\backend\relatorio_pytest.xml ---
+=========================== short test summary info ===========================
+PASSED tests/test_chat_integration.py::test_chat_total_vendas_periodo
+PASSED tests/test_chat_integration.py::test_chat_top_produtos_sem_periodo_explicito
+PASSED tests/test_chat_integration.py::test_chat_baixa_confianca_nao_toca_banco
+PASSED tests/test_chat_integration.py::test_chat_sem_resultado
+PASSED tests/test_chat_integration.py::test_valores_decimais_viram_float_serializavel
+PASSED tests/test_fallbacks.py::test_confianca_baixa_levanta_422
+PASSED tests/test_fallbacks.py::test_confianca_suficiente_nao_levanta
+PASSED tests/test_health.py::test_health
+PASSED tests/test_import.py::test_normalizar_tira_acento_e_espaco
+PASSED tests/test_import.py::test_mapeia_coluna_direta_e_sinonimo
+PASSED tests/test_import.py::test_le_planilha_valida
+PASSED tests/test_import.py::test_coluna_obrigatoria_faltando
+PASSED tests/test_import.py::test_precisa_de_algum_valor
+PASSED tests/test_import.py::test_rejeita_xls_antigo
+PASSED tests/test_import.py::test_rejeita_arquivo_nao_excel
+PASSED tests/test_import.py::test_colunas_extras_sao_listadas
+PASSED tests/test_import.py::test_parse_numero_pt_br
+PASSED tests/test_import.py::test_parse_data_formatos
+PASSED tests/test_import.py::test_parse_int_arredonda
+PASSED tests/test_nlu_regras.py::test_reconhece_faturamento
+PASSED tests/test_nlu_regras.py::test_fora_de_escopo
+PASSED tests/test_nlu_regras.py::test_top_produtos_com_limite
+PASSED tests/test_nlu_regras.py::test_top_produtos_limite_padrao
+PASSED tests/test_nlu_regras.py::test_ticket_medio
+PASSED tests/test_templates_sql.py::test_todas_as_12_intencoes_tem_template
+PASSED tests/test_templates_sql.py::test_templates_tem_formato_correto
+PASSED tests/test_templates_sql.py::test_obrigatorios_aparecem_como_parametros_no_sql
+PASSED tests/test_templates_sql.py::test_sql_nao_usa_f_string_de_valor
+============================= 28 passed in 2.50s ==============================
