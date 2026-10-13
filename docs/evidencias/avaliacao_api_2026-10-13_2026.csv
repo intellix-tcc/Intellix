@@ -1,0 +1,101 @@
+n,secao,categoria,pergunta,esperado,status,obtido,acerto,latencia_ms
+1,1,total_vendas_periodo,Quanto faturei em março?,200 / total_vendas_periodo,200,total_vendas_periodo,True,317.0
+2,1,total_vendas_periodo,Quanto faturei em março de 2024?,200 / total_vendas_periodo,200,total_vendas_periodo,True,74.5
+3,1,total_vendas_periodo,Qual foi o faturamento de 2024?,200 / total_vendas_periodo,200,total_vendas_periodo,True,64.0
+4,1,total_vendas_periodo,Quanto vendi no mês passado?,200 / total_vendas_periodo,422,baixa_confianca,False,3.1
+5,1,total_vendas_periodo,Qual o faturamento total desse ano?,200 / total_vendas_periodo,200,total_vendas_periodo,True,69.1
+6,1,total_vendas_periodo,Quanto a loja faturou em janeiro de 2024?,200 / total_vendas_periodo,200,total_vendas_periodo,True,85.1
+7,1,total_vendas_periodo,"Faturamento de dezembro de 2023, por favor.",200 / total_vendas_periodo,200,vendas_por_categoria,False,62.8
+8,2,top_produtos,Quais os 5 produtos mais vendidos?,200 / top_produtos,200,top_produtos,True,64.3
+9,2,top_produtos,Quais os 10 produtos mais vendidos em março de 2024?,200 / top_produtos,200,top_produtos,True,73.3
+10,2,top_produtos,Top 3 produtos do ano?,200 / top_produtos,200,top_produtos,True,63.5
+11,2,top_produtos,Quais produtos mais venderam em 2024?,200 / top_produtos,200,top_produtos,True,64.7
+12,2,top_produtos,Me mostra os produtos mais vendidos.,200 / top_produtos,200,top_produtos,True,61.0
+13,2,top_produtos,Quais os produtos mais vendidos no último mês?,200 / top_produtos,200,top_produtos,True,64.4
+14,2,top_produtos,Top produtos de fevereiro de 2024?,200 / top_produtos,200,top_produtos,True,63.7
+15,3,ticket_medio,Qual o ticket médio em março?,200 / ticket_medio,200,ticket_medio,True,59.6
+16,3,ticket_medio,Qual o ticket médio de 2024?,200 / ticket_medio,200,ticket_medio,True,64.3
+17,3,ticket_medio,Qual foi o ticket médio esse ano?,200 / ticket_medio,200,ticket_medio,True,79.6
+18,3,ticket_medio,Qual o valor médio das vendas em março de 2024?,200 / ticket_medio,200,ticket_medio,True,84.2
+19,3,ticket_medio,Qual o ticket médio do mês passado?,200 / ticket_medio,200,ticket_medio,True,61.7
+20,3,ticket_medio,Ticket médio de janeiro de 2024?,200 / ticket_medio,200,ticket_medio,True,60.3
+21,3,ticket_medio,Qual o ticket médio geral?,200 / ticket_medio,200,ticket_medio,True,63.0
+22,4,quantidade_vendas,Quantas vendas eu fiz em março?,200 / quantidade_vendas,200,quantidade_vendas,True,57.8
+23,4,quantidade_vendas,Quantas vendas tiveram em 2024?,200 / quantidade_vendas,200,quantidade_vendas,True,64.6
+24,4,quantidade_vendas,Quantas vendas foram feitas em março de 2024?,200 / quantidade_vendas,200,quantidade_vendas,True,61.2
+25,4,quantidade_vendas,Qual a quantidade de vendas do último mês?,200 / quantidade_vendas,422,parametro_faltando,False,17.9
+26,4,quantidade_vendas,Quantas vendas a loja fez esse ano?,200 / quantidade_vendas,200,quantidade_vendas,True,63.5
+27,4,quantidade_vendas,Número de vendas em janeiro de 2024?,200 / quantidade_vendas,200,quantidade_vendas,True,60.5
+28,4,quantidade_vendas,Quantas vendas eu tive no primeiro trimestre?,200 / quantidade_vendas,200,quantidade_vendas,True,63.7
+29,5,top_clientes,Quais os clientes que mais compraram?,200 / top_clientes,200,top_clientes,True,63.9
+30,5,top_clientes,Quem são os 5 clientes que mais compraram em 2024?,200 / top_clientes,200,top_clientes,True,65.8
+31,5,top_clientes,Top 10 clientes do ano?,200 / top_clientes,200,top_clientes,True,61.9
+32,5,top_clientes,Quais clientes mais gastaram em março de 2024?,200 / top_clientes,200,top_clientes,True,58.3
+33,5,top_clientes,Meus melhores clientes desse ano?,200 / top_clientes,200,top_clientes,True,67.9
+34,5,top_clientes,Quem comprou mais em janeiro de 2024?,200 / top_clientes,200,top_clientes,True,63.5
+35,5,top_clientes,Ranking de clientes por faturamento?,200 / top_clientes,422,baixa_confianca,False,1.8
+36,6,desempenho_vendedor,Como foi o desempenho da Fernanda em março?,200 / desempenho_vendedor,200,desempenho_vendedor,True,60.6
+37,6,desempenho_vendedor,Quanto o vendedor João vendeu em 2024?,200 / desempenho_vendedor,404,sem_resultado,False,63.1
+38,6,desempenho_vendedor,Desempenho de vendas da Maria em janeiro de 2024?,200 / desempenho_vendedor,422,parametro_faltando,False,18.5
+39,6,desempenho_vendedor,Como está o vendedor Carlos esse ano?,200 / desempenho_vendedor,422,parametro_faltando,False,17.5
+40,6,desempenho_vendedor,Quanto a vendedora Ana faturou em março de 2024?,200 / desempenho_vendedor,422,parametro_faltando,False,16.0
+41,6,desempenho_vendedor,Performance do time de vendas em fevereiro?,200 / desempenho_vendedor,422,baixa_confianca,False,1.8
+42,6,desempenho_vendedor,Quem vendeu mais entre os vendedores?,200 / desempenho_vendedor,422,parametro_faltando,False,16.0
+43,7,produtos_sem_saida,Quais produtos não venderam em março?,200 / produtos_sem_saida,200,produtos_sem_saida,True,59.7
+44,7,produtos_sem_saida,Quais produtos ficaram parados esse ano?,200 / produtos_sem_saida,404,sem_resultado,False,73.5
+45,7,produtos_sem_saida,Produtos sem venda em 2024?,200 / produtos_sem_saida,404,sem_resultado,False,64.6
+46,7,produtos_sem_saida,O que não saiu do estoque no último mês?,200 / produtos_sem_saida,404,sem_resultado,False,67.1
+47,7,produtos_sem_saida,Quais itens não tiveram saída em janeiro de 2024?,200 / produtos_sem_saida,200,produtos_sem_saida,True,60.6
+48,7,produtos_sem_saida,Produtos parados no ano?,200 / produtos_sem_saida,404,sem_resultado,False,69.4
+49,7,produtos_sem_saida,Quais produtos estão encalhados?,200 / produtos_sem_saida,404,sem_resultado,False,62.1
+50,8,comparacao_periodos,Compare o faturamento de março com abril de 2024.,200 / comparacao_periodos,200,comparacao_periodos,True,59.9
+51,8,comparacao_periodos,Como foi o faturamento de 2023 comparado com 2024?,200 / comparacao_periodos,200,total_vendas_periodo,False,63.9
+52,8,comparacao_periodos,Compare as vendas do primeiro trimestre com o segundo.,200 / comparacao_periodos,422,parametro_faltando,False,16.1
+53,8,comparacao_periodos,Faturamento de janeiro versus fevereiro de 2024?,200 / comparacao_periodos,422,baixa_confianca,False,1.8
+54,8,comparacao_periodos,Compare esse mês com o mês passado.,200 / comparacao_periodos,422,parametro_faltando,False,16.5
+55,8,comparacao_periodos,Como as vendas de 2024 se comparam com 2023?,200 / comparacao_periodos,422,parametro_faltando,False,17.3
+56,8,comparacao_periodos,Compare o desempenho de março e junho.,200 / comparacao_periodos,200,comparacao_periodos,True,74.1
+57,9,variacao_periodo,Qual foi a variação do faturamento em relação ao mês anterior?,200 / variacao_periodo,422,parametro_faltando,False,16.9
+58,9,variacao_periodo,Quanto cresceu o faturamento de março para abril de 2024?,200 / variacao_periodo,200,total_vendas_periodo,False,62.4
+59,9,variacao_periodo,Qual a variação percentual das vendas esse ano?,200 / variacao_periodo,422,parametro_faltando,False,15.7
+60,9,variacao_periodo,As vendas cresceram ou caíram em relação ao ano passado?,200 / variacao_periodo,422,parametro_faltando,False,16.2
+61,9,variacao_periodo,Qual o crescimento do faturamento em março de 2024?,200 / variacao_periodo,422,parametro_faltando,False,15.8
+62,9,variacao_periodo,Quanto caiu o faturamento comparado ao mês anterior?,200 / variacao_periodo,200,vendas_por_canal,False,64.0
+63,9,variacao_periodo,Qual a variação de vendas entre os trimestres?,200 / variacao_periodo,422,parametro_faltando,False,15.6
+64,10,vendas_por_canal,Quanto vendi por canal em março de 2024?,200 / vendas_por_canal,200,vendas_por_canal,True,63.7
+65,10,vendas_por_canal,Qual canal vendeu mais esse ano?,200 / vendas_por_canal,200,vendas_por_canal,True,72.3
+66,10,vendas_por_canal,Vendas por canal de venda em 2024?,200 / vendas_por_canal,200,vendas_por_canal,True,66.3
+67,10,vendas_por_canal,Como estão as vendas online comparadas às vendas físicas?,200 / vendas_por_canal,200,vendas_por_categoria,False,67.6
+68,10,vendas_por_canal,Qual o faturamento por canal no último mês?,200 / vendas_por_canal,200,vendas_por_canal,True,70.1
+69,10,vendas_por_canal,Quais canais mais venderam em janeiro de 2024?,200 / vendas_por_canal,200,top_produtos,False,63.6
+70,10,vendas_por_canal,Desempenho de vendas por canal esse trimestre?,200 / vendas_por_canal,200,vendas_por_canal,True,65.3
+71,11,vendas_por_categoria,Quais categorias mais venderam em 2024?,200 / vendas_por_categoria,200,top_produtos,False,62.1
+72,11,vendas_por_categoria,Faturamento por categoria de produto em março?,200 / vendas_por_categoria,200,vendas_por_categoria,True,61.8
+73,11,vendas_por_categoria,Qual categoria vendeu mais esse ano?,200 / vendas_por_categoria,200,vendas_por_categoria,True,60.7
+74,11,vendas_por_categoria,Vendas por categoria no último mês?,200 / vendas_por_categoria,200,vendas_por_categoria,True,63.6
+75,11,vendas_por_categoria,Quais categorias tiveram queda de vendas?,200 / vendas_por_categoria,404,sem_resultado,False,71.4
+76,11,vendas_por_categoria,Desempenho das categorias em janeiro de 2024?,200 / vendas_por_categoria,422,baixa_confianca,False,1.9
+77,11,vendas_por_categoria,Qual categoria de produto é mais lucrativa?,200 / vendas_por_categoria,200,vendas_por_categoria,True,61.9
+78,12,vendas_por_pagamento,Quais formas de pagamento mais usadas em março?,200 / vendas_por_pagamento,422,baixa_confianca,False,1.8
+79,12,vendas_por_pagamento,Vendas por forma de pagamento em 2024?,200 / vendas_por_pagamento,200,vendas_por_pagamento,True,65.9
+80,12,vendas_por_pagamento,Quanto foi pago no cartão em março de 2024?,200 / vendas_por_pagamento,200,vendas_por_pagamento,True,60.3
+81,12,vendas_por_pagamento,Qual forma de pagamento é mais usada pelos clientes?,200 / vendas_por_pagamento,200,vendas_por_pagamento,True,69.7
+82,12,vendas_por_pagamento,Faturamento por método de pagamento esse ano?,200 / vendas_por_pagamento,422,baixa_confianca,False,1.9
+83,12,vendas_por_pagamento,Quantas vendas no pix em janeiro de 2024?,200 / vendas_por_pagamento,200,quantidade_vendas,False,65.2
+84,12,vendas_por_pagamento,Como estão distribuídas as formas de pagamento das vendas?,200 / vendas_por_pagamento,200,vendas_por_categoria,False,64.5
+85,13,fora_de_escopo,Qual a capital da França?,422 / baixa_confianca,422,parametro_faltando,False,16.2
+86,13,fora_de_escopo,Que dia é hoje?,422 / baixa_confianca,422,baixa_confianca,True,1.9
+87,13,fora_de_escopo,Como está o tempo hoje?,422 / baixa_confianca,422,baixa_confianca,True,1.8
+88,13,fora_de_escopo,Me conta uma piada.,422 / baixa_confianca,404,sem_resultado,False,66.0
+89,13,fora_de_escopo,Qual o sentido da vida?,422 / baixa_confianca,422,baixa_confianca,True,2.0
+90,13,fora_de_escopo,Quem descobriu o Brasil?,422 / baixa_confianca,422,baixa_confianca,True,1.6
+91,14,parametro_faltando,Como foi o desempenho do vendedor?,422,404,sem_resultado,False,67.7
+92,14,parametro_faltando,Compare os períodos.,422,422,baixa_confianca,True,2.6
+93,14,parametro_faltando,Qual a variação?,422,422,parametro_faltando,True,15.0
+94,14,parametro_faltando,Quanto vendi?,422,200,total_vendas_periodo,False,72.3
+95,14,parametro_faltando,Mostra os dados de vendas.,422,422,baixa_confianca,True,1.7
+96,15,sem_resultado,Quanto faturei em janeiro de 2020?,404 / sem_resultado,404,sem_resultado,True,61.7
+97,15,sem_resultado,Quais produtos mais venderam em 2019?,404 / sem_resultado,404,sem_resultado,True,72.0
+98,15,sem_resultado,Qual o ticket médio de 2018?,404 / sem_resultado,200,ticket_medio,False,60.0
+99,15,sem_resultado,"Como foi o desempenho do vendedor ""Roberto"" em 2015?",404 / sem_resultado,422,baixa_confianca,False,1.9
+100,15,sem_resultado,Quantas vendas tivemos em 2030?,404 / sem_resultado,404,sem_resultado,True,59.5
