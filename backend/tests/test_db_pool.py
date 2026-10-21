@@ -8,9 +8,8 @@ import os
 
 import psycopg
 import pytest
-from psycopg_pool import PoolTimeout
-
 from app import db
+from psycopg_pool import PoolTimeout
 
 com_banco = pytest.mark.skipif(
     not os.environ.get("DATABASE_URL"),
