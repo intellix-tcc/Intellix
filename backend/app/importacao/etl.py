@@ -92,8 +92,13 @@ def _texto(valor: Any) -> str:
     return "" if valor is None else str(valor).strip()
 
 
-def importar(conteudo: bytes, nome_arquivo: str, empresa_id: str, conn: psycopg.Connection) -> dict:
-    """Lê a planilha e carrega no star schema. Devolve o relatório da carga.
+def importar(conteudo: bytes, nome_arquivo: str, conn: psycopg.Connection) -> dict:
+    """Lê a planilha e carrega no star schema, num dataset próprio.
+
+    Cada importação cria uma **empresa nova** (dataset isolado) e devolve o
+    `empresa_id` no relatório, para o frontend reenviar nas perguntas — assim
+    o chat responde sobre os dados importados, não sobre a base demo (ver
+    docs/plano-ingestao-dados.md, seção multi-tenant).
 
     Levanta ErroImportacao (do leitor) quando a planilha é inválida como um
     todo; erros de linha isolada viram linhas rejeitadas, não exceção.
@@ -103,22 +108,10 @@ def importar(conteudo: bytes, nome_arquivo: str, empresa_id: str, conn: psycopg.
     hash_arq = hashlib.sha256(conteudo).hexdigest()
 
     with conn.cursor() as cur:
-        # Dedupe: mesmo arquivo já importado por esta empresa.
-        cur.execute(
-            "select id, status, linhas_validas from importacao "
-            "where empresa_id = %s and hash_arquivo = %s",
-            (empresa_id, hash_arq),
-        )
-        existente = cur.fetchone()
-        if existente:
-            return {
-                "importacao_id": str(existente[0]),
-                "status": "duplicada",
-                "linhas_lidas": leitura["total_linhas"],
-                "linhas_validas": existente[2],
-                "linhas_rejeitadas": 0,
-                "mensagem": "Esta planilha já foi importada antes.",
-            }
+        # Dataset próprio deste upload: isola os dados da planilha dos demais.
+        nome_empresa = f"Importação: {nome_arquivo or 'planilha.xlsx'}"
+        cur.execute("insert into empresa (nome) values (%s) returning id", (nome_empresa,))
+        empresa_id = str(cur.fetchone()[0])
 
         cur.execute(
             "insert into importacao (empresa_id, nome_arquivo, hash_arquivo, status) "
@@ -280,6 +273,7 @@ def importar(conteudo: bytes, nome_arquivo: str, empresa_id: str, conn: psycopg.
 
     return {
         "importacao_id": str(importacao_id),
+        "empresa_id": empresa_id,
         "status": "processada",
         "linhas_lidas": leitura["total_linhas"],
         "linhas_validas": linhas_validas,
