@@ -75,8 +75,12 @@ ver `dev-b-backend.md`, Bloco 2, item B10).
 
 Requisição — modelo `Pergunta`:
 ```json
-{ "pergunta": "quanto faturei em março" }
+{ "pergunta": "quanto faturei em março", "empresa_id": "opcional" }
 ```
+`empresa_id` é **opcional**: quando presente (o id devolvido por um `/import`),
+a consulta cai sobre os dados daquela planilha; ausente, usa a base de
+demonstração (`EMPRESA_ID` fixo). O frontend guarda o id da última importação
+em `localStorage` (ver `frontend/src/utils/dataset.js`) e o reenvia aqui.
 
 Resposta em caso de sucesso — `200 OK` com um `ResultSet`:
 ```json
@@ -125,6 +129,7 @@ Resposta — `200 OK`:
 ```json
 {
   "importacao_id": "7b1e...",
+  "empresa_id": "a3c9...",
   "status": "processada",
   "linhas_lidas": 1240,
   "linhas_validas": 1231,
@@ -133,7 +138,9 @@ Resposta — `200 OK`:
   "colunas_ignoradas": ["observacao"]
 }
 ```
-`status` é `duplicada` quando o mesmo arquivo (hash) já foi importado.
+Cada importação cria um **dataset próprio** (uma empresa nova) e devolve o
+`empresa_id`; o frontend o reenvia no `/chat` para as perguntas caírem sobre
+os dados importados, não sobre a base demo.
 
 Planilha inválida (colunas obrigatórias faltando, arquivo ilegível) — `422`:
 ```json

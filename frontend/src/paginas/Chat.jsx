@@ -4,6 +4,7 @@ import Icone from "../componentes/Icone";
 import Logo from "../componentes/Logo";
 import { baixarExcel, baixarPdf } from "../utils/exportar";
 import { EXEMPLOS } from "../utils/exemplos";
+import { datasetAtivo, limparDataset } from "../utils/dataset";
 
 // Quanto tempo a mensagem "Encontrei N registros" fica na tela antes de dar
 // lugar à resposta completa — ver `reveladas` em Chat, mais abaixo.
@@ -321,6 +322,17 @@ export default function Chat({
   const pendente = reveladas < mensagens.length ? mensagens[reveladas] : null;
   const registrosPendentes = pendente?.dados?.linhas?.length ?? 0;
 
+  // Dataset ativo (planilha importada). Estado local para o botão "usar dados
+  // de exemplo" re-renderizar ao limpar. Lê o localStorage na montagem — e a
+  // tela remonta ao navegar para o chat (key={rota} em App.jsx), então vem
+  // sempre atualizado após uma importação.
+  const [dataset, setDataset] = useState(datasetAtivo);
+
+  function usarExemplo() {
+    limparDataset();
+    setDataset(null);
+  }
+
   function enviar(e) {
     e.preventDefault();
     onPerguntar(texto);
@@ -330,6 +342,17 @@ export default function Chat({
 
   return (
     <div className="chat-pagina">
+      {dataset && (
+        <div className="dataset-ativo">
+          <Icone nome="planilha" size={15} className="dataset-ativo-icone" />
+          <span className="dataset-ativo-texto">
+            Respondendo sobre <strong>{dataset.rotulo}</strong>
+          </span>
+          <button type="button" className="dataset-ativo-trocar" onClick={usarExemplo}>
+            usar dados de exemplo
+          </button>
+        </div>
+      )}
       {/* tabindex=0: a lista rola por dentro, e sem isso o teclado não
           alcança essa rolagem — só o mouse chegaria nas mensagens antigas. */}
       <div
