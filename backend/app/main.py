@@ -67,8 +67,22 @@ def chat(pergunta: Pergunta) -> ResultSet:
 
     # Dataset do usuário (vindo de uma importação) ou a base demo por padrão.
     empresa = pergunta.empresa_id or get_empresa_id()
-    with get_connection() as conn:
-        return executar_template(interpretacao, empresa, conn)
+    # O executor.py trata OperationalError que acontece DURANTE a consulta, mas a
+    # conexao e adquirida aqui: com o banco fora, get_connection() estoura
+    # PoolTimeout (subclasse de psycopg.OperationalError) antes de chegar ao
+    # executor. Sem este try, viraria 500 cru em vez do 503 banco_indisponivel
+    # (fallback da secao 7.6 do TCC). Mesmo tratamento que o /import ja faz.
+    try:
+        with get_connection() as conn:
+            return executar_template(interpretacao, empresa, conn)
+    except psycopg.OperationalError:
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "tipo": "banco_indisponivel",
+                "mensagem": "Serviço temporariamente indisponível. Tente novamente em instantes.",
+            },
+        )
 
 
 @app.post("/import")
