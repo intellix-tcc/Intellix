@@ -45,6 +45,10 @@ ml/artefatos/
 *.pth
 *.onnx
 
+# Dataset de treino gerado por `ia training/gerar_dataset.py` (derivado de
+# moldes.py; mora no Drive, não no repo). Regerável com um comando.
+ia training/dados/
+
 # ============================================================
 # SO / editores
 # ============================================================
