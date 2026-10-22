@@ -26,10 +26,37 @@ MESES = {
 
 CONFIANCA_MINIMA = 0.70
 
+# "Hoje" de referencia para periodos relativos ("mes passado", "ano passado",
+# "esse mes", "entre os trimestres"). Os dados sinteticos cobrem 2023-2026 e o
+# ANO_PADRAO documentado e 2024; ancorar no fim do ano de referencia mantem a
+# avaliacao reprodutivel e sempre dentro da faixa com dados (todos os meses de
+# 2024 tem vendas). Em producao com dados ao vivo, troque por date.today().
+DATA_REFERENCIA = date(ANO_PADRAO, 12, 1)
+
 
 def _periodo_do_mes(mes: int, ano: int) -> tuple[str, str]:
     ultimo_dia = calendar.monthrange(ano, mes)[1]
     return date(ano, mes, 1).isoformat(), date(ano, mes, ultimo_dia).isoformat()
+
+
+def _mes_relativo(desloc: int) -> tuple[str, str]:
+    """Periodo de um mes deslocado em relacao ao mes de DATA_REFERENCIA.
+    desloc=0 -> mes de referencia; -1 -> mes anterior; +1 -> proximo mes."""
+    total = (DATA_REFERENCIA.year * 12 + (DATA_REFERENCIA.month - 1)) + desloc
+    ano, mes = divmod(total, 12)
+    return _periodo_do_mes(mes + 1, ano)
+
+
+def _ano_inteiro(ano: int) -> tuple[str, str]:
+    return f"{ano}-01-01", f"{ano}-12-31"
+
+
+def _trimestre(numero: int, ano: int) -> tuple[str, str]:
+    """numero 1..4 -> (inicio do 1o mes, fim do 3o mes) do trimestre."""
+    primeiro = 3 * (numero - 1) + 1
+    inicio, _ = _periodo_do_mes(primeiro, ano)
+    _, fim = _periodo_do_mes(primeiro + 2, ano)
+    return inicio, fim
 
 
 def _extrai_periodo(texto: str, ano_completo_se_ausente: bool = False) -> dict[str, str]:

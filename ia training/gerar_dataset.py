@@ -126,6 +126,37 @@ def gerar_exemplo(intencao: str, molde: str) -> dict | None:
     }
 
 
+_PONTUACAO_FINAL = {"?", ".", "!", ",", ";", ":"}
+
+
+def _perguntas_proibidas() -> set[str]:
+    """Perguntas de validação (tokenizadas, sem pontuação final) que NÃO podem
+    entrar no treino -- senão a validação deixa de medir generalização
+    (docs/avaliacao-100-perguntas.md, seção 6). Se o arquivo não existir,
+    devolve vazio e o gerador segue normal (ex.: rodando fora do repo)."""
+    md = Path(__file__).resolve().parent.parent / "docs" / "perguntas_validacao.md"
+    if not md.exists():
+        print("  (aviso: perguntas_validacao.md nao encontrada; filtro de vazamento desligado)")
+        return set()
+    proibidas, numerando = set(), False
+    for linha in md.read_text(encoding="utf-8").splitlines():
+        if re.match(r"^##\s+\d+\.", linha):
+            numerando = True
+            continue
+        if linha.startswith("## "):
+            numerando = False
+            continue
+        m = re.match(r"^\d+\.\s+(.*)$", linha)
+        if m and numerando:
+            texto = re.sub(r"\*\(.*?\)\*", "", m.group(1)).strip()
+            toks = tokenizar(texto)
+            while toks and toks[-1] in _PONTUACAO_FINAL:
+                toks.pop()
+            if toks:
+                proibidas.add(" ".join(toks))
+    return proibidas
+
+
 def gerar_tudo() -> list[dict]:
     exemplos = []
     for intencao, lista_moldes in MOLDES.items():
@@ -140,6 +171,18 @@ def gerar_tudo() -> list[dict]:
     for ex in exemplos:
         unicos[(ex["texto"], ex["intencao"])] = ex
     exemplos = list(unicos.values())
+
+    # ---- FILTRO DE VAZAMENTO ----
+    # Remove exemplos idênticos a qualquer uma das 100 perguntas de validação.
+    # Alguns moldes + valores reproduzem perguntas da validação por extenso
+    # (ex.: "quanto faturei em {periodo}" com periodo="março de 2024"); mantê-los
+    # inflaria a taxa de acerto sem medir generalização.
+    proibidas = _perguntas_proibidas()
+    if proibidas:
+        antes = len(exemplos)
+        exemplos = [ex for ex in exemplos if " ".join(ex["tokens"]) not in proibidas]
+        removidos = antes - len(exemplos)
+        print(f"  filtro de vazamento: {removidos} exemplo(s) iguais a perguntas de validacao removido(s)")
 
     # ---- BALANCEAMENTO ----
     # Moldes com dois buracos ({periodo} e {periodo2}) geram muito mais

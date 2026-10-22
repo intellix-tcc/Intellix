@@ -216,6 +216,12 @@ MOLDES = {
         "qual vendeu mais, {periodo} ou {periodo2}",
         "{periodo} foi melhor que {periodo2}?",
         "me diz se {periodo} bateu {periodo2}",
+        # item 7: ensina "versus"/"ante" (formulações que falharam na validação,
+        # sem copiar as 100 perguntas — ver docs/avaliacao-100-perguntas.md §6)
+        "{periodo} versus {periodo2}",
+        "vendas de {periodo} versus {periodo2}",
+        "faturamento {periodo} versus {periodo2}",
+        "como ficou {periodo} ante {periodo2}",
     ],
     "vendas_por_categoria": [
         "quanto vendi em cada categoria",
@@ -243,6 +249,11 @@ MOLDES = {
         "qual categoria tá bombando",
         "{categoria} tá vendendo bem?",
         "que categoria puxa mais venda em {periodo}",
+        # item 7: categorias no plural e "ranking" (confusão com top_produtos)
+        "que categorias venderam mais em {periodo}",
+        "quais categorias tiveram mais faturamento em {periodo}",
+        "ranking de categorias de {periodo}",
+        "quais categorias caíram em {periodo}",
     ],
     "desempenho_vendedor": [
         "quem é o vendedor com maior faturamento",
@@ -399,6 +410,13 @@ MOLDES = {
         "como o pessoal paga mais em {periodo}",
         "quanto vendi parcelado em {periodo}",
         "quanto foi no {pagamento} em {periodo}",
+        # item 7: ensina "método de pagamento" e "distribuição" (validação)
+        "faturamento por método de pagamento",
+        "faturamento por método de pagamento em {periodo}",
+        "vendas por método de pagamento em {periodo}",
+        "qual o método de pagamento mais usado",
+        "qual método de pagamento os clientes mais usam",
+        "como se distribuem as formas de pagamento em {periodo}",
     ],
     "produtos_sem_saida": [
         "quais produtos não venderam {periodo}",
