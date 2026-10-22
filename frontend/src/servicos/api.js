@@ -1,3 +1,5 @@
+import { datasetAtivo } from "../utils/dataset";
+
 const API = import.meta.env.VITE_API_URL;
 const MOCK = import.meta.env.VITE_MOCK === "true";
 
@@ -71,12 +73,18 @@ export async function perguntar(pergunta) {
 
   // Servidor fora do ar, DNS, CORS: fetch rejeita com TypeError, não com uma
   // resposta. Sem este try o erro cru subia e a UI só dizia "Algo deu errado".
+  // Se há um dataset importado ativo, pergunta sobre ele; senão, base demo.
+  const dataset = datasetAtivo();
+  const corpo = dataset?.empresaId
+    ? { pergunta, empresa_id: dataset.empresaId }
+    : { pergunta };
+
   let r;
   try {
     r = await fetch(`${API}/chat`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ pergunta }),
+      body: JSON.stringify(corpo),
     });
   } catch (err) {
     throw erroDeRede(err?.message);

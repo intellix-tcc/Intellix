@@ -65,8 +65,10 @@ def chat(pergunta: Pergunta) -> ResultSet:
     interpretacao = nlu.parse(pergunta.pergunta)
     verificar_confianca(interpretacao)
 
+    # Dataset do usuário (vindo de uma importação) ou a base demo por padrão.
+    empresa = pergunta.empresa_id or get_empresa_id()
     with get_connection() as conn:
-        return executar_template(interpretacao, get_empresa_id(), conn)
+        return executar_template(interpretacao, empresa, conn)
 
 
 @app.post("/import")
@@ -78,7 +80,9 @@ async def import_planilha(arquivo: UploadFile) -> dict:
     conteudo = await arquivo.read()
     try:
         with get_connection() as conn:
-            return importar(conteudo, arquivo.filename or "planilha.xlsx", get_empresa_id(), conn)
+            # Cada importação cria o próprio dataset (empresa) e devolve o
+            # empresa_id, que o frontend reenvia nas perguntas.
+            return importar(conteudo, arquivo.filename or "planilha.xlsx", conn)
     except ErroImportacao as e:
         raise HTTPException(
             status_code=422,

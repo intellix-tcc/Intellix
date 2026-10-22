@@ -30,3 +30,8 @@ class ResultSet(BaseModel):
 
 class Pergunta(BaseModel):
     pergunta: str
+    # Dataset a consultar. Quando o usuário importa uma planilha, o /import
+    # cria uma empresa própria e devolve o id; o frontend o reenvia aqui para
+    # as perguntas caírem sobre os dados importados, não sobre a base demo.
+    # Ausente (None) = base de demonstração (EMPRESA_ID fixo).
+    empresa_id: str | None = None

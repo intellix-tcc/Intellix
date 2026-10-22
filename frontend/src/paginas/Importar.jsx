@@ -7,6 +7,7 @@ import {
   formatarTamanho,
   TAMANHO_MAX_MB,
 } from "../servicos/importacao";
+import { salvarDataset } from "../utils/dataset";
 
 // Estados possíveis: vazio -> lendo -> lido -> enviando -> (enviado | pendente | erro)
 // "pendente" é o caso de hoje: o arquivo passou na validação, mas o endpoint
@@ -65,6 +66,9 @@ export default function Importar({ onIrParaChat }) {
     setProgresso(0);
     try {
       const resposta = await enviarPlanilha(arquivo, setProgresso);
+      // Passa a perguntar sobre este arquivo: guarda o dataset devolvido
+      // pelo backend para o chat usar (ver utils/dataset.js).
+      if (resposta?.empresa_id) salvarDataset(resposta.empresa_id, arquivo.name);
       setResultadoEnvio(resposta);
       setEstado("enviado");
     } catch (err) {
