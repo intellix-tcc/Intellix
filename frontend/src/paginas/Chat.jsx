@@ -80,7 +80,11 @@ function humanizarColuna(nome) {
 
 function formatarData(iso) {
   const d = new Date(iso);
-  return Number.isNaN(d.getTime()) ? iso : d.toLocaleDateString("pt-BR");
+  // Datas puras ("2024-03-01") são parseadas como meia-noite UTC; sem fixar
+  // timeZone, pt-BR as renderiza em Brasília (UTC-3) e "01/03" vira "29/02".
+  return Number.isNaN(d.getTime())
+    ? iso
+    : d.toLocaleDateString("pt-BR", { timeZone: "UTC" });
 }
 
 // "Como cheguei nessa resposta": só usa o que o ResultSet já traz — o
