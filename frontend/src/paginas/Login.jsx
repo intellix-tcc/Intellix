@@ -125,7 +125,7 @@ export default function Login({ onEntrar, aviso, tema, onAlternarTema }) {
         onEntrar(await registrar(campos));
       } else if (etapa === "pedir") {
         const { codigo: gerado } = await solicitarRecuperacao({ email: campos.email });
-        setCodigoGerado(gerado);
+        setCodigoGerado(gerado || "");
         setEtapa("redefinir");
       } else {
         await redefinirSenha({
@@ -374,9 +374,17 @@ export default function Login({ onEntrar, aviso, tema, onAlternarTema }) {
             {modo === "recuperar" && etapa === "redefinir" && (
               <>
                 <p className="auth-codigo-aviso">
-                  Num sistema com servidor de e-mail este código chegaria na sua
-                  caixa de entrada. Como o envio ainda depende do backend, ele
-                  aparece aqui: <strong>{codigoGerado}</strong>
+                  {codigoGerado ? (
+                    <>
+                      Modo de demonstração: num sistema real este código chegaria
+                      no seu e-mail. Ele aparece aqui: <strong>{codigoGerado}</strong>
+                    </>
+                  ) : (
+                    <>
+                      Se existir uma conta com este e-mail, enviamos um código de 6
+                      dígitos para ele. Confira também a caixa de spam.
+                    </>
+                  )}
                 </p>
                 <Campo rotulo="Código" erro={erros.codigo}>
                   <input
