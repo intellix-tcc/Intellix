@@ -1,3 +1,4 @@
+import { obterToken } from "./auth";
 import { datasetAtivo } from "../utils/dataset";
 
 const API = import.meta.env.VITE_API_URL;
@@ -79,11 +80,23 @@ export async function perguntar(pergunta) {
     ? { pergunta, empresa_id: dataset.empresaId }
     : { pergunta };
 
+  // Token do login (Supabase Auth): o backend só deixa consultar um dataset
+  // importado por quem é dono dele. Sem sessão, segue sem o cabeçalho.
+  let token;
+  try {
+    token = await obterToken();
+  } catch (err) {
+    throw erroDeRede(err?.mensagem);
+  }
+
   let r;
   try {
     r = await fetch(`${API}/chat`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
       body: JSON.stringify(corpo),
     });
   } catch (err) {

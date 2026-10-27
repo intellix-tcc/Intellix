@@ -1,10 +1,12 @@
 import os
 
 import psycopg
-from fastapi import FastAPI, HTTPException, UploadFile
+from fastapi import Depends, FastAPI, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.db import fechar_pool, get_connection, get_empresa_id
+from app.acesso import resolver_empresa
+from app.auth import Usuario, usuario_atual
+from app.db import fechar_pool, get_connection
 from app.fallbacks import verificar_confianca
 from app.importacao.etl import importar
 from app.importacao.leitor_excel import ErroImportacao
@@ -61,12 +63,10 @@ def health():
 
 
 @app.post("/chat", response_model=ResultSet)
-def chat(pergunta: Pergunta) -> ResultSet:
+def chat(pergunta: Pergunta, usuario: Usuario | None = Depends(usuario_atual)) -> ResultSet:
     interpretacao = nlu.parse(pergunta.pergunta)
     verificar_confianca(interpretacao)
 
-    # Dataset do usuário (vindo de uma importação) ou a base demo por padrão.
-    empresa = pergunta.empresa_id or get_empresa_id()
     # O executor.py trata OperationalError que acontece DURANTE a consulta, mas a
     # conexao e adquirida aqui: com o banco fora, get_connection() estoura
     # PoolTimeout (subclasse de psycopg.OperationalError) antes de chegar ao
@@ -74,6 +74,9 @@ def chat(pergunta: Pergunta) -> ResultSet:
     # (fallback da secao 7.6 do TCC). Mesmo tratamento que o /import ja faz.
     try:
         with get_connection() as conn:
+            # Dataset do usuário (vindo de uma importação) ou a base demo.
+            # Só o dono consulta um dataset importado (ver acesso.py).
+            empresa = resolver_empresa(conn, pergunta.empresa_id, usuario)
             return executar_template(interpretacao, empresa, conn)
     except psycopg.OperationalError:
         raise HTTPException(
@@ -86,7 +89,9 @@ def chat(pergunta: Pergunta) -> ResultSet:
 
 
 @app.post("/import")
-async def import_planilha(arquivo: UploadFile) -> dict:
+async def import_planilha(
+    arquivo: UploadFile, usuario: Usuario | None = Depends(usuario_atual)
+) -> dict:
     """Recebe o .xlsx do frontend (campo `arquivo`), valida e carrega no star
     schema. A resposta traz linhas_lidas/validas/rejeitadas -- campos que o
     `frontend/src/paginas/Importar.jsx` já lê. Mesmo padrão de erro do
@@ -96,7 +101,13 @@ async def import_planilha(arquivo: UploadFile) -> dict:
         with get_connection() as conn:
             # Cada importação cria o próprio dataset (empresa) e devolve o
             # empresa_id, que o frontend reenvia nas perguntas.
-            return importar(conteudo, arquivo.filename or "planilha.xlsx", conn)
+            # Com login, o dataset fica registrado em nome do usuário.
+            return importar(
+                conteudo,
+                arquivo.filename or "planilha.xlsx",
+                conn,
+                dono_id=usuario.id if usuario else None,
+            )
     except ErroImportacao as e:
         raise HTTPException(
             status_code=422,
