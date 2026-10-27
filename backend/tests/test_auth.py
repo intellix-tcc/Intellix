@@ -85,7 +85,7 @@ def _codigo_401(token):
 
 
 def test_token_expirado():
-    assert _codigo_401(token_es256(exp=int(time.time()) - 10)) == "sessao_expirada"
+    assert _codigo_401(token_es256(exp=int(time.time()) - 120)) == "sessao_expirada"
 
 
 def test_token_assinado_por_outra_chave():
@@ -224,3 +224,21 @@ def test_dataset_sem_dono_so_com_login_opcional(monkeypatch):
     assert acesso.resolver_empresa(CONN, DATASET_SEM_DONO, None) == DATASET_SEM_DONO
     monkeypatch.setenv("AUTH_OBRIGATORIA", "true")
     _status_404(DATASET_SEM_DONO, ANA)
+
+
+def test_token_emitido_segundos_no_futuro_e_aceito():
+    # relógio do servidor alguns segundos atrás do Supabase
+    agora = int(time.time())
+    assert auth.validar_token(token_es256(iat=agora + 10, nbf=agora + 10)).id == USUARIO_ID
+
+
+def test_relogio_minutos_atrasado_nao_recusa_token():
+    # caso real no Windows de desenvolvimento: "iat" minutos à frente
+    agora = int(time.time())
+    assert auth.validar_token(token_es256(iat=agora + 600)).id == USUARIO_ID
+
+
+def test_motivo_da_recusa_vai_para_o_log(caplog):
+    with caplog.at_level("WARNING", logger="intellix.auth"):
+        _codigo_401(token_es256(iss="https://outro-projeto.supabase.co/auth/v1"))
+    assert "InvalidIssuerError" in caplog.text
