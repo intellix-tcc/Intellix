@@ -1,5 +1,11 @@
 import { useState } from "react";
-import { entrar, registrar, solicitarRecuperacao, redefinirSenha } from "../servicos/auth";
+import {
+  entrar,
+  obterRetornoDoEmail,
+  redefinirSenha,
+  registrar,
+  solicitarRecuperacao,
+} from "../servicos/auth";
 import { validarEmail, validarNome, validarSenha, forcaSenha } from "../utils/validacao";
 import { EXEMPLOS } from "../utils/exemplos";
 import { RESUMO_EXEMPLO } from "../utils/resumoExemplo";
@@ -31,28 +37,39 @@ const TEXTOS = {
     carregando: "Criando conta…",
   },
   recuperar: {
-    sub: "Vamos gerar um código para você definir uma nova senha.",
-    acao: "Enviar código",
-    carregando: "Gerando código…",
+    sub: "Enviaremos um link para o seu e-mail para você criar uma nova senha.",
+    acao: "Enviar link",
+    carregando: "Enviando…",
   },
 };
 
 const VAZIO = { nome: "", email: "", senha: "", confirmarSenha: "" };
+
+// Resultado do link de recuperação de senha (ver auth.js). Lido uma vez: a
+// tela abre direto no passo certo quando a pessoa chega pelo e-mail.
+const RETORNO_EMAIL = obterRetornoDoEmail();
 
 export default function Login({ onEntrar, aviso, tema, onAlternarTema }) {
   // "landing" é a vitrine (quem somos, o que fazemos) — quem chega sem sessão
   // vê isso primeiro. "formulario" é a tela de entrar/criar conta de sempre.
   // Sessão expirada (aviso preenchido) pula direto pro formulário: a pessoa
   // já conhece o produto, só precisa entrar de novo.
-  const [tela, setTela] = useState(() => (aviso ? "formulario" : "landing"));
-  const [modo, setModo] = useState("entrar");
+  const [tela, setTela] = useState(() => (aviso || RETORNO_EMAIL ? "formulario" : "landing"));
+  const [modo, setModo] = useState(() => (RETORNO_EMAIL ? "recuperar" : "entrar"));
   const [campos, setCampos] = useState(VAZIO);
   const [erros, setErros] = useState({});
-  const [erroGeral, setErroGeral] = useState("");
+  const [erroGeral, setErroGeral] = useState(() =>
+    RETORNO_EMAIL?.tipo === "erro" ? RETORNO_EMAIL.mensagem : ""
+  );
   const [carregando, setCarregando] = useState(false);
 
-  // etapa da recuperação: "pedir" (informa e-mail) -> "redefinir" (código + senha)
-  const [etapa, setEtapa] = useState("pedir");
+  // etapa da recuperação: "pedir" (informa e-mail) -> "redefinir" (nova senha).
+  // Pelo link do e-mail a pessoa já chega em "redefinir"; o código de 6
+  // dígitos só aparece no modo de demonstração (VITE_MOCK).
+  const [etapa, setEtapa] = useState(() =>
+    RETORNO_EMAIL?.tipo === "recuperacao" ? "redefinir" : "pedir"
+  );
+  const porLink = RETORNO_EMAIL?.tipo === "recuperacao";
   const [codigo, setCodigo] = useState("");
   const [codigoGerado, setCodigoGerado] = useState("");
   const [sucesso, setSucesso] = useState("");
@@ -99,7 +116,7 @@ export default function Login({ onEntrar, aviso, tema, onAlternarTema }) {
     } else if (etapa === "pedir") {
       novos.email = validarEmail(campos.email);
     } else {
-      novos.codigo = codigo.trim() ? "" : "Digite o código que você recebeu.";
+      novos.codigo = porLink || codigo.trim() ? "" : "Digite o código que você recebeu.";
       novos.senha = validarSenha(campos.senha);
       if (!novos.senha && campos.senha !== campos.confirmarSenha) {
         novos.confirmarSenha = "As senhas não coincidem.";
@@ -125,8 +142,16 @@ export default function Login({ onEntrar, aviso, tema, onAlternarTema }) {
         onEntrar(await registrar(campos));
       } else if (etapa === "pedir") {
         const { codigo: gerado } = await solicitarRecuperacao({ email: campos.email });
-        setCodigoGerado(gerado || "");
-        setEtapa("redefinir");
+        if (gerado) {
+          // modo de demonstração: o código aparece na tela
+          setCodigoGerado(gerado);
+          setEtapa("redefinir");
+        } else {
+          setSucesso(
+            "Se existir uma conta com este e-mail, enviamos um link para criar a nova senha. " +
+              "Abra o link neste mesmo navegador. Confira também a caixa de spam."
+          );
+        }
       } else {
         await redefinirSenha({
           email: campos.email,
@@ -371,20 +396,15 @@ export default function Login({ onEntrar, aviso, tema, onAlternarTema }) {
               </Campo>
             )}
 
-            {modo === "recuperar" && etapa === "redefinir" && (
+            {modo === "recuperar" && etapa === "redefinir" && porLink && (
+              <p className="auth-codigo-aviso">Link confirmado. Crie sua nova senha.</p>
+            )}
+
+            {modo === "recuperar" && etapa === "redefinir" && !porLink && (
               <>
                 <p className="auth-codigo-aviso">
-                  {codigoGerado ? (
-                    <>
-                      Modo de demonstração: num sistema real este código chegaria
-                      no seu e-mail. Ele aparece aqui: <strong>{codigoGerado}</strong>
-                    </>
-                  ) : (
-                    <>
-                      Se existir uma conta com este e-mail, enviamos um código de 6
-                      dígitos para ele. Confira também a caixa de spam.
-                    </>
-                  )}
+                  Modo de demonstração: num sistema real este código chegaria no seu
+                  e-mail. Ele aparece aqui: <strong>{codigoGerado}</strong>
                 </p>
                 <Campo rotulo="Código" erro={erros.codigo}>
                   <input
@@ -475,8 +495,8 @@ export default function Login({ onEntrar, aviso, tema, onAlternarTema }) {
           </div>
 
           <p className="auth-nota">
-            Protótipo acadêmico: as contas ficam guardadas neste navegador. A
-            autenticação com servidor ainda depende do backend.
+            Protótipo acadêmico. O login é feito pelo Supabase Auth: sua senha é
+            guardada com criptografia e nunca passa pelo servidor do Intellix.
           </p>
         </div>
       </div>

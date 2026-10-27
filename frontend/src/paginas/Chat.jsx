@@ -79,8 +79,30 @@ function humanizarColuna(nome) {
 }
 
 function formatarData(iso) {
+  // "2024-03-01" é uma data de calendário, sem hora. new Date() a lê como
+  // meia-noite em UTC, e no fuso de Brasília (UTC-3) isso vira 21h do dia
+  // anterior: o período aparecia como 29/02 a 30/03. Para data pura, só
+  // reordenamos os campos; nada de fuso.
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(iso));
+  if (m) return `${m[3]}/${m[2]}/${m[1]}`;
   const d = new Date(iso);
   return Number.isNaN(d.getTime()) ? iso : d.toLocaleDateString("pt-BR");
+}
+
+// Nem todo número de resposta é dinheiro: "quantidade_vendas" é contagem e
+// "variacao_percentual" é porcentagem. Decide pelo nome da coluna que veio
+// do backend (o mesmo nome dos templates SQL).
+function formatarValor(coluna, valor) {
+  if (valor === null || valor === undefined) return "—";
+  if (typeof valor !== "number") return valor;
+  const nome = String(coluna || "").toLowerCase();
+  if (nome.includes("percentual")) {
+    return `${valor.toLocaleString("pt-BR", { maximumFractionDigits: 2 })}%`;
+  }
+  if (nome.startsWith("quantidade") || nome.startsWith("itens") || nome.startsWith("unidades")) {
+    return valor.toLocaleString("pt-BR", { maximumFractionDigits: 0 });
+  }
+  return valor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
 
 // "Como cheguei nessa resposta": só usa o que o ResultSet já traz — o
@@ -162,9 +184,7 @@ function Resultado({ r }) {
       <div className="resultado resultado-numero">
         <p className="resultado-titulo">{r.titulo}</p>
         <p className="resultado-valor">
-          {typeof valor === "number"
-            ? valor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
-            : valor}
+          {formatarValor(r.colunas[r.colunas.length - 1], valor)}
         </p>
         <DetalhesResposta r={r} />
         <LinhaMeta r={r} />

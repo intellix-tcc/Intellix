@@ -44,6 +44,55 @@ function erro(mensagem, campo) {
 }
 
 // ---------------------------------------------------------------------------
+// Retorno do link de recuperação de senha
+// ---------------------------------------------------------------------------
+// O e-mail de recuperação do Supabase traz um link. Ao clicar, o Supabase
+// confere o link e devolve a pessoa a este site com o resultado no fim do
+// endereço: "#access_token=...&type=recovery" (deu certo) ou
+// "#error_code=otp_expired&..." (link vencido ou já usado).
+//
+// Lemos isso UMA vez, quando o módulo carrega, antes do roteamento por hash
+// do App olhar o endereço, e limpamos o endereço na hora: o token não pode
+// ficar visível, no histórico nem em print de tela. O token de recuperação
+// fica só em memória, para trocar a senha, e some ao recarregar a página.
+let tokenRecuperacao = null;
+const retornoDoEmail = (() => {
+  if (MOCK || typeof window === "undefined") return null;
+  const hash = window.location.hash || "";
+  if (!/(access_token|error_code)=/.test(hash)) return null;
+
+  const p = new URLSearchParams(hash.replace(/^#\/?/, ""));
+  window.history.replaceState(null, "", window.location.pathname + window.location.search);
+
+  if (p.get("error_code") || p.get("error")) {
+    return {
+      tipo: "erro",
+      mensagem: "Este link de recuperação venceu ou já foi usado. Peça um novo abaixo.",
+    };
+  }
+  if (p.get("type") === "recovery" && p.get("access_token")) {
+    tokenRecuperacao = p.get("access_token");
+    // Quem abriu o link quer trocar a senha: uma sessão antiga aberta neste
+    // navegador não pode pular essa etapa.
+    try {
+      localStorage.removeItem(CHAVE_SESSAO);
+    } catch {
+      // segue sem limpar
+    }
+    return { tipo: "recuperacao" };
+  }
+  return null;
+})();
+
+/**
+ * O que veio do link do e-mail, para a tela de login abrir no passo certo:
+ * { tipo: "recuperacao" } | { tipo: "erro", mensagem } | null.
+ */
+export function obterRetornoDoEmail() {
+  return MOCK ? null : retornoDoEmail;
+}
+
+// ---------------------------------------------------------------------------
 // Chamada à API do Supabase Auth
 // ---------------------------------------------------------------------------
 
@@ -342,9 +391,11 @@ export async function atualizarPerfil({ email, nome, foto }) {
 }
 
 // --- Recuperação de senha -------------------------------------------------
-// Fluxo em duas etapas, como a tela já espera: o Supabase envia um código de
-// 6 dígitos por e-mail (o modelo "Reset Password" do projeto precisa conter
-// {{ .Token }}); a pessoa digita o código e a nova senha.
+// O Supabase envia um e-mail com um LINK (o modelo padrão do plano grátis
+// não pode ser editado para mostrar um código). O link volta para este site
+// e o retorno é lido em `retornoDoEmail`, acima; a tela então pede só a nova
+// senha. Para o link poder voltar para cá, o endereço do site precisa estar
+// em Authentication -> URL Configuration -> Redirect URLs no Supabase.
 
 export async function solicitarRecuperacao({ email }) {
   if (MOCK) return simulado.solicitarRecuperacao({ email });
@@ -353,30 +404,45 @@ export async function solicitarRecuperacao({ email }) {
   if (erroEmail) throw erro(erroEmail, "email");
 
   // A resposta é a mesma exista ou não a conta, para não revelar quem é
-  // cliente. Sem `codigo` no retorno: ele vai para o e-mail.
-  await chamar("/recover", { corpo: { email: normalizarEmail(email) } });
-  return { simulado: false };
+  // cliente. Sem `codigo` no retorno: o link vai para o e-mail.
+  const volta = encodeURIComponent(`${window.location.origin}/`);
+  await chamar(`/recover?redirect_to=${volta}`, { corpo: { email: normalizarEmail(email) } });
+  return { simulado: false, porLink: true };
 }
 
 export async function redefinirSenha({ email, codigo, novaSenha, confirmarSenha }) {
   if (MOCK) return simulado.redefinirSenha({ email, codigo, novaSenha, confirmarSenha });
 
-  if (!String(codigo || "").trim()) throw erro("Digite o código que você recebeu.", "codigo");
   const erroNova = validarSenha(novaSenha);
   if (erroNova) throw erro(erroNova, "novaSenha");
   if (novaSenha !== confirmarSenha)
     throw erro("A confirmação não corresponde à nova senha.", "confirmarSenha");
 
-  const sessao = await chamar("/verify", {
-    corpo: { type: "recovery", email: normalizarEmail(email), token: String(codigo).trim() },
-  });
-  await chamar("/user", {
-    metodo: "PUT",
-    token: sessao.access_token,
-    corpo: { password: novaSenha },
-  });
+  let token = tokenRecuperacao;
+  if (!token) {
+    // Caminho do código de 6 dígitos: só existe se o projeto tiver SMTP
+    // próprio com o modelo de e-mail editado para mostrar {{ .Token }}.
+    if (!String(codigo || "").trim()) {
+      throw erro("Abra o link que enviamos para o seu e-mail para criar a nova senha.");
+    }
+    const sessao = await chamar("/verify", {
+      corpo: { type: "recovery", email: normalizarEmail(email), token: String(codigo).trim() },
+    });
+    token = sessao.access_token;
+  }
+
+  try {
+    await chamar("/user", { metodo: "PUT", token, corpo: { password: novaSenha } });
+  } catch (e) {
+    if (e?.status === 401 || e?.status === 403) {
+      tokenRecuperacao = null;
+      throw erro("Este link de recuperação venceu. Peça um novo.");
+    }
+    throw e;
+  }
   // A tela manda a pessoa entrar com a senha nova; encerramos a sessão
-  // temporária aberta pelo código.
-  chamar("/logout", { token: sessao.access_token }).catch(() => {});
+  // temporária aberta pelo link.
+  tokenRecuperacao = null;
+  chamar("/logout", { token }).catch(() => {});
   return { ok: true };
 }
