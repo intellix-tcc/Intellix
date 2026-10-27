@@ -22,6 +22,7 @@ Variáveis de ambiente:
                         estiver no ar.
 """
 
+import logging
 import os
 import threading
 from dataclasses import dataclass
@@ -31,6 +32,12 @@ from fastapi import Header, HTTPException
 
 _AUDIENCIA = "authenticated"
 _ALGORITMOS_ASSIMETRICOS = ("ES256", "RS256")
+
+# Relógios de servidores nunca batem ao segundo: sem folga, um token recém-
+# emitido pelo Supabase pode chegar "do futuro" e ser recusado.
+_FOLGA_RELOGIO_S = 30
+
+log = logging.getLogger("intellix.auth")
 
 _jwks: jwt.PyJWKClient | None = None
 _trava = threading.Lock()
@@ -90,12 +97,17 @@ def validar_token(token: str) -> Usuario:
         if alg == "HS256":
             segredo = os.environ.get("SUPABASE_JWT_SECRET")
             if not segredo:
+                log.warning(
+                    "token recusado: assinado com HS256 (segredo legado), mas "
+                    "SUPABASE_JWT_SECRET nao esta configurado"
+                )
                 raise _nao_autenticado()
             chave = segredo
         elif alg in _ALGORITMOS_ASSIMETRICOS:
             chave = _cliente_jwks().get_signing_key_from_jwt(token).key
         else:
             # inclui alg "none": nunca aceitar token sem assinatura
+            log.warning("token recusado: algoritmo %r nao aceito", alg)
             raise _nao_autenticado()
 
         claims = jwt.decode(
@@ -104,7 +116,12 @@ def validar_token(token: str) -> Usuario:
             algorithms=[alg],
             audience=_AUDIENCIA,
             issuer=f"{_supabase_url()}/auth/v1",
-            options={"require": ["exp", "sub", "aud", "iss"]},
+            # "iat" (hora de emissão) não é conferido: se o relógio deste
+            # servidor estiver atrasado, um token recém-emitido parece vir do
+            # futuro e seria recusado. A segurança vem da assinatura e do
+            # "exp" (validade), que continuam conferidos.
+            options={"require": ["exp", "sub", "aud", "iss"], "verify_iat": False},
+            leeway=_FOLGA_RELOGIO_S,
         )
     except jwt.ExpiredSignatureError:
         raise _nao_autenticado("Sua sessão expirou. Entre de novo.", "sessao_expirada")
@@ -116,11 +133,15 @@ def validar_token(token: str) -> Usuario:
                 "mensagem": "Login temporariamente indisponível. Tente novamente em instantes.",
             },
         )
-    except jwt.PyJWTError:
+    except jwt.PyJWTError as e:
+        # O motivo vai só para o log do servidor (nunca o token); o usuário
+        # recebe a mensagem genérica.
+        log.warning("token recusado: %s: %s", type(e).__name__, e)
         raise _nao_autenticado()
 
     if claims.get("role") != "authenticated":
         # token "anon" (chave pública do projeto) não é login de ninguém
+        log.warning("token recusado: role=%r", claims.get("role"))
         raise _nao_autenticado()
     return Usuario(id=claims["sub"], email=claims.get("email"))
 
