@@ -18,6 +18,8 @@
 //      existir, ela devolve o motivo "sem-endpoint" e a tela diz isso ao
 //      usuário — não fingimos que o envio deu certo.
 
+import { obterToken } from "./auth";
+
 const API = import.meta.env.VITE_API_URL;
 
 export const TAMANHO_MAX_MB = 10;
@@ -186,7 +188,18 @@ export async function analisarPlanilha(arquivo) {
  * Resolve com a resposta do servidor; rejeita com { mensagem, motivo? }.
  * motivo === "sem-endpoint" quando o backend ainda não implementou /import.
  */
-export function enviarPlanilha(arquivo, onProgresso) {
+export async function enviarPlanilha(arquivo, onProgresso) {
+  // Token do login: o dataset criado pela importação fica em nome do usuário.
+  let token = null;
+  try {
+    token = await obterToken();
+  } catch {
+    throw {
+      mensagem: "Não consegui falar com o servidor. Verifique sua conexão.",
+      motivo: "rede",
+    };
+  }
+
   return new Promise((resolve, reject) => {
     if (!API) {
       reject({
@@ -203,6 +216,7 @@ export function enviarPlanilha(arquivo, onProgresso) {
     // no navegador hoje.
     const xhr = new XMLHttpRequest();
     xhr.open("POST", `${API}/import`);
+    if (token) xhr.setRequestHeader("Authorization", `Bearer ${token}`);
 
     xhr.upload.onprogress = (e) => {
       if (e.lengthComputable && onProgresso) {

@@ -68,6 +68,30 @@ poucas linhas de código em vez de precisar re-parsear texto.
 { "status": "ok" }
 ```
 
+### Autenticação (vale para `/chat` e `/import`)
+
+O login é feito pelo **Supabase Auth**, direto do frontend: cadastro, entrada,
+recuperação e troca de senha não passam pelo backend, e o backend nunca vê
+senha. O frontend envia o token de acesso que o Supabase devolve em toda
+requisição:
+
+```
+Authorization: Bearer <access_token do Supabase>
+```
+
+O backend confere a assinatura, a validade e o projeto do token
+([`app/auth.py`](../backend/app/auth.py)) e usa o `id` do usuário para decidir
+de quais datasets ele é dono ([`app/acesso.py`](../backend/app/acesso.py)).
+`GET /health` continua aberto.
+
+| Situação | Resposta |
+|---|---|
+| Sem cabeçalho e `AUTH_OBRIGATORIA=false` | segue como anônimo (só base demo e datasets sem dono) |
+| Sem cabeçalho e `AUTH_OBRIGATORIA=true` | `401`, `tipo: "nao_autenticado"` |
+| Token inválido (sempre, mesmo com login opcional) | `401`, `tipo: "nao_autenticado"` |
+| Token expirado | `401`, `tipo: "sessao_expirada"` (frontend renova ou manda ao login) |
+| `empresa_id` de outro usuário, inexistente ou malformado | `404`, `tipo: "dataset_nao_encontrado"` (mesma resposta, para não revelar ids) |
+
 ### `POST /chat`
 
 **Contrato definido, implementação pendente** (depende de banco no ar —
@@ -78,8 +102,9 @@ Requisição — modelo `Pergunta`:
 { "pergunta": "quanto faturei em março", "empresa_id": "opcional" }
 ```
 `empresa_id` é **opcional**: quando presente (o id devolvido por um `/import`),
-a consulta cai sobre os dados daquela planilha; ausente, usa a base de
-demonstração (`EMPRESA_ID` fixo). O frontend guarda o id da última importação
+a consulta cai sobre os dados daquela planilha, **desde que o usuário logado
+seja o dono** (ver Autenticação acima); ausente, usa a base de demonstração
+(`EMPRESA_ID` fixo). O frontend guarda o id da última importação
 em `localStorage` (ver `frontend/src/utils/dataset.js`) e o reenvia aqui.
 
 Resposta em caso de sucesso — `200 OK` com um `ResultSet`:
@@ -138,7 +163,8 @@ Resposta — `200 OK`:
   "colunas_ignoradas": ["observacao"]
 }
 ```
-Cada importação cria um **dataset próprio** (uma empresa nova) e devolve o
+Cada importação cria um **dataset próprio** (uma empresa nova), registrado em
+nome do usuário logado (`empresa.dono_id`, migration 005), e devolve o
 `empresa_id`; o frontend o reenvia no `/chat` para as perguntas caírem sobre
 os dados importados, não sobre a base demo.
 

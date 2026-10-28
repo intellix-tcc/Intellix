@@ -87,6 +87,22 @@ function formatarData(iso) {
     : d.toLocaleDateString("pt-BR", { timeZone: "UTC" });
 }
 
+// Nem todo número de resposta é dinheiro: "quantidade_vendas" é contagem e
+// "variacao_percentual" é porcentagem. Decide pelo nome da coluna que veio
+// do backend (o mesmo nome dos templates SQL).
+function formatarValor(coluna, valor) {
+  if (valor === null || valor === undefined) return "—";
+  if (typeof valor !== "number") return valor;
+  const nome = String(coluna || "").toLowerCase();
+  if (nome.includes("percentual")) {
+    return `${valor.toLocaleString("pt-BR", { maximumFractionDigits: 2 })}%`;
+  }
+  if (nome.startsWith("quantidade") || nome.startsWith("itens") || nome.startsWith("unidades")) {
+    return valor.toLocaleString("pt-BR", { maximumFractionDigits: 0 });
+  }
+  return valor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+}
+
 // "Como cheguei nessa resposta": só usa o que o ResultSet já traz — o
 // período (quando o backend manda `parametros`, que o modo mock não
 // preenche), a métrica e o agrupamento (deduzidos das colunas). Quantos
@@ -166,9 +182,7 @@ function Resultado({ r }) {
       <div className="resultado resultado-numero">
         <p className="resultado-titulo">{r.titulo}</p>
         <p className="resultado-valor">
-          {typeof valor === "number"
-            ? valor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
-            : valor}
+          {formatarValor(r.colunas[r.colunas.length - 1], valor)}
         </p>
         <DetalhesResposta r={r} />
         <LinhaMeta r={r} />
