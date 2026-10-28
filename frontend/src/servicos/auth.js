@@ -1,24 +1,22 @@
-// UI mock — NÃO é autenticação real. O backend ainda não tem login (ver
-// backend/CLAUDE.md: "não existe login ainda"), então isto simula
-// cadastro/entrada inteiramente no navegador, mesmo padrão do modo mock em
-// api.js: um dublê ocupando o lugar do que ainda não existe.
+// Autenticação real, pelo Supabase Auth.
 //
-// A senha fica em texto puro no localStorage de propósito — não há dado real
-// em jogo aqui e o objetivo é a banca ver o fluxo funcionando.
-// NÃO reproduzir este padrão quando o backend de autenticação existir: lá a
-// senha vira hash (bcrypt/argon2) e nada disso mora no navegador.
+// Cadastro, entrada, recuperação e troca de senha falam direto com o Supabase
+// Auth (API REST em <projeto>.supabase.co/auth/v1). A senha nunca passa pelo
+// nosso backend e nunca é guardada no navegador: o Supabase guarda o hash e
+// devolve um token de acesso (JWT, vale 1 h) e um token de renovação. O
+// backend confere o token em cada /chat e /import (backend/app/auth.py).
 //
-// ---------------------------------------------------------------------------
-// O QUE DEPENDE DO BACKEND (Dev B) para virar real:
-//   POST /auth/registrar   -> registrar()
-//   POST /auth/entrar      -> entrar()          (devolve token, não sessão local)
-//   POST /auth/senha       -> alterarSenha()
-//   POST /auth/recuperar   -> solicitarRecuperacao()  (envia e-mail de verdade)
-//   PATCH /usuario/eu      -> atualizarPerfil()
-// Nenhum existe hoje. As assinaturas abaixo já são assíncronas e lançam
-// { mensagem } no mesmo formato do contrato de erro do backend, então a troca
-// é substituir o corpo de cada função pela chamada HTTP.
-// ---------------------------------------------------------------------------
+// As funções exportadas mantêm os mesmos nomes, parâmetros e formato de erro
+// ({ mensagem, campo? }) do dublê que existia antes, para as telas (Login,
+// Perfil, App) não precisarem mudar. Com VITE_MOCK=true, tudo é delegado ao
+// dublê (authSimulado.js), para desenvolver a interface sem servidor.
+//
+// Configuração (Vercel e frontend/.env.local):
+//   VITE_SUPABASE_URL       https://<ref>.supabase.co
+//   VITE_SUPABASE_ANON_KEY  chave pública do projeto ("anon" / "publishable").
+//                           É pública por natureza; NUNCA use a service_role.
+import * as simulado from "./authSimulado";
+import { limparDataset } from "../utils/dataset";
 import {
   normalizarEmail,
   normalizarNome,
@@ -27,107 +25,259 @@ import {
   validarSenha,
 } from "../utils/validacao";
 
+const MOCK = import.meta.env.VITE_MOCK === "true";
+const URL_SUPABASE = (import.meta.env.VITE_SUPABASE_URL || "").replace(/\/$/, "");
+const CHAVE_ANON = import.meta.env.VITE_SUPABASE_ANON_KEY || "";
+
 const CHAVE_SESSAO = "intellix_sessao";
-const CHAVE_USUARIOS = "intellix_usuarios";
-const CHAVE_RECUPERACAO = "intellix_recuperacao";
+const prefixoFoto = (id) => `intellix_foto_${id}`;
 
-const ATRASO_MS = 500;
-
-// Sessão vale 12h. Existe para o app ter o conceito de "sessão expirada"
-// pedido no escopo; com token real isso passa a ser a validade do JWT.
+// Sessão do Intellix dura no máximo 12 h, mesmo com renovação do token: é o
+// conceito de "sessão expirada" do escopo. Dentro disso, o token de acesso
+// (1 h) é renovado sozinho por obterToken().
 const DURACAO_SESSAO_MS = 12 * 60 * 60 * 1000;
-
-const espera = (ms = ATRASO_MS) => new Promise((r) => setTimeout(r, ms));
+// Renova o token quando faltar menos que isto para ele vencer.
+const MARGEM_RENOVACAO_S = 60;
 
 function erro(mensagem, campo) {
   return { mensagem, campo };
 }
 
-function carregarUsuarios() {
-  try {
-    const salvo = localStorage.getItem(CHAVE_USUARIOS);
-    const lista = salvo ? JSON.parse(salvo) : [];
-    if (!Array.isArray(lista)) return [];
-    // Contas criadas antes da normalização podem ter e-mail com maiúsculas.
-    return lista.map((u) => ({ ...u, email: normalizarEmail(u.email) }));
-  } catch {
-    return [];
+// ---------------------------------------------------------------------------
+// Retorno do link de recuperação de senha
+// ---------------------------------------------------------------------------
+// O e-mail de recuperação do Supabase traz um link. Ao clicar, o Supabase
+// confere o link e devolve a pessoa a este site com o resultado no fim do
+// endereço: "#access_token=...&type=recovery" (deu certo) ou
+// "#error_code=otp_expired&..." (link vencido ou já usado).
+//
+// Lemos isso UMA vez, quando o módulo carrega, antes do roteamento por hash
+// do App olhar o endereço, e limpamos o endereço na hora: o token não pode
+// ficar visível, no histórico nem em print de tela. O token de recuperação
+// fica só em memória, para trocar a senha, e some ao recarregar a página.
+let tokenRecuperacao = null;
+const retornoDoEmail = (() => {
+  if (MOCK || typeof window === "undefined") return null;
+  const hash = window.location.hash || "";
+  if (!/(access_token|error_code)=/.test(hash)) return null;
+
+  const p = new URLSearchParams(hash.replace(/^#\/?/, ""));
+  window.history.replaceState(null, "", window.location.pathname + window.location.search);
+
+  if (p.get("error_code") || p.get("error")) {
+    return {
+      tipo: "erro",
+      mensagem: "Este link de recuperação venceu ou já foi usado. Peça um novo abaixo.",
+    };
+  }
+  if (p.get("type") === "recovery" && p.get("access_token")) {
+    tokenRecuperacao = p.get("access_token");
+    // Quem abriu o link quer trocar a senha: uma sessão antiga aberta neste
+    // navegador não pode pular essa etapa.
+    try {
+      localStorage.removeItem(CHAVE_SESSAO);
+    } catch {
+      // segue sem limpar
+    }
+    return { tipo: "recuperacao" };
+  }
+  return null;
+})();
+
+/**
+ * O que veio do link do e-mail, para a tela de login abrir no passo certo:
+ * { tipo: "recuperacao" } | { tipo: "erro", mensagem } | null.
+ */
+export function obterRetornoDoEmail() {
+  return MOCK ? null : retornoDoEmail;
+}
+
+// ---------------------------------------------------------------------------
+// Chamada à API do Supabase Auth
+// ---------------------------------------------------------------------------
+
+// Traduz os códigos de erro do Supabase para mensagens da interface.
+// Mensagens genéricas de propósito onde a específica vazaria quais e-mails têm
+// conta (entrar, recuperar).
+const MENSAGENS = {
+  invalid_credentials: ["E-mail ou senha incorretos.", "senha"],
+  invalid_grant: ["E-mail ou senha incorretos.", "senha"],
+  email_not_confirmed: [
+    "Confirme seu e-mail antes de entrar: enviamos um link para a sua caixa de entrada.",
+    "email",
+  ],
+  user_already_exists: ["Este e-mail já está cadastrado. Faça login ou recupere sua senha.", "email"],
+  email_exists: ["Este e-mail já está cadastrado. Faça login ou recupere sua senha.", "email"],
+  weak_password: ["Senha fraca demais. Use uma senha mais longa.", "senha"],
+  same_password: ["A nova senha precisa ser diferente da atual.", "novaSenha"],
+  otp_expired: ["Código incorreto ou expirado. Peça um novo.", "codigo"],
+  over_request_rate_limit: ["Muitas tentativas seguidas. Espere um minuto e tente de novo."],
+  over_email_send_rate_limit: [
+    "Muitos e-mails enviados em pouco tempo. Espere alguns minutos e tente de novo.",
+  ],
+  signup_disabled: ["O cadastro de novas contas está desativado no momento."],
+};
+
+function configurado() {
+  if (!URL_SUPABASE || !CHAVE_ANON) {
+    throw erro(
+      "O login não está configurado: falta VITE_SUPABASE_URL ou VITE_SUPABASE_ANON_KEY. Avise a equipe."
+    );
   }
 }
 
-function salvarUsuarios(usuarios) {
-  localStorage.setItem(CHAVE_USUARIOS, JSON.stringify(usuarios));
+async function chamar(caminho, { metodo = "POST", corpo, token } = {}) {
+  configurado();
+  let r;
+  try {
+    r = await fetch(`${URL_SUPABASE}/auth/v1${caminho}`, {
+      method: metodo,
+      headers: {
+        apikey: CHAVE_ANON,
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: corpo === undefined ? undefined : JSON.stringify(corpo),
+    });
+  } catch {
+    throw erro("Não consegui falar com o servidor de login. Verifique sua conexão.");
+  }
+
+  let dados;
+  try {
+    dados = await r.json();
+  } catch {
+    dados = null; // corpo vazio (ex.: /logout devolve 204)
+  }
+  if (!r.ok) {
+    // O Supabase usa dois formatos: { error_code, msg } e { error, error_description }.
+    const codigo = dados?.error_code || dados?.error || "";
+    const [mensagem, campo] = MENSAGENS[codigo] || [
+      "Não foi possível concluir agora. Tente de novo em instantes.",
+    ];
+    throw { ...erro(mensagem, campo), codigo, status: r.status };
+  }
+  return dados;
 }
 
-function acharUsuario(usuarios, email) {
-  const alvo = normalizarEmail(email);
-  return usuarios.find((u) => normalizarEmail(u.email) === alvo);
-}
+// ---------------------------------------------------------------------------
+// Sessão local
+// ---------------------------------------------------------------------------
 
-/** O que a interface enxerga do usuário — nunca inclui a senha. */
-function paraSessao(usuario) {
-  return {
-    nome: usuario.nome,
-    email: usuario.email,
-    foto: usuario.foto || null,
-    expiraEm: Date.now() + DURACAO_SESSAO_MS,
-  };
-}
-
-function salvarSessao(sessao) {
-  localStorage.setItem(CHAVE_SESSAO, JSON.stringify(sessao));
-  return sessao;
-}
-
-/**
- * Devolve a sessão válida ou null. Sessão vencida é apagada aqui mesmo, para
- * não sobrar estado morto no navegador.
- */
-export function carregarSessao() {
+function lerSessaoBruta() {
   try {
     const salvo = localStorage.getItem(CHAVE_SESSAO);
-    if (!salvo) return null;
-    const sessao = JSON.parse(salvo);
-    if (!sessao?.email) return null;
-    if (sessao.expiraEm && Date.now() > sessao.expiraEm) {
-      localStorage.removeItem(CHAVE_SESSAO);
-      return null;
-    }
-    // A conta pode ter sido apagada em outra aba.
-    const usuario = acharUsuario(carregarUsuarios(), sessao.email);
-    if (!usuario) {
-      localStorage.removeItem(CHAVE_SESSAO);
-      return null;
-    }
-    // Nome/foto vêm sempre do cadastro, não da cópia dentro da sessão: se o
-    // perfil mudou em outra aba, a sessão acompanha.
-    return { ...sessao, nome: usuario.nome, foto: usuario.foto || null };
+    return salvo ? JSON.parse(salvo) : null;
   } catch {
     return null;
   }
 }
 
-/** true quando existe sessão salva, mas já vencida — App usa para avisar. */
-export function sessaoExpirou() {
+function lerFoto(id) {
   try {
-    const salvo = localStorage.getItem(CHAVE_SESSAO);
-    if (!salvo) return false;
-    const sessao = JSON.parse(salvo);
-    return Boolean(sessao?.expiraEm && Date.now() > sessao.expiraEm);
+    return localStorage.getItem(prefixoFoto(id)) || null;
   } catch {
-    return false;
+    return null;
   }
 }
 
-export function encerrarSessao() {
-  localStorage.removeItem(CHAVE_SESSAO);
+/** O que a interface enxerga do usuário: nunca inclui os tokens. */
+function paraInterface(bruta) {
+  return {
+    id: bruta.id,
+    nome: bruta.nome,
+    email: bruta.email,
+    foto: lerFoto(bruta.id),
+    expiraEm: bruta.expiraEm,
+  };
 }
 
-export async function registrar({ nome, email, senha, confirmarSenha }) {
-  await espera();
+/** Guarda a resposta de login do Supabase e devolve a visão da interface. */
+function salvarSessao(resposta, anterior = null) {
+  const usuario = resposta.user || {};
+  const bruta = {
+    id: usuario.id,
+    email: normalizarEmail(usuario.email),
+    nome: normalizarNome(usuario.user_metadata?.nome || anterior?.nome || usuario.email),
+    tokenAcesso: resposta.access_token,
+    tokenRenovacao: resposta.refresh_token,
+    tokenVenceEm: resposta.expires_at || Math.floor(Date.now() / 1000) + (resposta.expires_in || 3600),
+    // renovar o token não estende a sessão de 12 h
+    expiraEm: anterior?.expiraEm || Date.now() + DURACAO_SESSAO_MS,
+  };
+  localStorage.setItem(CHAVE_SESSAO, JSON.stringify(bruta));
+  return paraInterface(bruta);
+}
 
-  // Revalidação na camada de persistência: a tela já validou, mas não
-  // dependemos disso — qualquer chamada direta a registrar() passa por aqui.
+/**
+ * Devolve a sessão válida ou null. Sessão vencida é apagada aqui mesmo.
+ * Síncrona de propósito (o App usa no estado inicial): não chama a rede.
+ */
+export function carregarSessao() {
+  if (MOCK) return simulado.carregarSessao();
+  const bruta = lerSessaoBruta();
+  if (!bruta?.tokenRenovacao) return null;
+  if (bruta.expiraEm && Date.now() > bruta.expiraEm) {
+    localStorage.removeItem(CHAVE_SESSAO);
+    return null;
+  }
+  return paraInterface(bruta);
+}
+
+/** true quando existe sessão salva, mas já vencida: o App usa para avisar. */
+export function sessaoExpirou() {
+  if (MOCK) return simulado.sessaoExpirou();
+  const bruta = lerSessaoBruta();
+  return Boolean(bruta?.expiraEm && Date.now() > bruta.expiraEm);
+}
+
+export function encerrarSessao() {
+  if (MOCK) return simulado.encerrarSessao();
+  const bruta = lerSessaoBruta();
+  localStorage.removeItem(CHAVE_SESSAO);
+  // o dataset importado é de quem saiu; o próximo usuário começa na base demo
+  limparDataset();
+  if (bruta?.tokenAcesso) {
+    // invalida o token de renovação no Supabase; falha aqui não impede a saída
+    chamar("/logout", { token: bruta.tokenAcesso }).catch(() => {});
+  }
+}
+
+/**
+ * Token de acesso válido para mandar ao backend, renovando se estiver para
+ * vencer. null quando não há sessão. Se a renovação for recusada (sessão
+ * revogada), apaga a sessão local: o App percebe e volta para o login.
+ */
+export async function obterToken() {
+  if (MOCK) return null;
+  const bruta = lerSessaoBruta();
+  if (!bruta?.tokenRenovacao || (bruta.expiraEm && Date.now() > bruta.expiraEm)) return null;
+
+  const agora = Math.floor(Date.now() / 1000);
+  if (bruta.tokenVenceEm - agora > MARGEM_RENOVACAO_S) return bruta.tokenAcesso;
+
+  try {
+    const resposta = await chamar("/token?grant_type=refresh_token", {
+      corpo: { refresh_token: bruta.tokenRenovacao },
+    });
+    salvarSessao(resposta, bruta);
+    return resposta.access_token;
+  } catch (e) {
+    if (e?.status === 400 || e?.status === 401) {
+      localStorage.removeItem(CHAVE_SESSAO);
+      return null;
+    }
+    throw e; // rede: não derruba a sessão por instabilidade
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Ações das telas
+// ---------------------------------------------------------------------------
+
+export async function registrar({ nome, email, senha, confirmarSenha }) {
+  if (MOCK) return simulado.registrar({ nome, email, senha, confirmarSenha });
+
   const erroNome = validarNome(nome);
   if (erroNome) throw erro(erroNome, "nome");
   const erroEmail = validarEmail(email);
@@ -138,61 +288,41 @@ export async function registrar({ nome, email, senha, confirmarSenha }) {
     throw erro("As senhas não coincidem.", "confirmarSenha");
   }
 
-  const usuarios = carregarUsuarios();
-  const emailNormalizado = normalizarEmail(email);
+  const resposta = await chamar("/signup", {
+    corpo: {
+      email: normalizarEmail(email),
+      password: senha,
+      data: { nome: normalizarNome(nome) },
+    },
+  });
 
-  // Unicidade pelo e-mail normalizado: antes a comparação era sensível a
-  // maiúsculas, então "Ana@x.com" e "ana@x.com" viravam duas contas.
-  if (acharUsuario(usuarios, emailNormalizado)) {
+  // Com "Confirm email" ligado no Supabase, o cadastro não devolve sessão:
+  // a conta só vale depois do clique no link do e-mail.
+  if (!resposta?.access_token) {
     throw erro(
-      "Este e-mail já está cadastrado. Faça login ou recupere sua senha.",
-      "email"
+      "Conta criada. Enviamos um link de confirmação para o seu e-mail: confirme e depois entre."
     );
   }
-
-  const novo = {
-    nome: normalizarNome(nome),
-    email: emailNormalizado,
-    senha,
-    foto: null,
-    criadoEm: new Date().toISOString(),
-  };
-  salvarUsuarios([...usuarios, novo]);
-  return salvarSessao(paraSessao(novo));
+  return salvarSessao(resposta);
 }
 
 export async function entrar({ email, senha }) {
-  await espera();
+  if (MOCK) return simulado.entrar({ email, senha });
 
   const erroEmail = validarEmail(email);
   if (erroEmail) throw erro(erroEmail, "email");
   if (!senha) throw erro("Digite sua senha.", "senha");
 
-  const usuario = acharUsuario(carregarUsuarios(), email);
-
-  // Distinguimos "conta não existe" de "senha errada" porque o escopo do TCC
-  // pede as duas mensagens. Num sistema real isso vaza quais e-mails têm
-  // conta — lá a resposta seria genérica para os dois casos.
-  if (!usuario) {
-    throw erro("Não encontramos uma conta com este e-mail. Crie uma conta.", "email");
-  }
-  if (usuario.senha !== senha) {
-    throw erro("Senha incorreta. Tente de novo ou recupere sua senha.", "senha");
-  }
-
-  return salvarSessao(paraSessao(usuario));
+  const resposta = await chamar("/token?grant_type=password", {
+    corpo: { email: normalizarEmail(email), password: senha },
+  });
+  return salvarSessao(resposta);
 }
 
 export async function alterarSenha({ email, senhaAtual, novaSenha, confirmarSenha }) {
-  await espera();
-
-  const usuarios = carregarUsuarios();
-  const usuario = acharUsuario(usuarios, email);
-  if (!usuario) throw erro("Conta não encontrada. Entre de novo.");
+  if (MOCK) return simulado.alterarSenha({ email, senhaAtual, novaSenha, confirmarSenha });
 
   if (!senhaAtual) throw erro("Digite sua senha atual.", "senhaAtual");
-  if (usuario.senha !== senhaAtual) throw erro("A senha atual está incorreta.", "senhaAtual");
-
   const erroNova = validarSenha(novaSenha);
   if (erroNova) throw erro(erroNova, "novaSenha");
   if (novaSenha === senhaAtual)
@@ -200,93 +330,119 @@ export async function alterarSenha({ email, senhaAtual, novaSenha, confirmarSenh
   if (novaSenha !== confirmarSenha)
     throw erro("A confirmação não corresponde à nova senha.", "confirmarSenha");
 
-  salvarUsuarios(
-    usuarios.map((u) => (u.email === usuario.email ? { ...u, senha: novaSenha } : u))
-  );
-  // Sessão renovada: trocar a senha não derruba quem está usando o sistema.
-  return salvarSessao(paraSessao({ ...usuario, senha: novaSenha }));
+  const anterior = lerSessaoBruta();
+  // O Supabase troca a senha só com o token. Conferimos a senha atual
+  // entrando de novo com ela, para quem pegou o computador destravado não
+  // conseguir trocar a senha de outra pessoa.
+  let sessao;
+  try {
+    sessao = await chamar("/token?grant_type=password", {
+      corpo: { email: normalizarEmail(email), password: senhaAtual },
+    });
+  } catch (e) {
+    if (e?.codigo === "invalid_credentials" || e?.codigo === "invalid_grant") {
+      throw erro("A senha atual está incorreta.", "senhaAtual");
+    }
+    throw e;
+  }
+
+  await chamar("/user", {
+    metodo: "PUT",
+    token: sessao.access_token,
+    corpo: { password: novaSenha },
+  });
+  // Trocar a senha não derruba quem está usando o sistema.
+  return salvarSessao(sessao, anterior);
 }
 
 export async function atualizarPerfil({ email, nome, foto }) {
-  await espera(300);
+  if (MOCK) return simulado.atualizarPerfil({ email, nome, foto });
 
-  const usuarios = carregarUsuarios();
-  const usuario = acharUsuario(usuarios, email);
-  if (!usuario) throw erro("Conta não encontrada. Entre de novo.");
-
-  const atualizado = { ...usuario };
+  const anterior = lerSessaoBruta();
+  if (!anterior) throw erro("Sua sessão terminou. Entre de novo.");
 
   if (nome !== undefined) {
     const erroNome = validarNome(nome);
     if (erroNome) throw erro(erroNome, "nome");
-    atualizado.nome = normalizarNome(nome);
+    const token = await obterToken();
+    if (!token) throw erro("Sua sessão terminou. Entre de novo.");
+    await chamar("/user", {
+      metodo: "PUT",
+      token,
+      corpo: { data: { nome: normalizarNome(nome) } },
+    });
+    anterior.nome = normalizarNome(nome);
   }
-  // null remove a foto; undefined significa "não mexer".
-  if (foto !== undefined) atualizado.foto = foto;
 
-  try {
-    salvarUsuarios(usuarios.map((u) => (u.email === usuario.email ? atualizado : u)));
-  } catch {
-    // Foto grande demais estoura a cota do localStorage (~5MB).
-    throw erro("Não consegui salvar a foto. Tente uma imagem menor.", "foto");
+  // A foto fica só neste navegador: imagem não vai para o cadastro do
+  // Supabase (os metadados do usuário viajam dentro de todo token).
+  // null remove a foto; undefined significa "não mexer".
+  if (foto !== undefined) {
+    try {
+      if (foto === null) localStorage.removeItem(prefixoFoto(anterior.id));
+      else localStorage.setItem(prefixoFoto(anterior.id), foto);
+    } catch {
+      throw erro("Não consegui salvar a foto. Tente uma imagem menor.", "foto");
+    }
   }
-  return salvarSessao(paraSessao(atualizado));
+
+  localStorage.setItem(CHAVE_SESSAO, JSON.stringify(anterior));
+  return paraInterface(anterior);
 }
 
 // --- Recuperação de senha -------------------------------------------------
-// O envio do código por e-mail depende de backend (endpoint inexistente). O
-// fluxo em duas etapas abaixo tem a mesma forma do fluxo real — pedir código,
-// conferir código, trocar senha — para a integração ser uma troca de corpo de
-// função. Enquanto isso o código é devolvido na tela, com aviso explícito.
+// O Supabase envia um e-mail com um LINK (o modelo padrão do plano grátis
+// não pode ser editado para mostrar um código). O link volta para este site
+// e o retorno é lido em `retornoDoEmail`, acima; a tela então pede só a nova
+// senha. Para o link poder voltar para cá, o endereço do site precisa estar
+// em Authentication -> URL Configuration -> Redirect URLs no Supabase.
 
 export async function solicitarRecuperacao({ email }) {
-  await espera();
+  if (MOCK) return simulado.solicitarRecuperacao({ email });
 
   const erroEmail = validarEmail(email);
   if (erroEmail) throw erro(erroEmail, "email");
 
-  const usuario = acharUsuario(carregarUsuarios(), email);
-  if (!usuario) throw erro("Não encontramos uma conta com este e-mail.", "email");
-
-  const codigo = String(Math.floor(100000 + Math.random() * 900000));
-  localStorage.setItem(
-    CHAVE_RECUPERACAO,
-    JSON.stringify({ email: usuario.email, codigo, expiraEm: Date.now() + 10 * 60 * 1000 })
-  );
-  // `codigo` volta para a tela mostrar. Com backend real, esta função não
-  // devolveria o código — ele iria para a caixa de entrada do usuário.
-  return { codigo, simulado: true };
+  // A resposta é a mesma exista ou não a conta, para não revelar quem é
+  // cliente. Sem `codigo` no retorno: o link vai para o e-mail.
+  const volta = encodeURIComponent(`${window.location.origin}/`);
+  await chamar(`/recover?redirect_to=${volta}`, { corpo: { email: normalizarEmail(email) } });
+  return { simulado: false, porLink: true };
 }
 
 export async function redefinirSenha({ email, codigo, novaSenha, confirmarSenha }) {
-  await espera();
-
-  let pedido;
-  try {
-    pedido = JSON.parse(localStorage.getItem(CHAVE_RECUPERACAO) || "null");
-  } catch {
-    pedido = null;
-  }
-  if (!pedido) throw erro("Pedido de recuperação não encontrado. Comece de novo.");
-  if (Date.now() > pedido.expiraEm) {
-    localStorage.removeItem(CHAVE_RECUPERACAO);
-    throw erro("O código expirou. Peça um novo.");
-  }
-  if (normalizarEmail(email) !== pedido.email) throw erro("E-mail diferente do pedido.");
-  if (String(codigo).trim() !== pedido.codigo) throw erro("Código incorreto.", "codigo");
+  if (MOCK) return simulado.redefinirSenha({ email, codigo, novaSenha, confirmarSenha });
 
   const erroNova = validarSenha(novaSenha);
   if (erroNova) throw erro(erroNova, "novaSenha");
   if (novaSenha !== confirmarSenha)
     throw erro("A confirmação não corresponde à nova senha.", "confirmarSenha");
 
-  const usuarios = carregarUsuarios();
-  const usuario = acharUsuario(usuarios, pedido.email);
-  if (!usuario) throw erro("Conta não encontrada.");
+  let token = tokenRecuperacao;
+  if (!token) {
+    // Caminho do código de 6 dígitos: só existe se o projeto tiver SMTP
+    // próprio com o modelo de e-mail editado para mostrar {{ .Token }}.
+    if (!String(codigo || "").trim()) {
+      throw erro("Abra o link que enviamos para o seu e-mail para criar a nova senha.");
+    }
+    const sessao = await chamar("/verify", {
+      corpo: { type: "recovery", email: normalizarEmail(email), token: String(codigo).trim() },
+    });
+    token = sessao.access_token;
+  }
 
-  salvarUsuarios(
-    usuarios.map((u) => (u.email === usuario.email ? { ...u, senha: novaSenha } : u))
-  );
-  localStorage.removeItem(CHAVE_RECUPERACAO);
+  try {
+    await chamar("/user", { metodo: "PUT", token, corpo: { password: novaSenha } });
+  } catch (e) {
+    if (e?.status === 401 || e?.status === 403) {
+      tokenRecuperacao = null;
+      throw erro("Este link de recuperação venceu. Peça um novo.");
+    }
+    throw e;
+  }
+  // A tela manda a pessoa entrar com a senha nova; encerramos a sessão
+  // temporária aberta pelo link.
+  tokenRecuperacao = null;
+  chamar("/logout", { token }).catch(() => {});
   return { ok: true };
 }
