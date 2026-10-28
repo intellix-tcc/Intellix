@@ -79,12 +79,6 @@ function humanizarColuna(nome) {
 }
 
 function formatarData(iso) {
-  // "2024-03-01" é uma data de calendário, sem hora. new Date() a lê como
-  // meia-noite em UTC, e no fuso de Brasília (UTC-3) isso vira 21h do dia
-  // anterior: o período aparecia como 29/02 a 30/03. Para data pura, só
-  // reordenamos os campos; nada de fuso.
-  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(iso));
-  if (m) return `${m[3]}/${m[2]}/${m[1]}`;
   const d = new Date(iso);
   // Datas puras ("2024-03-01") são parseadas como meia-noite UTC; sem fixar
   // timeZone, pt-BR as renderiza em Brasília (UTC-3) e "01/03" vira "29/02".
