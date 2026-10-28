@@ -86,7 +86,11 @@ function formatarData(iso) {
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(iso));
   if (m) return `${m[3]}/${m[2]}/${m[1]}`;
   const d = new Date(iso);
-  return Number.isNaN(d.getTime()) ? iso : d.toLocaleDateString("pt-BR");
+  // Datas puras ("2024-03-01") são parseadas como meia-noite UTC; sem fixar
+  // timeZone, pt-BR as renderiza em Brasília (UTC-3) e "01/03" vira "29/02".
+  return Number.isNaN(d.getTime())
+    ? iso
+    : d.toLocaleDateString("pt-BR", { timeZone: "UTC" });
 }
 
 // Nem todo número de resposta é dinheiro: "quantidade_vendas" é contagem e
