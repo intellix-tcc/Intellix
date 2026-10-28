@@ -1,4 +1,5 @@
 import os
+from typing import Annotated
 
 import psycopg
 from fastapi import Depends, FastAPI, HTTPException, UploadFile
@@ -13,6 +14,11 @@ from app.importacao.leitor_excel import ErroImportacao
 from app.models import Pergunta, ResultSet
 from app.nlu.regras import RuleBasedNLU
 from app.sql.executor import executar_template
+
+# Usuário logado (ou None, com AUTH_OBRIGATORIA=false). Annotated é a forma
+# recomendada pelo FastAPI para dependências, e não esbarra na regra B008 do
+# ruff (chamada de função como valor padrão de argumento).
+UsuarioAtual = Annotated[Usuario | None, Depends(usuario_atual)]
 
 app = FastAPI(title="Intellix API")
 app.add_event_handler("shutdown", fechar_pool)  # devolve as conexões do pool ao desligar
@@ -63,7 +69,7 @@ def health():
 
 
 @app.post("/chat", response_model=ResultSet)
-def chat(pergunta: Pergunta, usuario: Usuario | None = Depends(usuario_atual)) -> ResultSet:
+def chat(pergunta: Pergunta, usuario: UsuarioAtual) -> ResultSet:
     interpretacao = nlu.parse(pergunta.pergunta)
     verificar_confianca(interpretacao)
 
@@ -89,9 +95,7 @@ def chat(pergunta: Pergunta, usuario: Usuario | None = Depends(usuario_atual)) -
 
 
 @app.post("/import")
-async def import_planilha(
-    arquivo: UploadFile, usuario: Usuario | None = Depends(usuario_atual)
-) -> dict:
+async def import_planilha(arquivo: UploadFile, usuario: UsuarioAtual) -> dict:
     """Recebe o .xlsx do frontend (campo `arquivo`), valida e carrega no star
     schema. A resposta traz linhas_lidas/validas/rejeitadas -- campos que o
     `frontend/src/paginas/Importar.jsx` já lê. Mesmo padrão de erro do
