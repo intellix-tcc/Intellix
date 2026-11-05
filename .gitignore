@@ -74,3 +74,6 @@ docs/wizard_upload_mockup.html
 # A regra *.pt acima existe para modelos pesados; este é leve e cabe no
 # Render sem precisar de download externo. Ver B11.
 !backend/app/nlu/intellix_nlu_v1.0.0.pt
+
+# backups de dados (gerados por scripts/backup_db.py)
+scripts/backups/*.sql

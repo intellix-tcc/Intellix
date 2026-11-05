@@ -1,4 +1,5 @@
 import os
+import time
 from typing import Annotated
 
 import psycopg
@@ -6,6 +7,7 @@ from fastapi import Depends, FastAPI, HTTPException, Query, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.acesso import resolver_empresa
+from app.auditoria import registrar_consulta
 from app.auth import Usuario, usuario_atual
 from app.contexto import aplicar_contexto
 from app.db import fechar_pool, get_connection
@@ -137,6 +139,7 @@ def capacidades() -> dict:
 
 @app.post("/chat", response_model=ResultSet)
 def chat(pergunta: Pergunta, usuario: UsuarioAtual) -> ResultSet:
+    inicio = time.perf_counter()
     texto = pergunta.pergunta
     # 1. O modelo (ou o baseline de regras) lê a frase: intenção, confiança e
     #    os trechos que marcou (período, produto, vendedor...).
@@ -178,7 +181,12 @@ def chat(pergunta: Pergunta, usuario: UsuarioAtual) -> ResultSet:
                 # 4. Refino: mês de maior venda, unidades, total de um recorte.
                 interpretacao = refinar(interpretacao, texto)
             verificar_confianca(interpretacao)
-            return executar_template(interpretacao, empresa, conn)
+            resultado = executar_template(interpretacao, empresa, conn)
+            # Auditoria (F09): registra a consulta que de fato executou. É
+            # best-effort e vai na mesma transação (commit ao sair do `with`).
+            registrar_consulta(conn, empresa, interpretacao,
+                               round((time.perf_counter() - inicio) * 1000))
+            return resultado
     except psycopg.OperationalError:
         raise HTTPException(
             status_code=503,
