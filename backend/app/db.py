@@ -72,6 +72,22 @@ def get_connection():
     return get_pool().connection()
 
 
+def declarar_empresa(conn, empresa_id: str) -> None:
+    """Diz ao banco de qual empresa é esta transação (C14, migration 006).
+
+    As políticas de RLS só deixam o usuário da aplicação (intellix_app) ver e
+    gravar linhas com esse empresa_id. O terceiro argumento `true` faz a
+    declaração valer só até o fim da transação atual: é o que funciona no
+    Transaction pooler do Supabase (porta 6543), onde a conexão física pode
+    mudar entre uma transação e outra. Por isso tudo o que a requisição faz
+    no banco precisa acontecer dentro do mesmo `with get_connection()`.
+
+    Conectado como `postgres` (dono das tabelas), o RLS não se aplica e esta
+    chamada é inofensiva: o código funciona antes e depois da troca de usuário.
+    """
+    conn.execute("select set_config('app.empresa_id', %s, true)", (str(empresa_id),))
+
+
 def fechar_pool() -> None:
     global _pool
     if _pool is not None:

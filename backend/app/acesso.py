@@ -17,7 +17,7 @@ import psycopg
 from fastapi import HTTPException
 
 from app.auth import Usuario, auth_obrigatoria
-from app.db import get_empresa_id
+from app.db import declarar_empresa, get_empresa_id
 
 
 def _nao_encontrado() -> HTTPException:
@@ -35,6 +35,7 @@ def resolver_empresa(
 ) -> str:
     demo = get_empresa_id()
     if not empresa_id or empresa_id == demo:
+        declarar_empresa(conn, demo)
         return demo
 
     try:
@@ -43,6 +44,10 @@ def resolver_empresa(
         # sem isto, um id malformado virava erro do Postgres (500)
         raise _nao_encontrado()
 
+    # Com RLS (migration 006), a linha da empresa só fica visível depois de
+    # declarada; e a consulta do template, logo depois, só enxerga as vendas
+    # dela. Se o acesso for negado abaixo, a transação é desfeita.
+    declarar_empresa(conn, empresa_id)
     linha = conn.execute("select dono_id from empresa where id = %s", (empresa_id,)).fetchone()
     if linha is None:
         raise _nao_encontrado()
