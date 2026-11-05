@@ -23,6 +23,12 @@ const moedaCurta = (v) =>
 const numero = (v) => v.toLocaleString("pt-BR");
 const pct = (v) => `${v.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%`;
 
+// "2026-11-04" -> "04/11", sem passar por Date (evita o deslocamento de fuso).
+function dataCurta(iso) {
+  const [, m, d] = String(iso).split("-");
+  return `${d}/${m}`;
+}
+
 function valorKpi(kpi) {
   return kpi.formato === "moeda" ? moeda(kpi.valor) : numero(kpi.valor);
 }
@@ -105,9 +111,17 @@ export default function Home({ usuario, conversas = [], onPerguntar, onAbrirConv
             <h1 className="painel-saudacao">{cumprimento}</h1>
             <p className="painel-subtitulo">
               {r ? (
-                <>
-                  Aqui está como sua loja foi em <strong>{r.periodo.rotulo}</strong>.
-                </>
+                r.periodo.parcial ? (
+                  <>
+                    Assim está sua loja em <strong>{r.periodo.rotulo}</strong>, mês em andamento
+                    (até {dataCurta(r.periodo.fim)}). As variações comparam com os mesmos dias de{" "}
+                    {r.periodo_anterior.rotulo.split(" de ")[0]}.
+                  </>
+                ) : (
+                  <>
+                    Aqui está como sua loja foi em <strong>{r.periodo.rotulo}</strong>.
+                  </>
+                )
               ) : (
                 "Preparando o panorama das suas vendas…"
               )}
@@ -142,6 +156,7 @@ export default function Home({ usuario, conversas = [], onPerguntar, onAbrirConv
                   {r.meses_disponiveis.map((m) => (
                     <option key={`${m.ano}-${m.mes}`} value={`${m.ano}-${m.mes}`}>
                       {m.rotulo.charAt(0).toUpperCase() + m.rotulo.slice(1)}
+                      {m.parcial ? " (em andamento)" : ""}
                     </option>
                   ))}
                 </select>
@@ -423,7 +438,7 @@ function GraficoTendencia({ serie }) {
             <XAxis
               dataKey="rotulo"
               interval={1}
-              padding={{ left: 14, right: 14 }}
+              padding={{ left: 24, right: 24 }}
               tick={{ fontSize: 11, fill: "var(--text-3)" }}
               axisLine={false}
               tickLine={false}

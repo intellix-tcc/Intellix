@@ -31,9 +31,12 @@ def test_limites_mes_fim_exclusivo():
     assert limites_mes(2024, 12) == (date(2024, 12, 1), date(2025, 1, 1))
 
 
-def test_escolher_mes_ignora_meses_futuros():
+def test_escolher_mes_prefere_o_ultimo_mes_fechado():
     meses = [(2026, 12), (2026, 11), (2026, 10)]
-    assert escolher_mes(meses, date(2026, 11, 5)) == (2026, 11)
+    # 5/nov: novembro está em andamento e dezembro é futuro -> outubro
+    assert escolher_mes(meses, date(2026, 11, 5)) == (2026, 10)
+    # só existe o mês corrente: fica com ele
+    assert escolher_mes([(2026, 11)], date(2026, 11, 5)) == (2026, 11)
     # tudo no futuro: fica com o mais próximo de hoje
     assert escolher_mes([(2030, 2), (2030, 1)], date(2026, 1, 1)) == (2030, 1)
 
@@ -119,3 +122,17 @@ def test_resumo_texto_sem_vendas():
         categorias=[], top_produtos=[],
     )
     assert texto == ["Não houve vendas registradas em março de 2019."]
+
+
+def test_mes_parcial_compara_com_o_mesmo_periodo():
+    obs = gerar_observacoes(
+        ano=2026, mes=11, kpi_atual=kpi(120, 10), kpi_anterior=kpi(100, 10),
+        produtos=[], sem_giro=0, canais=[], dias_semana=None, parcial=True,
+    )
+    assert obs[0]["texto"] == "Faturamento 20% acima do mesmo período de outubro."
+    texto = gerar_resumo_texto(
+        ano=2026, mes=11, kpi_atual=kpi(120.0, 10), kpi_anterior=kpi(100.0, 10),
+        categorias=[], top_produtos=[], ate_dia=4,
+    )
+    assert texto[0].startswith("Em novembro de 2026 (até o dia 4), a loja faturou")
+    assert texto[0].endswith("20% acima do mesmo período de outubro.")
