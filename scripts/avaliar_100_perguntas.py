@@ -41,6 +41,7 @@ import sys
 import time
 import urllib.error
 import urllib.request
+from collections import Counter
 from pathlib import Path
 
 RAIZ = Path(__file__).resolve().parent.parent
@@ -196,6 +197,39 @@ def _pct(a: int, b: int) -> str:
     return f"{100 * a / b:.1f}%" if b else "-"
 
 
+# Ledger (feedback TC2 F03): para cada erro, uma causa primária e se ele é
+# corrigível SEM alterar o modelo (slot/regra/SQL/dado) ou se DEPENDE do modelo
+# (classificação/confiança/filtro). Serve para separar "quais casos justificam
+# uma taxa maior" do que precisa de novo treino -- rotulado como contrafactual.
+def classificar_causa(r: dict) -> tuple[str, str, bool]:
+    """Devolve (causa, depende_de, corrigivel_sem_modelo)."""
+    if r["acerto"]:
+        return ("ok", "-", True)
+    cat, status, obtido = r["categoria"], r["status"], r["obtido"]
+    # modo nlu (sem banco): o erro é sempre de classificação/confiança do NLU.
+    if status == "-":
+        return ("classificacao_nlu", "modelo", False)
+    if cat in TITULOS:
+        if status == 200:
+            return ("intencao_errada", "modelo", False)
+        if obtido == "baixa_confianca":
+            return ("baixa_confianca", "modelo/limiar", False)
+        if obtido == "parametro_faltando":
+            return ("parametro_faltando", "regra/slot", True)
+        if obtido == "sem_resultado":
+            return ("sem_resultado_no_periodo", "dado/periodo", True)
+        return ("outro", "-", False)
+    if cat == FORA_DE_ESCOPO:
+        return ("aceitacao_indevida", "modelo/filtro", False)
+    if cat == PARAM_FALTANDO:
+        return ("nao_pediu_parametro", "regra/slot", True)
+    if cat == SEM_RESULTADO:
+        if status == 200:
+            return ("vazio_respondido_como_valido", "template_sql", True)
+        return ("recusou_em_vez_de_vazio", "regra/slot", True)
+    return ("outro", "-", False)
+
+
 def resumo_md(resultados: list[dict], modo: str, alvo: str) -> str:
     ordem, rot = [], {}
     for r in resultados:
@@ -235,15 +269,37 @@ def resumo_md(resultados: list[dict], modo: str, alvo: str) -> str:
         f"| {statistics.median(lat):.0f} ms | {p95:.0f} ms | {max(lat):.0f} ms | "
         f"{statistics.mean(lat):.0f} ms | {abaixo}/{len(lat)} ({_pct(abaixo, len(lat))}) |" if lat else "| - | - | - | - | - |",
         "",
-        "## Erros",
+        "## Ledger de erros (causa)",
         "",
     ]
     erros = [r for r in resultados if not r["acerto"]]
-    if erros:
-        partes += ["| n | Pergunta | Esperado | Obtido | Status |", "|---:|---|---|---|---|"]
-        partes += [f"| {r['n']} | {r['pergunta']} | {r['esperado']} | {r['obtido']} | {r['status']} |" for r in erros]
-    else:
+    if not erros:
         partes.append("Nenhum.")
+        return "\n".join(partes) + "\n"
+
+    partes += ["| n | Pergunta | Esperado | Obtido | Status | Causa | Depende de |",
+               "|---:|---|---|---|---|---|---|"]
+    partes += [f"| {r['n']} | {r['pergunta']} | {r['esperado']} | {r['obtido']} | "
+               f"{r['status']} | {r.get('causa', '-')} | {r.get('depende_de', '-')} |"
+               for r in erros]
+
+    # Resumo por causa + projeção CONTRAFACTUAL (não medida).
+    por_causa = Counter(r.get("causa", "-") for r in erros)
+    dep_de = {r.get("causa", "-"): r.get("depende_de", "-") for r in erros}
+    partes += ["", "## Causas (resumo)", "", "| Causa | Qtd | Depende de |", "|---|---:|---|"]
+    partes += [f"| {causa} | {q} | {dep_de[causa]} |" for causa, q in por_causa.most_common()]
+
+    sem_modelo = sum(1 for r in erros if r.get("corrigivel_sem_modelo"))
+    com_modelo = len(erros) - sem_modelo
+    proj = (tot_a + sem_modelo) / tot_n * 100 if tot_n else 0
+    partes += [
+        "",
+        f"**{sem_modelo}** erro(s) corrigível(is) sem alterar o modelo "
+        f"(slot/regra/SQL/dado); **{com_modelo}** dependem do modelo "
+        f"(classificação/confiança/filtro).",
+        f"Projeção **contrafactual (não medida)**: corrigir os {sem_modelo} casos "
+        f"levaria {tot_a}/{tot_n} para ~{proj:.0f}%. É necessário reexecutar para confirmar.",
+    ]
     return "\n".join(partes) + "\n"
 
 
@@ -268,13 +324,19 @@ def main() -> None:
         resultados = avaliar_nlu(perguntas, args.backend, args.modelo)
         alvo, rotulo = f"NLU `{args.backend}` (sem servidor, sem banco)", f"nlu-{args.backend}"
 
+    # Ledger (F03): classifica a causa de cada resultado para o CSV e o MD.
+    for r in resultados:
+        causa, depende_de, corrigivel = classificar_causa(r)
+        r["causa"], r["depende_de"], r["corrigivel_sem_modelo"] = causa, depende_de, corrigivel
+
     saida = Path(args.saida)
     saida.mkdir(parents=True, exist_ok=True)
     stamp = dt.datetime.now().strftime("%Y-%m-%d_%H%M")
     base = saida / f"avaliacao_{rotulo}_{stamp}"
     with open(f"{base}.csv", "w", newline="", encoding="utf-8") as f:
         w = csv.DictWriter(f, fieldnames=["n", "secao", "categoria", "pergunta", "esperado",
-                                          "status", "obtido", "acerto", "latencia_ms"])
+                                          "status", "obtido", "acerto", "latencia_ms",
+                                          "causa", "depende_de", "corrigivel_sem_modelo"])
         w.writeheader()
         w.writerows(resultados)
     md = resumo_md(resultados, rotulo, alvo)
