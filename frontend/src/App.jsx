@@ -4,6 +4,13 @@ import Sidebar from "./componentes/Sidebar";
 import Icone from "./componentes/Icone";
 import Login from "./paginas/Login";
 import CascaPublica from "./componentes/CascaPublica";
+import PaletaComandos from "./componentes/PaletaComandos";
+import {
+  aplicarPreferencias,
+  carregarPreferencias,
+  salvarPreferencias,
+  sistemaEscuro,
+} from "./utils/preferencias";
 
 // Cada página vira um arquivo próprio, baixado só quando a rota abre. Antes
 // tudo (gráficos, leitor de planilha, páginas institucionais) vinha num
@@ -62,12 +69,6 @@ function lerRota() {
   return ROTAS.includes(hash) ? hash : "home";
 }
 
-function temaInicial() {
-  const salvo = localStorage.getItem("intellix_tema");
-  if (salvo === "claro" || salvo === "escuro") return salvo;
-  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "escuro" : "claro";
-}
-
 // Três estados, não dois. "auto" é o padrão: a sidebar recolhe sozinha
 // quando a página desce e volta quando sobe. Assim que a pessoa usa o botão,
 // vira escolha explícita ("aberta"/"fechada") e a rolagem para de mandar —
@@ -86,7 +87,13 @@ export default function App() {
   // vencida, então a checagem tem que rodar primeiro.
   const [avisoSessao, setAvisoSessao] = useState(() => (sessaoExpirou() ? MSG_EXPIRADA : ""));
   const [usuario, setUsuario] = useState(carregarSessao);
-  const [tema, setTema] = useState(temaInicial);
+  // Tema, tamanho do texto e animações (utils/preferencias.js). `tema` abaixo
+  // é o efetivo: com "igual ao sistema", acompanha o sistema operacional.
+  const [preferencias, setPreferencias] = useState(carregarPreferencias);
+  const [escuroNoSistema, setEscuroNoSistema] = useState(sistemaEscuro);
+  const tema =
+    preferencias.tema === "sistema" ? (escuroNoSistema ? "escuro" : "claro") : preferencias.tema;
+  const [paletaAberta, setPaletaAberta] = useState(false);
   const [rota, setRota] = useState(lerRota);
   const [menuAberto, setMenuAberto] = useState(false);
   const [modoSidebar, setModoSidebar] = useState(sidebarInicial);
@@ -104,9 +111,49 @@ export default function App() {
   const timerAcordando = useRef(null);
 
   useEffect(() => {
-    document.documentElement.setAttribute("data-theme", tema === "escuro" ? "dark" : "light");
-    localStorage.setItem("intellix_tema", tema);
-  }, [tema]);
+    aplicarPreferencias(preferencias);
+    salvarPreferencias(preferencias);
+  }, [preferencias]);
+
+  useEffect(() => {
+    const mq = window.matchMedia?.("(prefers-color-scheme: dark)");
+    if (!mq) return;
+    const aoMudar = (e) => setEscuroNoSistema(e.matches);
+    mq.addEventListener("change", aoMudar);
+    return () => mq.removeEventListener("change", aoMudar);
+  }, []);
+
+  // Título da aba acompanha a tela — é o que o leitor de tela anuncia e o
+  // que aparece no histórico do navegador.
+  useEffect(() => {
+    document.title = usuario || ROTAS_PUBLICAS.includes(rota) ? `${TITULOS[rota]} · Intellix` : "Intellix";
+  }, [rota, usuario]);
+
+  // Foco vai para o conteúdo novo a cada troca de tela (menos na primeira
+  // carga): sem isso, quem navega por teclado ou leitor de tela continua
+  // "parado" no link do menu e não percebe que a página mudou.
+  // Compara com a rota anterior (e não com um "primeira vez"): no modo de
+  // desenvolvimento o React roda o efeito duas vezes na montagem.
+  const rotaAnterior = useRef(rota);
+  useEffect(() => {
+    if (rotaAnterior.current === rota) return;
+    rotaAnterior.current = rota;
+    if (rota === "chat") return; // o chat foca o campo de pergunta sozinho
+    document.getElementById("conteudo")?.focus({ preventScroll: true });
+  }, [rota]);
+
+  // Ctrl+K / ⌘K abre a paleta de comandos de qualquer tela.
+  useEffect(() => {
+    if (!usuario) return;
+    function aoTeclar(e) {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setPaletaAberta((a) => !a);
+      }
+    }
+    window.addEventListener("keydown", aoTeclar);
+    return () => window.removeEventListener("keydown", aoTeclar);
+  }, [usuario]);
 
   useEffect(() => {
     salvarConversas(conversas);
@@ -174,11 +221,15 @@ export default function App() {
   }, [usuario]);
 
   function irPara(destino) {
-    window.location.hash = destino === "home" ? "#/" : `#/${destino}`;
+    // assign() com só o fragmento: navegação dentro da página, sem recarregar
+    // (equivale a trocar location.hash, que a regra do React Compiler não
+    // aceita quando a função também é usada pelos comandos da paleta).
+    window.location.assign(destino === "home" ? "#/" : `#/${destino}`);
   }
 
+  // O botão do topo fixa o oposto do que está na tela (sai do "sistema").
   function alternarTema() {
-    setTema((t) => (t === "escuro" ? "claro" : "escuro"));
+    setPreferencias((p) => ({ ...p, tema: tema === "escuro" ? "claro" : "escuro" }));
   }
 
   function novoChat() {
@@ -301,11 +352,70 @@ export default function App() {
     );
   }
 
+  const comandos = [
+    ...[
+      ["home", "inicio", "panorama painel dashboard"],
+      ["chat", "perguntar", "chat conversa"],
+      ["importar", "importar", "planilha excel upload"],
+      ["perfil", "usuarios", "conta senha foto preferencias tema texto"],
+      ["sobre", "sobre", ""],
+      ["faq", "ajuda", "ajuda faq duvidas perguntas frequentes"],
+      ["contato", "envelope", "fale conosco contato suporte"],
+      ["termos", "documento", "termos de uso privacidade lgpd"],
+    ].map(([r, icone, palavras]) => ({
+      id: `ir-${r}`,
+      grupo: "Ir para",
+      rotulo: TITULOS[r],
+      icone,
+      palavras,
+      acao: () => irPara(r),
+    })),
+    { id: "nova", grupo: "Ações", rotulo: "Nova conversa", icone: "mais", acao: novoChat },
+    {
+      id: "tema",
+      grupo: "Ações",
+      rotulo: tema === "escuro" ? "Usar tema claro" : "Usar tema escuro",
+      icone: tema === "escuro" ? "sol" : "lua",
+      palavras: "tema escuro claro modo noturno",
+      acao: alternarTema,
+    },
+    {
+      id: "menu",
+      grupo: "Ações",
+      rotulo: recolhida ? "Expandir menu lateral" : "Recolher menu lateral",
+      icone: "painel",
+      acao: () => setModoSidebar(recolhida ? "aberta" : "fechada"),
+    },
+    { id: "sair", grupo: "Ações", rotulo: "Sair da conta", icone: "sair", palavras: "logout", acao: sair },
+    ...conversas.slice(0, 6).map((c) => ({
+      id: `conversa-${c.id}`,
+      grupo: "Conversas recentes",
+      rotulo: c.titulo,
+      icone: "historico",
+      acao: () => {
+        selecionarConversa(c.id);
+        irPara("chat");
+      },
+    })),
+  ];
+
   return (
     // rota-* no layout: o chat precisa de regra de rolagem própria (ver App.css)
     <div
       className={`layout rota-${rota}${recolhida ? " com-sidebar-recolhida" : ""}`}
     >
+      {/* Primeiro item do Tab: pula a navegação e vai direto ao conteúdo. */}
+      <a
+        className="pular-conteudo"
+        href="#conteudo"
+        onClick={(e) => {
+          e.preventDefault();
+          document.getElementById("conteudo")?.focus();
+        }}
+      >
+        Pular para o conteúdo
+      </a>
+
       <Sidebar
         rota={rota}
         aberta={menuAberto}
@@ -318,6 +428,13 @@ export default function App() {
         onSelecionar={selecionarConversa}
         onExcluir={excluirConversa}
         onNovoChat={novoChat}
+      />
+
+      <PaletaComandos
+        aberta={paletaAberta}
+        onFechar={() => setPaletaAberta(false)}
+        comandos={comandos}
+        onPerguntar={(p) => perguntarTexto(p, { nova: true })}
       />
 
       <div className="conteudo">
@@ -349,6 +466,17 @@ export default function App() {
           <span className="topo-titulo">{TITULOS[rota]}</span>
           <button
             type="button"
+            className="topo-busca"
+            onClick={() => setPaletaAberta(true)}
+            aria-label="Abrir paleta de comandos (Ctrl+K)"
+            aria-keyshortcuts="Control+K Meta+K"
+          >
+            <Icone nome="lupa" size={16} />
+            <span className="topo-busca-texto">Buscar ou perguntar…</span>
+            <kbd className="topo-busca-atalho">Ctrl K</kbd>
+          </button>
+          <button
+            type="button"
             className="tema-toggle"
             onClick={alternarTema}
             aria-label="Alternar tema claro/escuro"
@@ -358,7 +486,7 @@ export default function App() {
           </button>
         </header>
 
-        <main className="area" key={rota}>
+        <main className="area" key={rota} id="conteudo" tabIndex={-1}>
           <Suspense fallback={<CarregandoPagina />}>
           {rota === "home" && (
             <Home
@@ -375,7 +503,13 @@ export default function App() {
           {rota === "sobre" && <Sobre onIrParaImportar={() => irPara("importar")} />}
           {rota === "importar" && <Importar onIrParaChat={() => irPara("chat")} />}
           {rota === "perfil" && (
-            <Perfil usuario={usuario} onAtualizar={setUsuario} onSair={sair} />
+            <Perfil
+              usuario={usuario}
+              onAtualizar={setUsuario}
+              onSair={sair}
+              preferencias={preferencias}
+              onPreferencias={setPreferencias}
+            />
           )}
           {ROTAS_PUBLICAS.includes(rota) && (
             <PaginaInstitucional rota={rota} usuario={usuario} />
