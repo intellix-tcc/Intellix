@@ -85,3 +85,17 @@ def test_frase_comum_nao_muda():
     texto = "quanto faturei em março de 2024"
     i = _i("total_vendas_periodo", texto)
     assert refinar(i, texto) is i
+
+
+def test_classe_melhor_mes_do_modelo_ganha_metrica_e_sentido():
+    # v1.2: o modelo reconhece o mês sem a frase bater nas regras
+    texto = "quando o perfume importado vendeu mais?"
+    out = refinar(_i("melhor_mes", texto, produto="Perfume importado"), texto)
+    assert (out.intencao, out.entidades["metrica"], out.entidades["sentido"]) == ("melhor_mes", "unidades", "maior")
+
+
+def test_unidades_do_modelo_com_frase_de_pedidos_vira_quantidade_de_vendas():
+    texto = "qual a quantidade de vendas do último mês?"
+    assert refinar(_i("unidades_vendidas", texto), texto).intencao == "quantidade_vendas"
+    texto = "quantas peças saíram no último mês?"
+    assert refinar(_i("unidades_vendidas", texto), texto).intencao == "unidades_vendidas"
