@@ -548,6 +548,224 @@ MOLDES = {
     ],
 }
 
+
+# =============================================================================
+# VERSÃO 3 (modelo v1.2.0) — perguntas de detalhe, mês e períodos relativos
+# =============================================================================
+# O que a v1.1.0 errava na interface (frases abaixo do limiar de confiança):
+#   - período relativo com preposição: "no mês passado", "do ano passado";
+#   - detalhe de produto em perguntas de vendedor/cliente/canal
+#     ("qual vendedor mais vendeu {produto}");
+#   - "quantas peças/unidades de {produto}" (contagem de itens, não de pedidos);
+#   - "qual mês vendeu mais/menos".
+# As 12 intenções continuam as mesmas. Cada frase nova entra na intenção que
+# já a responde, e o backend (app/refino.py) faz o detalhe da resposta:
+#   - "quantas peças/unidades de {produto}" -> quantidade_vendas
+#     (o refino troca a contagem de pedidos pela soma de peças)
+#   - "qual mês vendeu mais/menos"          -> total_vendas_periodo
+#     (o refino devolve o mês campeão, com a série mensal em destaque)
+# As 100 perguntas de validação continuam fora do treino (filtro do gerador).
+
+VALORES["produto"] += [
+    "relógio digital", "fone bluetooth", "panela antiaderente", "sandália rasteira",
+    "moletom", "cinto de couro", "power bank", "batom matte", "shampoo",
+    "tênis casual", "luminária", "almofada", "bota de couro", "sapatênis",
+    "camisetas", "calças jeans", "mochilas", "canecas", "relógios", "bonés",
+]
+VALORES["categoria"] += ["alimentos", "casa", "acessorios", "calcados"]
+
+# Contagem de peças: mesma intenção da contagem de vendas (quantidade_vendas).
+MOLDES["quantidade_vendas"] += [
+    "quantas unidades vendemos em {periodo}",
+    "quantas unidades vendi no {periodo}",
+    "quantos itens saíram em {periodo}",
+    "quantos itens vendi no {periodo}",
+    "quantas peças vendi de {produto}",
+    "quantas peças de {produto} saíram {periodo}",
+    "quantos {produto} a gente vendeu em {periodo}",
+    "quantos {produto} a gente vendeu no {periodo}",
+    "quantidade de {produto} vendida em {periodo}",
+    "quantos {produto} saíram",
+    "quantos {produto} saíram no {periodo}",
+    "volume de {produto} vendido em {periodo}",
+    "quantas unidades de {categoria} vendemos em {periodo}",
+    "quantos produtos de {categoria} saíram no {periodo}",
+    "total de unidades vendidas em {periodo}",
+    "total de peças vendidas no {periodo}",
+    "quantas peças vendi {periodo}",
+    "qtas unidades de {produto} saíram em {periodo}",
+    "quantos {produto} eu vendi",
+    "vendi quantos {produto} em {periodo}",
+    "quantas {produto} foram vendidas em {periodo}",
+    "número de unidades de {produto} no {periodo}",
+    "quantos {produto} vendemos pelo {canal} em {periodo}",
+    "quantas unidades foram pagas no {pagamento} em {periodo}",
+    "quantos {produto} a {vendedor} vendeu",
+    "quantas unidades o {vendedor} vendeu em {periodo}",
+    "me diz quantos {produto} saíram em {periodo}",
+    "quantidade de itens vendidos no {periodo}",
+    "quantas unidades de {produto} foram pro cliente {cliente}",
+    "a gente vendeu quantas peças de {categoria} {periodo}",
+]
+
+# Mês de maior/menor venda: é uma pergunta sobre o faturamento mês a mês
+# (total_vendas_periodo).
+MOLDES["total_vendas_periodo"] += [
+    "qual mês vendeu mais em {periodo}",
+    "qual foi o melhor mês de {periodo}",
+    "qual mês foi o pior em {periodo}",
+    "em que mês vendi mais {produto}",
+    "em que mês o {produto} vendeu mais",
+    "qual mês o {produto} saiu mais em {periodo}",
+    "qual mês registrou mais vendas de {produto}",
+    "qual mês faturei mais em {periodo}",
+    "qual mês faturei menos",
+    "em qual mês a gente mais vendeu",
+    "qual foi o mês mais forte de {periodo}",
+    "qual o mês mais fraco do ano",
+    "quando o {produto} vendeu mais",
+    "quando foi o pico de vendas de {periodo}",
+    "qual mês bombou em {periodo}",
+    "mês com mais vendas em {periodo}",
+    "mês com menos vendas de {produto}",
+    "qual foi o mês recorde de {periodo}",
+    "em que mês as vendas de {categoria} foram maiores",
+    "qual mês de {periodo} vendeu menos",
+    "melhor mês do {produto}",
+    "pior mês do ano para {produto}",
+    "em qual mês saiu mais {produto} em {periodo}",
+    "qual mês a {vendedor} vendeu mais",
+    "quando vendemos mais {categoria} em {periodo}",
+    "qual foi o mês campeão de vendas",
+    "qual mês teve o maior faturamento",
+    "em que mês o faturamento foi menor em {periodo}",
+    "qual mês mais vendeu no {canal}",
+    "melhor e pior mês de {periodo}",
+]
+
+MOLDES["total_vendas_periodo"] += [
+    "quanto vendi no {periodo}",
+    "quanto faturei no {periodo}",
+    "faturamento do {periodo}",
+    "vendas do {periodo}",
+    "qual foi o total do {periodo}",
+    "quanto a gente faturou no {periodo}",
+    "quanto entrou de {categoria} {periodo}",
+    "quanto faturei com {categoria} em {periodo}",
+    "quanto vendemos de {produto} no {periodo}",
+    "quanto rendeu o {produto} em {periodo}",
+    # canal/pagamento citados ficam com vendas_por_canal/pagamento: o backend
+    # converte a quebra filtrada no total do recorte (app/refino.py).
+    "me passa o faturamento de {periodo} por favor",
+    "faturamento de {periodo} por favor",
+    "quanto deu o faturamento de {categoria} no {periodo}",
+]
+
+MOLDES["desempenho_vendedor"] += [
+    "quais vendedores venderam mais {produto} em {periodo}",
+    "qual vendedor vendeu mais {produto}",
+    "quem mais vendeu {produto} no {periodo}",
+    "ranking de vendedores de {produto}",
+    "qual vendedora vendeu mais {categoria}",
+    "quem da equipe vendeu mais {categoria} em {periodo}",
+    "como foi o {vendedor} no {periodo}",
+    "como a {vendedor} se saiu no {periodo}",
+    "ranking da equipe no {periodo}",
+    "como tá o time de vendas",
+    "resultado da equipe de vendas em {periodo}",
+    "desempenho da equipe no {periodo}",
+    "quanto a vendedora {vendedor} vendeu no {periodo}",
+    "quanto o vendedor {vendedor} faturou",
+    "quanto o {vendedor} vendeu de {produto}",
+    "vendas da {vendedor} no {periodo}",
+    "qual vendedor se destacou no {periodo}",
+]
+
+MOLDES["top_clientes"] += [
+    # mesma forma "quais os X que mais Y" do molde de produtos por categoria
+    # (abaixo): sem estes, "quais os clientes que mais compraram" (sugestão
+    # da tela do chat) dividia a confiança com top_produtos.
+    "quais os clientes que mais compraram em {periodo}",
+    "quais os {numero} clientes que mais compraram",
+    "quais os clientes que mais gastaram {periodo}",
+    "quais os clientes que mais compraram {produto}",
+    "quais os {numero} clientes que mais gastaram em {periodo}",
+    "ranking dos clientes",
+    "ranking de clientes do {periodo}",
+    "clientes que mais gastaram em {periodo}",
+    "maiores clientes por faturamento no {periodo}",
+    "quais clientes mais compraram {produto}",
+    "quem mais comprou {produto} em {periodo}",
+    "quais clientes compraram mais {categoria} no {periodo}",
+]
+
+MOLDES["quantidade_vendas"] += [
+    "quantas vendas pelo {canal} em {periodo}",
+    "quantos pedidos no {pagamento} no {periodo}",
+    "quantas vendas fiz no {periodo}",
+    "número de pedidos do {periodo}",
+    "quantas vendas de {produto} tivemos no {periodo}",
+    "quantas compras pelo {canal} no {periodo}",
+]
+
+MOLDES["ticket_medio"] += [
+    "ticket médio no {pagamento} em {periodo}",
+    "ticket médio de {categoria} no {periodo}",
+    "ticket médio do {canal} no {periodo}",
+    "qual o ticket médio do {periodo}",
+    "ticket médio de quem compra {produto}",
+]
+
+MOLDES["vendas_por_canal"] += [
+    "qual canal vendeu mais {produto}",
+    "por qual canal saiu mais {produto} no {periodo}",
+    "vendas online versus loja física",
+    "canais de venda no {periodo}",
+    "como as vendas se dividem entre os canais",
+    "loja física ou internet vendeu mais em {periodo}",
+]
+
+MOLDES["vendas_por_pagamento"] += [
+    "quais as formas de pagamento mais usadas",
+    "como os clientes pagam no {periodo}",
+    "divisão por forma de pagamento em {periodo}",
+    "qual forma de pagamento predomina",
+    "como ficou o pagamento por modalidade no {periodo}",
+]
+
+# "quanto entrou de dinheiro" é faturamento (total_vendas_periodo); com
+# {pagamento}="dinheiro" este molde gerava a mesma frase com outra intenção.
+MOLDES["vendas_por_pagamento"] = [
+    "quanto entrou no {pagamento} em {periodo}" if m == "quanto entrou de {pagamento} em {periodo}" else m
+    for m in MOLDES["vendas_por_pagamento"]
+]
+
+MOLDES["vendas_por_categoria"] += [
+    "como foram as categorias no {periodo}",
+    "resultado por categoria em {periodo}",
+    "qual categoria foi melhor no {periodo}",
+    "categorias que mais faturaram no {periodo}",
+]
+
+MOLDES["comparacao_periodos"] += [
+    "compare {periodo} e {periodo2}",
+    "compara {periodo} com {periodo2}",
+    "comparativo entre {periodo} e {periodo2}",
+    "{periodo} contra {periodo2}",
+]
+
+MOLDES["top_produtos"] += [
+    "qual o produto mais vendido do {periodo}",
+    "o que mais vendeu no {periodo}",
+    "top produtos de {categoria}",
+    "quais os {numero} produtos de {categoria} que mais venderam em {periodo}",
+]
+
+MOLDES["produtos_sem_saida"] += [
+    "o que ficou parado no {periodo}",
+    "quais produtos de {categoria} não venderam em {periodo}",
+]
+
 INTENCOES = sorted(MOLDES.keys())
 TIPOS_ENTIDADE = ["PERIODO", "DATA", "PRODUTO", "CATEGORIA", "CLIENTE",
                   "VENDEDOR", "CANAL", "PAGAMENTO", "NUMERO"]
