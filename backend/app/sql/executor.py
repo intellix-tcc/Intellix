@@ -16,6 +16,36 @@ from app.fallbacks import EXEMPLOS_PADRAO
 from app.models import Interpretacao, ResultSet
 from app.sql.templates import TEMPLATES
 
+# Pergunta de esclarecimento por parametro obrigatorio ausente. Em vez do
+# generico "nao entendi, reformule", o backend diz exatamente o que faltou e
+# da um exemplo de como completar (melhoria: perguntar quando o contexto esta
+# incompleto). A chave e o prefixo do parametro para cobrir periodo_a_inicio,
+# periodo_atual_inicio etc. com uma unica entrada.
+_PERGUNTA_POR_PARAMETRO: list[tuple[str, str]] = [
+    ("vendedor_nome", "sobre qual vendedor(a)? (ex.: \"desempenho da Fernanda em março\")"),
+    ("limite", "quantos itens no ranking? (ex.: \"top 5 produtos\")"),
+    ("periodo_a", "quais são os dois períodos a comparar? (ex.: \"março com abril de 2024\")"),
+    ("periodo_b", "quais são os dois períodos a comparar? (ex.: \"março com abril de 2024\")"),
+    ("periodo_atual", "em relação a qual período anterior? (ex.: \"de março para abril de 2024\")"),
+    ("periodo_anterior", "em relação a qual período anterior? (ex.: \"de março para abril de 2024\")"),
+    ("periodo", "de qual período? (ex.: \"em março de 2024\" ou \"em 2024\")"),
+]
+
+
+def _esclarecer(faltando: list[str]) -> str:
+    """Monta uma pergunta de esclarecimento a partir dos parametros ausentes,
+    sem repetir a mesma pergunta (ex.: periodo_a_inicio e periodo_a_fim viram
+    uma pergunta so)."""
+    perguntas: list[str] = []
+    for param in faltando:
+        for prefixo, texto in _PERGUNTA_POR_PARAMETRO:
+            if param.startswith(prefixo) and texto not in perguntas:
+                perguntas.append(texto)
+                break
+    if not perguntas:
+        return "Não consegui identificar todos os dados da pergunta. Tente reformular."
+    return "Quase lá — só preciso saber " + "; ".join(perguntas) + "."
+
 
 def _para_json(valor: Any) -> Any:
     if isinstance(valor, Decimal):
@@ -43,7 +73,8 @@ def executar_template(interp: Interpretacao, empresa_id: str, conn: psycopg.Conn
             status_code=422,
             detail={
                 "tipo": "parametro_faltando",
-                "mensagem": "Não consegui identificar todos os dados da pergunta. Tente reformular.",
+                "mensagem": _esclarecer(faltando),
+                "faltando": faltando,
                 "exemplos": EXEMPLOS_PADRAO,
             },
         )
@@ -64,7 +95,14 @@ def executar_template(interp: Interpretacao, empresa_id: str, conn: psycopg.Conn
             },
         )
 
-    if not linhas_brutas:
+    # Agregados sem GROUP BY (ex.: ticket_medio = avg(...)) SEMPRE devolvem uma
+    # linha: quando nao ha dados no periodo, essa linha vem toda NULL. Sem este
+    # tratamento, "ticket médio de 2018" (sem vendas) virava 200 com valor null
+    # em vez de 404 sem_resultado. Uma linha unica 100% NULL conta como vazio.
+    sem_dados = not linhas_brutas or (
+        len(linhas_brutas) == 1 and all(v is None for v in linhas_brutas[0])
+    )
+    if sem_dados:
         raise HTTPException(
             status_code=404,
             detail={
