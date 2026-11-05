@@ -21,11 +21,11 @@ INTENCOES_ESPERADAS = {
 }
 
 
-# Intenções que entraram no modelo v1.2.0 (antes só refino por regra).
+# Refinamentos sobre a intenção do modelo (app/refino.py), sem classe própria.
 REFINAMENTOS = {"unidades_vendidas", "melhor_mes"}
 
 
-def test_todas_as_14_intencoes_tem_template():
+def test_todas_as_12_intencoes_tem_template():
     assert TEMPLATES.keys() == INTENCOES_ESPERADAS | REFINAMENTOS
 
 
