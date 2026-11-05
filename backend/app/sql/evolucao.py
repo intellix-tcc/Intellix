@@ -1,4 +1,4 @@
-"""Contexto de uma resposta de um mês só: a mesma métrica nos 12 meses até ele.
+"""Evolução de uma resposta de um mês só: a mesma métrica nos 12 meses até ele.
 
 "Quanto faturei em outubro?" responde com um número. Sozinho, ele não diz se
 outubro foi bom ou ruim. Para essas perguntas (faturamento, quantidade de
@@ -19,9 +19,9 @@ from typing import Any
 
 import psycopg
 
-MESES_DE_CONTEXTO = 12
+MESES_DE_EVOLUCAO = 12
 
-# intenção -> (coluna da métrica, título do contexto, SQL mensal)
+# intenção -> (coluna da métrica, título da evolução, SQL mensal)
 CONSULTAS: dict[str, tuple[str, str, str]] = {
     "total_vendas_periodo": (
         "faturamento",
@@ -79,7 +79,7 @@ def mes_unico(entidades: dict[str, Any]) -> tuple[int, int] | None:
     return None
 
 
-def meses_ate(ano: int, mes: int, quantidade: int = MESES_DE_CONTEXTO) -> list[str]:
+def meses_ate(ano: int, mes: int, quantidade: int = MESES_DE_EVOLUCAO) -> list[str]:
     """Rótulos 'AAAA-MM' dos `quantidade` meses que terminam em (ano, mes)."""
     rotulos = []
     for passos in range(quantidade - 1, -1, -1):
@@ -93,7 +93,7 @@ def preencher(rotulos: list[str], valores: dict[str, float]) -> list[list[Any]]:
     return [[r, round(valores.get(r, 0.0), 2)] for r in rotulos]
 
 
-def contexto_mensal(intencao: str | None, entidades: dict[str, Any], empresa_id: str,
+def evolucao_mensal(intencao: str | None, entidades: dict[str, Any], empresa_id: str,
                     conn: psycopg.Connection) -> dict[str, Any] | None:
     consulta = CONSULTAS.get(intencao or "")
     mes = mes_unico(entidades)

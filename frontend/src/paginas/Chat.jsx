@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import GraficoResultado from "../componentes/GraficoResultado";
 import LimiteErro from "../componentes/LimiteErro";
-import ContextoMensal from "../componentes/ContextoMensal";
+import EvolucaoMensal from "../componentes/EvolucaoMensal";
 import Icone from "../componentes/Icone";
 import Logo from "../componentes/Logo";
 import { baixarExcel, baixarPdf } from "../utils/exportar";
@@ -334,9 +334,9 @@ function Resultado({ r, onPerguntar }) {
           </p>
         )}
         {/* Um mês só: a evolução dos 12 meses até ele, com o mês em destaque. */}
-        {r.contexto && (
+        {r.evolucao && (
           <LimiteErro alternativo={null}>
-            <ContextoMensal contexto={r.contexto} />
+            <EvolucaoMensal evolucao={r.evolucao} />
           </LimiteErro>
         )}
         <DetalhesResposta r={r} />

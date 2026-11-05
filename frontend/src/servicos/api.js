@@ -12,7 +12,7 @@ const FALSAS = {
     linhas: [["2024-03", 208725.39]],
     tipo_visualizacao: "numero",
     confianca: 0.93,
-    contexto: {
+    evolucao: {
       titulo: "Faturamento mês a mês",
       colunas: ["periodo", "faturamento"],
       linhas: [
@@ -84,7 +84,7 @@ function erroDeRede(causa) {
   };
 }
 
-export async function perguntar(pergunta) {
+export async function perguntar(pergunta, contexto) {
   if (MOCK) {
     await new Promise((r) => setTimeout(r, 600)); // simula a espera real
     if (/produto|vendidos/i.test(pergunta)) return { ...FALSAS.barra, intencao: "top_produtos" };
@@ -101,9 +101,11 @@ export async function perguntar(pergunta) {
 
   // Se há um dataset importado ativo, pergunta sobre ele; senão, base demo.
   const dataset = datasetAtivo();
-  const corpo = dataset?.empresaId
-    ? { pergunta, empresa_id: dataset.empresaId }
-    : { pergunta };
+  const corpo = { pergunta };
+  if (dataset?.empresaId) corpo.empresa_id = dataset.empresaId;
+  // Continuidade da conversa: manda o contexto da resposta anterior (intenção
+  // + parâmetros) para o backend resolver frases elípticas como "e em abril?".
+  if (contexto?.intencao) corpo.contexto = contexto;
   return chamar("/chat", { metodo: "POST", corpo });
 }
 
