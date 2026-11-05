@@ -1,5 +1,8 @@
 name: CI
-on: [pull_request]
+on:
+  pull_request:
+  push:
+    branches: [main]
 
 jobs:
   lint:
@@ -13,15 +16,42 @@ jobs:
 
   test:
     runs-on: ubuntu-latest
+    # Postgres efêmero (só existe durante o job): os testes de integração
+    # (/chat de ponta a ponta, valores de referência F01, isolamento e
+    # auditoria F09) rodam a cada PR, sem nenhuma credencial de produção.
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: intellix
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready --health-interval 5s
+          --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/intellix
+      EMPRESA_ID: 00000000-0000-0000-0000-000000000001
+      # O mesmo NLU de produção (Render): os testes usam o modelo treinado,
+      # não o baseline de regras (feedback TC2 F11).
+      NLU_BACKEND: modelo
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: { python-version: "3.12" }
       - run: pip install -r backend/requirements.txt
-      # Sem DATABASE_URL no CI, os testes de integração se auto-pulam
-      # (pytest.mark.skipif em test_chat_integration.py). Rodam os demais.
-      - run: pytest
+      - name: Schema e dados de demonstração
+        env:
+          PGPASSWORD: postgres
+        run: |
+          psql -h localhost -U postgres -d intellix -v ON_ERROR_STOP=1 -q -f database/local/supabase_minimo.sql
+          for f in database/migrations/*.sql; do
+            psql -h localhost -U postgres -d intellix -v ON_ERROR_STOP=1 -q -f "$f"
+          done
+          python database/seed.py
+      - run: pytest -rs
         working-directory: backend
+
   # Frontend: o mesmo cuidado que o backend já tinha. Sem isto, um erro de
   # lint ou de build só aparecia no deploy da Vercel.
   frontend:
