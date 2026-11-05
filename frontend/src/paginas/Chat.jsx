@@ -221,7 +221,11 @@ function TabelaResultado({ r }) {
           {r.linhas.map((linha, i) => (
             <tr key={i}>
               {linha.map((v, j) => (
-                <td key={j} className={typeof v === "number" ? "num" : undefined}>
+                <td
+                  key={j}
+                  className={typeof v === "number" ? "num" : undefined}
+                  data-rotulo={humanizarColuna(r.colunas[j])}
+                >
                   {typeof v === "number" ? formatarValor(r.colunas[j], v) : rotuloItem(r.colunas[j], v)}
                 </td>
               ))}

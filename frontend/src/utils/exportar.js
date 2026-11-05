@@ -4,12 +4,37 @@
 // As libs (xlsx, jspdf) são pesadas, então usamos import() dinâmico: elas só
 // entram no navegador quando o usuário clica em exportar, não no load inicial.
 
+// Nome de arquivo só com letras sem acento, números, "_" e "-": nome com
+// acento ("período") chega a virar "download", sem extensão, em alguns
+// navegadores e sistemas.
 function nomeArquivo(r) {
-  return (r.titulo || "resultado").replace(/\s+/g, "_");
+  return (r.titulo || "resultado")
+    .normalize("NFD")
+    .replace(/\p{M}/gu, "")
+    .replace(/\s+/g, "_")
+    .replace(/[^A-Za-z0-9_-]/g, "");
 }
 
 function celula(v) {
   return typeof v === "number" ? v.toLocaleString("pt-BR") : v;
+}
+
+// Download de um Blob com nome de arquivo garantido. O XLSX.writeFile da
+// SheetJS remove o link no mesmo instante do clique, e em alguns navegadores
+// o arquivo saía com o nome genérico "download", sem a extensão .xlsx.
+function baixarBlob(blob, nome) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = nome;
+  a.rel = "noopener";
+  a.style.display = "none";
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => {
+    a.remove();
+    URL.revokeObjectURL(url);
+  }, 1000);
 }
 
 export async function baixarExcel(r) {
@@ -17,7 +42,11 @@ export async function baixarExcel(r) {
   const ws = XLSX.utils.aoa_to_sheet([r.colunas, ...r.linhas]);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "Resultado");
-  XLSX.writeFile(wb, `${nomeArquivo(r)}.xlsx`);
+  const dados = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+  baixarBlob(
+    new Blob([dados], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }),
+    `${nomeArquivo(r)}.xlsx`
+  );
 }
 
 export async function baixarPdf(r) {
