@@ -131,3 +131,13 @@ erDiagram
 | staging_venda | id | — |
 | fato_item_venda | id | (empresa_id, venda_id, produto_id) |
 | log_consulta | id | — |
+
+## Figura do documento (TCC, Figura 4)
+
+`der.png` é a imagem usada na Figura 4 do TCC. Foi gerada a partir do mesmo
+Mermaid acima, convertido para Graphviz (`der.dot`) para caber em uma página A4
+em formato retrato. Para regenerar:
+
+```bash
+dot -Tpng -Gdpi=300 docs/diagramas/der.dot -o docs/diagramas/der.png
+```
