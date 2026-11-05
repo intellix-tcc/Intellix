@@ -1905,7 +1905,13 @@ img.logo {
   gap: 12px;
   margin-top: 16px;
 }
-.form-pergunta input {
+.form-pergunta textarea {
+  resize: none;
+  line-height: 1.45;
+  max-height: 160px;
+}
+.form-pergunta input,
+.form-pergunta textarea {
   flex: 1;
   min-width: 0;
   padding: 14px 18px;
@@ -1917,7 +1923,8 @@ img.logo {
   font-family: var(--sans);
   transition: border-color 0.16s ease, box-shadow 0.16s ease;
 }
-.form-pergunta input:focus {
+.form-pergunta input:focus,
+.form-pergunta textarea:focus {
   outline: none;
   border-color: var(--accent);
   box-shadow: 0 0 0 3px var(--accent-bg);
@@ -1939,7 +1946,8 @@ img.logo {
   transform: translateY(-1px);
 }
 .form-pergunta button:disabled,
-.form-pergunta input:disabled {
+.form-pergunta input:disabled,
+.form-pergunta textarea:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
@@ -4391,4 +4399,230 @@ button.painel-observacao:focus-visible .painel-observacao-acao {
     width: 100%;
     flex-wrap: wrap;
   }
+}
+
+/* ==========================================================
+   Chat: campo, sugestões, continuação, tentar de novo
+   ========================================================== */
+.form-pergunta {
+  align-items: flex-end;
+}
+.form-pergunta button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 52px;
+}
+.form-pergunta-icone {
+  display: none;
+}
+.form-pergunta-dica {
+  margin: 8px 2px 0;
+  font-size: 12px;
+  color: var(--text-3);
+}
+kbd {
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 1px 6px;
+  border: 1px solid var(--border-2);
+  border-bottom-width: 2px;
+  border-radius: 5px;
+  background: var(--surface);
+  color: var(--text);
+}
+
+/* Chat vazio: marca, pergunta-convite e sugestões por tema. */
+.tela-inicial {
+  max-width: 860px;
+  width: 100%;
+}
+.tela-inicial-marca {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 20px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-2);
+}
+.tela-inicial-titulo {
+  font-family: var(--heading);
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.4px;
+  color: var(--text-h);
+  margin: 18px 0 6px;
+}
+.tela-inicial-texto {
+  margin: 0 0 22px;
+  color: var(--text);
+}
+.sugestoes-grade {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 14px;
+  text-align: left;
+}
+.sugestao-grupo {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+}
+.sugestao-tema {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0 0 2px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--accent-3);
+}
+.sugestao-grupo .exemplo {
+  padding: 9px 12px;
+  border-radius: 10px;
+  font-size: 13.5px;
+  text-align: left;
+  line-height: 1.35;
+}
+
+/* Perguntas clicáveis (erro, resposta incerta) */
+.perguntas-clicaveis {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.perguntas-clicaveis button,
+.continuar-opcao {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  border: 1px solid var(--border-2);
+  border-radius: 999px;
+  background: var(--surface);
+  font: inherit;
+  font-size: 13.5px;
+  color: var(--text-h);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.16s ease, color 0.16s ease, background 0.16s ease;
+}
+.perguntas-clicaveis button .icone {
+  color: var(--text-3);
+}
+.perguntas-clicaveis button:hover:not(:disabled),
+.continuar-opcao:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-bg);
+}
+.perguntas-clicaveis button:focus-visible,
+.continuar-opcao:focus-visible,
+.botao-tentar:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.perguntas-clicaveis button:disabled,
+.continuar-opcao:disabled,
+.botao-tentar:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.mensagem-erro-dica {
+  margin: 10px 0 0;
+  font-size: 13px;
+  color: var(--text);
+}
+.botao-tentar {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 10px;
+  padding: 7px 14px;
+  border: 1px solid var(--erro-borda);
+  border-radius: 9px;
+  background: var(--surface);
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--erro-texto);
+  cursor: pointer;
+}
+.botao-tentar:hover:not(:disabled) {
+  background: var(--erro-bg);
+}
+
+/* Continue a análise: próximos passos sugeridos após a resposta. */
+.continuar {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px dashed var(--border-2);
+}
+.continuar-titulo {
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--accent-3);
+}
+.continuar-opcoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+@media (max-width: 560px) {
+  .form-pergunta button {
+    padding: 0 16px;
+  }
+  .form-pergunta-rotulo {
+    display: none;
+  }
+  .form-pergunta-icone {
+    display: inline;
+  }
+  .form-pergunta-dica {
+    display: none;
+  }
+  .tela-inicial-titulo {
+    font-size: 20px;
+  }
+}
+/* Copiar: neutro ao lado do verde do Excel e do vermelho do PDF. */
+.meta-acao:not(.meta-acao-excel):not(.meta-acao-pdf) {
+  border: 1px solid var(--border-2);
+  background: var(--surface);
+  color: var(--text);
+}
+.meta-acao:not(.meta-acao-excel):not(.meta-acao-pdf):hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.form-pergunta textarea {
+  box-sizing: border-box;
+  min-height: 52px;
+}
+.resultado-tabela td.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.mensagem-erro .perguntas-clicaveis {
+  padding-left: 0;
+  align-items: flex-start;
 }
