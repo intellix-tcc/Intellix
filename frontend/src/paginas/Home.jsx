@@ -17,6 +17,8 @@ import { datasetAtivo } from "../utils/dataset";
 import { quando } from "../utils/conversas";
 import Icone from "../componentes/Icone";
 import Rosca from "../componentes/Rosca";
+import LimiteErro from "../componentes/LimiteErro";
+import { animar, criarRotuloDePonto, escalaDe, numeroNaEscala } from "../utils/rotulos";
 import { coresDistintas } from "../utils/cores";
 
 const ICONE_OBSERVACAO = { alta: "seta-cima", queda: "seta-baixo", atencao: "alerta", padrao: "historico" };
@@ -241,7 +243,9 @@ export default function Home({ usuario, conversas = [], onPerguntar, onAbrirConv
             <div className="painel-duas-colunas">
               <section className="painel-secao anima-entrada" aria-labelledby="h-diario">
                 <h2 id="h-diario" className="eyebrow">Vendas por dia</h2>
-                <GraficoDiario serie={r.serie_diaria} mes={r.periodo.mes} />
+                <LimiteErro alternativo={<p className="painel-legenda">Não foi possível desenhar este gráfico.</p>}>
+                  <GraficoDiario serie={r.serie_diaria} mes={r.periodo.mes} />
+                </LimiteErro>
               </section>
 
               <section className="painel-secao anima-entrada" aria-labelledby="h-categorias">
@@ -253,7 +257,9 @@ export default function Home({ usuario, conversas = [], onPerguntar, onAbrirConv
             <div className="painel-duas-colunas">
               <section className="painel-secao anima-entrada" aria-labelledby="h-tendencia">
                 <h2 id="h-tendencia" className="eyebrow">Tendência: últimos 12 meses</h2>
-                <GraficoTendencia serie={r.serie_mensal} />
+                <LimiteErro alternativo={<p className="painel-legenda">Não foi possível desenhar este gráfico.</p>}>
+                  <GraficoTendencia serie={r.serie_mensal} />
+                </LimiteErro>
               </section>
 
               <section className="painel-secao anima-entrada" aria-labelledby="h-canais">
@@ -267,7 +273,9 @@ export default function Home({ usuario, conversas = [], onPerguntar, onAbrirConv
                 {r.dias_semana && (
                   <section className="painel-secao anima-entrada" aria-labelledby="h-semana">
                     <h2 id="h-semana" className="eyebrow">Média por dia da semana</h2>
-                    <GraficoSemana dias={r.dias_semana} />
+                    <LimiteErro alternativo={<p className="painel-legenda">Não foi possível desenhar este gráfico.</p>}>
+                      <GraficoSemana dias={r.dias_semana} />
+                    </LimiteErro>
                   </section>
                 )}
                 {r.pagamentos && (
@@ -439,17 +447,42 @@ function CartaoKpi({ kpi, indice, anterior, serie }) {
   );
 }
 
+// Rótulo vertical acima da barra (vendas por dia): "5,7 mil". Dia sem venda
+// fica sem rótulo.
+function criarRotuloVertical(escala) {
+  return function RotuloVertical({ x, y, width, value }) {
+  if (!value || x == null) return null;
+  const cx = x + width / 2;
+  return (
+    <text
+      x={cx}
+      y={y - 6}
+      transform={`rotate(-90 ${cx} ${y - 6})`}
+      textAnchor="start"
+      dominantBaseline="central"
+      fontSize={9.5}
+      fill="var(--text-3)"
+      fontFamily="var(--mono)"
+    >
+      {numeroNaEscala(value, escala)}
+    </text>
+  );
+  };
+}
+
 function GraficoDiario({ serie, mes }) {
   const comVenda = serie.filter((d) => d.valor > 0);
   if (!comVenda.length) return <p className="painel-legenda">Sem vendas no período.</p>;
   const pico = serie.reduce((max, d) => (d.valor > max.valor ? d : max), serie[0]);
   const media = serie.reduce((s, d) => s + d.valor, 0) / serie.length;
   const mm = String(mes).padStart(2, "0");
+  const escalaDiaria = escalaDe(serie.map((d) => d.valor));
   return (
     <>
+      <p className="grafico-unidade">Valores em {escalaDiaria.unidade}</p>
       <div role="img" aria-label={`Gráfico de barras do faturamento diário. Pico no dia ${pico.dia}, com ${moeda(pico.valor)}; média de ${moeda(media)} por dia.`}>
-        <ResponsiveContainer width="100%" height={210}>
-          <BarChart data={serie} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
+        <ResponsiveContainer width="100%" height={250}>
+          <BarChart data={serie} margin={{ top: 34, right: 4, left: 0, bottom: 0 }}>
             <XAxis dataKey="dia" interval={2} tick={{ fontSize: 11, fill: "var(--text-3)" }} axisLine={false} tickLine={false} />
             <YAxis hide />
             <Tooltip
@@ -464,7 +497,11 @@ function GraficoDiario({ serie, mes }) {
                 <stop offset="100%" stopColor="var(--accent)" stopOpacity={0.85} />
               </linearGradient>
             </defs>
-            <Bar dataKey="valor" fill="url(#grad-barra)" radius={[4, 4, 0, 0]} />
+            <Bar dataKey="valor" fill="url(#grad-barra)" radius={[4, 4, 0, 0]} {...animar()}>
+              {/* rótulo de valor na vertical, acima de cada barra: com 31
+                  dias não cabe na horizontal */}
+              <LabelList dataKey="valor" content={criarRotuloVertical(escalaDiaria)} />
+            </Bar>
           </BarChart>
         </ResponsiveContainer>
       </div>
@@ -479,11 +516,13 @@ function GraficoTendencia({ serie }) {
   const comValor = serie.filter((m) => m.valor > 0);
   if (comValor.length < 2) return <p className="painel-legenda">Histórico curto demais para mostrar tendência.</p>;
   const melhor = comValor.reduce((max, m) => (m.valor > max.valor ? m : max), comValor[0]);
+  const escala = escalaDe(serie.map((m) => m.valor));
   return (
     <>
+      <p className="grafico-unidade">Valores em {escala.unidade}</p>
       <div role="img" aria-label={`Gráfico de área do faturamento mensal dos últimos 12 meses. Melhor mês: ${melhor.rotulo}, com ${moeda(melhor.valor)}.`}>
-        <ResponsiveContainer width="100%" height={210}>
-          <AreaChart data={serie} margin={{ top: 6, right: 6, left: 0, bottom: 0 }}>
+        <ResponsiveContainer width="100%" height={230}>
+          <AreaChart data={serie} margin={{ top: 30, right: 20, left: 20, bottom: 16 }}>
             <defs>
               <linearGradient id="grad-tendencia" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stopColor="var(--teal)" stopOpacity={0.35} />
@@ -497,7 +536,7 @@ function GraficoTendencia({ serie }) {
             <XAxis
               dataKey="rotulo"
               interval={1}
-              padding={{ left: 24, right: 24 }}
+              padding={{ left: 20, right: 20 }}
               tick={{ fontSize: 11, fill: "var(--text-3)" }}
               axisLine={false}
               tickLine={false}
@@ -511,12 +550,19 @@ function GraficoTendencia({ serie }) {
               strokeWidth={2.5}
               fill="url(#grad-tendencia)"
               activeDot={{ r: 5, fill: "var(--teal)", stroke: "var(--surface)", strokeWidth: 2 }}
-            />
+              dot={{ r: 2.5, fill: "var(--surface)", stroke: "var(--teal)", strokeWidth: 1.5 }}
+              {...animar()}
+            >
+              <LabelList
+                dataKey="valor"
+                content={criarRotuloDePonto(serie.map((m) => m.valor), (v) => numeroNaEscala(v, escala))}
+              />
+            </Area>
           </AreaChart>
         </ResponsiveContainer>
       </div>
       <p className="painel-legenda">
-        Melhor mês: {melhor.rotulo} ({moedaCurta(melhor.valor)})
+        Melhor mês, em destaque: {melhor.rotulo} ({moedaCurta(melhor.valor)})
       </p>
     </>
   );
@@ -533,12 +579,14 @@ function Fatias({ itens }) {
   }] : itens;
   const cores = coresDistintas(visiveis.map((i) => i.nome));
   return (
-    <Rosca
-      itens={visiveis.map((i, k) => ({ nome: i.nome, valor: i.valor, cor: cores[k] }))}
-      formatar={(v, centro) => (centro ? moedaCurta(v) : moeda(v))}
-      rotuloCentro="No mês"
-      altura={170}
-    />
+    <LimiteErro alternativo={<p className="painel-legenda">Não foi possível desenhar este gráfico.</p>}>
+      <Rosca
+        itens={visiveis.map((i, k) => ({ nome: i.nome, valor: i.valor, cor: cores[k] }))}
+        formatar={(v, centro) => (centro ? moedaCurta(v) : moeda(v))}
+        rotuloCentro="No mês"
+        altura={170}
+      />
+    </LimiteErro>
   );
 }
 
@@ -563,7 +611,7 @@ function GraficoSemana({ dias }) {
               cursor={{ fill: "var(--hover-bg)" }}
               formatter={(v) => [moeda(v), "Média por dia"]}
             />
-            <Bar dataKey="valor" radius={[6, 6, 0, 0]} maxBarSize={46}>
+            <Bar dataKey="valor" radius={[6, 6, 0, 0]} maxBarSize={46} {...animar()}>
               {dias.map((d) => (
                 <Cell key={d.dia} fill={d === melhor ? "var(--dado-2)" : "var(--dado-8)"} fillOpacity={d === melhor ? 1 : 0.75} />
               ))}

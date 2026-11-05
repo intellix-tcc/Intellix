@@ -1,5 +1,30 @@
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 
+const RAD = Math.PI / 180;
+
+// Percentual escrito dentro da própria fatia (só nas que têm espaço: 5% ou
+// mais). O valor em reais fica na legenda ao lado.
+function RotuloFatia({ cx, cy, midAngle, innerRadius, outerRadius, percent }) {
+  if (percent == null || percent < 0.05) return null;
+  const r = innerRadius + (outerRadius - innerRadius) / 2;
+  const x = cx + r * Math.cos(-midAngle * RAD);
+  const y = cy + r * Math.sin(-midAngle * RAD);
+  return (
+    <text
+      x={x}
+      y={y}
+      textAnchor="middle"
+      dominantBaseline="central"
+      fontSize={11}
+      fontWeight={700}
+      fill="#ffffff"
+      style={{ paintOrder: "stroke", stroke: "rgba(0,0,0,0.25)", strokeWidth: 2 }}
+    >
+      {`${Math.round(percent * 100)}%`}
+    </text>
+  );
+}
+
 // Rosca (gráfico de pizza com furo) + legenda com valor e percentual.
 // Para composição do todo: categorias, canais, formas de pagamento. A
 // legenda é texto de verdade, então o dado continua legível sem o gráfico
@@ -26,9 +51,11 @@ export default function Rosca({ itens, formatar, rotuloCentro = "Total", altura 
               stroke="var(--surface)"
               strokeWidth={2}
               isAnimationActive={false}
+              labelLine={false}
+              label={RotuloFatia}
             >
-              {itens.map((i) => (
-                <Cell key={i.nome} fill={i.cor} />
+              {itens.map((i, k) => (
+                <Cell key={`${k}-${i.nome}`} fill={i.cor} />
               ))}
             </Pie>
             <Tooltip
@@ -50,8 +77,8 @@ export default function Rosca({ itens, formatar, rotuloCentro = "Total", altura 
         </div>
       </div>
       <ul className="rosca-legenda">
-        {itens.map((i) => (
-          <li key={i.nome}>
+        {itens.map((i, k) => (
+          <li key={`${k}-${i.nome}`}>
             <span className="rosca-cor" style={{ background: i.cor }} aria-hidden="true" />
             <span className="rosca-nome">{i.nome}</span>
             <span className="rosca-pct">{fmtPct(i.valor)}</span>
