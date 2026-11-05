@@ -5,6 +5,7 @@ import Logo from "../componentes/Logo";
 import { baixarExcel, baixarPdf } from "../utils/exportar";
 import { EXEMPLOS } from "../utils/exemplos";
 import { datasetAtivo, limparDataset } from "../utils/dataset";
+import { SUGESTOES_INICIAIS, sugestoesDeContinuacao } from "../utils/sugestoes";
 
 // Quanto tempo a mensagem "Encontrei N registros" fica na tela antes de dar
 // lugar à resposta completa — ver `reveladas` em Chat, mais abaixo.
@@ -31,9 +32,29 @@ const CONFIANCA_MINIMA = 0.5;
 // discreto com um ponto colorido, não um badge — a cor já diz "confiança",
 // não precisa de uma caixa em volta pra parecer importante. `baixa` nunca
 // chega aqui: essa faixa já vira o bloco `resultado-incerto` acima.
+// Resultado como texto: título + tabela separada por tabulação. Colado numa
+// planilha, cada valor cai na sua célula; num e-mail, continua legível.
+function resultadoComoTexto(r) {
+  const linhas = r.linhas.map((linha) =>
+    linha.map((v, j) => (typeof v === "number" ? formatarValor(r.colunas[j], v) : v)).join("\t")
+  );
+  return [r.titulo, r.colunas.map(humanizarColuna).join("\t"), ...linhas].join("\n");
+}
+
 function LinhaMeta({ r }) {
   const alta = r.confianca != null && r.confianca >= 0.8;
   const n = r.linhas?.length ?? 0;
+  const [copiado, setCopiado] = useState(false);
+
+  async function copiar() {
+    try {
+      await navigator.clipboard.writeText(resultadoComoTexto(r));
+      setCopiado(true);
+      setTimeout(() => setCopiado(false), 1800);
+    } catch {
+      // sem permissão de área de transferência: o Excel continua disponível
+    }
+  }
   return (
     <div className="linha-meta">
       {r.confianca != null && (
@@ -49,6 +70,16 @@ function LinhaMeta({ r }) {
         {n === 1 ? "1 registro" : `${n} registros`}
       </span>
       <span className="meta-acoes">
+        <button
+          type="button"
+          className="meta-acao"
+          onClick={copiar}
+          aria-live="polite"
+          title="Copiar o resultado como texto"
+        >
+          <Icone nome={copiado ? "check" : "copiar"} size={14} />
+          {copiado ? "Copiado" : "Copiar"}
+        </button>
         <button
           type="button"
           className="meta-acao meta-acao-excel"
@@ -156,18 +187,31 @@ function maiorItem(r) {
   return { rotulo: maior[0], pct: Math.round((Number(maior[idx]) / total) * 100) };
 }
 
-function Resultado({ r }) {
+// Lista de perguntas clicáveis — usada no erro, na resposta incerta e nas
+// sugestões de continuação. Clicar já pergunta; não precisa redigitar.
+function PerguntasClicaveis({ perguntas, onPerguntar, desativado }) {
+  return (
+    <ul className="perguntas-clicaveis">
+      {perguntas.map((p) => (
+        <li key={p}>
+          <button type="button" onClick={() => onPerguntar(p)} disabled={desativado}>
+            {p}
+            <Icone nome="seta-direita" size={13} />
+          </button>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function Resultado({ r, onPerguntar }) {
   // D6 #3 — Prevenção de erros: confiança baixa → não adivinhe, mostre exemplos.
   if (r.confianca != null && r.confianca < CONFIANCA_MINIMA) {
     return (
       <div className="resultado resultado-incerto">
         <p className="resultado-titulo">Não tenho certeza dessa resposta.</p>
         <p>Tente uma dessas perguntas:</p>
-        <ul>
-          {EXEMPLOS.map((ex) => (
-            <li key={ex}>{ex}</li>
-          ))}
-        </ul>
+        <PerguntasClicaveis perguntas={EXEMPLOS} onPerguntar={onPerguntar} />
       </div>
     );
   }
@@ -209,9 +253,7 @@ function Resultado({ r }) {
               return (
                 <li key={linha[0] ?? i}>
                   <span className="resultado-lista-rotulo">{linha[0]}</span>
-                  <span className="resultado-lista-valor">
-                    {typeof valor === "number" ? valor.toLocaleString("pt-BR") : valor}
-                  </span>
+                  <span className="resultado-lista-valor">{formatarValor(metrica, valor)}</span>
                 </li>
               );
             })}
@@ -250,7 +292,9 @@ function Resultado({ r }) {
               {r.linhas.map((linha, i) => (
                 <tr key={i}>
                   {linha.map((v, j) => (
-                    <td key={j}>{typeof v === "number" ? v.toLocaleString("pt-BR") : v}</td>
+                    <td key={j} className={typeof v === "number" ? "num" : undefined}>
+                      {typeof v === "number" ? formatarValor(r.colunas[j], v) : v}
+                    </td>
                   ))}
                 </tr>
               ))}
@@ -264,7 +308,7 @@ function Resultado({ r }) {
   }
 }
 
-function Mensagem({ msg }) {
+function Mensagem({ msg, ultima, perguntaAnterior, onPerguntar, ocupado }) {
   if (msg.tipo === "usuario") {
     return <div className="mensagem mensagem-usuario">{msg.texto}</div>;
   }
@@ -274,22 +318,47 @@ function Mensagem({ msg }) {
         <AvatarMarca />
         <div className="mensagem mensagem-erro">
           <p>{msg.mensagem}</p>
-          {msg.exemplos && (
-            <ul>
-              {msg.exemplos.map((ex) => (
-                <li key={ex}>{ex}</li>
-              ))}
-            </ul>
+          {msg.exemplos?.length > 0 && (
+            <>
+              <p className="mensagem-erro-dica">Você pode tentar, por exemplo:</p>
+              <PerguntasClicaveis perguntas={msg.exemplos} onPerguntar={onPerguntar} desativado={ocupado} />
+            </>
+          )}
+          {/* Sem exemplos, o problema foi de rede/servidor: a mesma pergunta
+              pode dar certo daqui a pouco. */}
+          {ultima && !msg.exemplos?.length && perguntaAnterior && (
+            <button
+              type="button"
+              className="botao-tentar"
+              onClick={() => onPerguntar(perguntaAnterior)}
+              disabled={ocupado}
+            >
+              <Icone nome="recarregar" size={14} />
+              Tentar de novo
+            </button>
           )}
         </div>
       </div>
     );
   }
+  const continuar = ultima ? sugestoesDeContinuacao(msg.dados) : [];
   return (
     <div className="linha-ia">
       <AvatarMarca />
       <div className="mensagem mensagem-resultado">
-        <Resultado r={msg.dados} />
+        <Resultado r={msg.dados} onPerguntar={onPerguntar} />
+        {continuar.length > 0 && (
+          <div className="continuar">
+            <p className="continuar-titulo">Continue a análise</p>
+            <div className="continuar-opcoes">
+              {continuar.map((p) => (
+                <button key={p} type="button" className="continuar-opcao" onClick={() => onPerguntar(p)} disabled={ocupado}>
+                  {p}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -358,6 +427,47 @@ export default function Chat({
 
   const vazio = mensagens.length === 0;
 
+  // Rolagem automática para a última mensagem. Só quando a pessoa já está
+  // perto do fim: se ela subiu para reler uma resposta antiga, a chegada de
+  // uma nova não arranca a leitura dela do lugar.
+  const listaRef = useRef(null);
+  const pertoDoFim = useRef(true);
+  function aoRolar() {
+    const el = listaRef.current;
+    if (el) pertoDoFim.current = el.scrollHeight - el.scrollTop - el.clientHeight < 160;
+  }
+  useEffect(() => {
+    const el = listaRef.current;
+    if (!el || !pertoDoFim.current) return;
+    const suave = !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    el.scrollTo({ top: el.scrollHeight, behavior: suave ? "smooth" : "auto" });
+  }, [reveladas, carregando, mensagens.length]);
+
+  // Campo de pergunta: Enter envia, Shift+Enter quebra linha, e a caixa
+  // cresce com o texto até um limite (depois rola por dentro).
+  const campoRef = useRef(null);
+  useEffect(() => {
+    const el = campoRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${Math.min(el.scrollHeight, 160)}px`;
+  }, [texto]);
+  useEffect(() => {
+    if (!carregando) campoRef.current?.focus({ preventScroll: true });
+  }, [carregando]);
+
+  function aoTeclar(e) {
+    if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
+      e.preventDefault();
+      onPerguntar(texto);
+    }
+  }
+
+  const perguntaDe = (i) => {
+    for (let j = i - 1; j >= 0; j--) if (mensagens[j].tipo === "usuario") return mensagens[j].texto;
+    return null;
+  };
+
   return (
     <div className="chat-pagina">
       {dataset && (
@@ -379,27 +489,45 @@ export default function Chat({
         role="log"
         aria-label="Conversa"
         aria-live="polite"
+        ref={listaRef}
+        onScroll={aoRolar}
       >
         {vazio && !carregando && (
           <div className="tela-inicial anima-entrada">
-            <p>Pergunte sobre suas vendas. Por exemplo:</p>
-            <div className="exemplos">
-              {EXEMPLOS.map((ex) => (
-                <button
-                  key={ex}
-                  type="button"
-                  className="exemplo"
-                  onClick={() => onPerguntar(ex)}
-                >
-                  {ex}
-                </button>
+            <span className="tela-inicial-marca" aria-hidden="true">
+              <Logo variante="simbolo" largura={40} />
+            </span>
+            <h2 className="tela-inicial-titulo">O que você quer saber sobre suas vendas?</h2>
+            <p className="tela-inicial-texto">
+              Pergunte em português, do seu jeito. Algumas ideias para começar:
+            </p>
+            <div className="sugestoes-grade">
+              {SUGESTOES_INICIAIS.map((g) => (
+                <div key={g.tema} className="sugestao-grupo">
+                  <p className="sugestao-tema">
+                    <Icone nome={g.icone} size={15} />
+                    {g.tema}
+                  </p>
+                  {g.perguntas.map((ex) => (
+                    <button key={ex} type="button" className="exemplo" onClick={() => onPerguntar(ex)}>
+                      {ex}
+                    </button>
+                  ))}
+                </div>
               ))}
             </div>
           </div>
         )}
 
         {mensagens.slice(0, reveladas).map((msg, i) => (
-          <Mensagem key={i} msg={msg} />
+          <Mensagem
+            key={i}
+            msg={msg}
+            ultima={i === mensagens.length - 1}
+            perguntaAnterior={perguntaDe(i)}
+            onPerguntar={onPerguntar}
+            ocupado={carregando}
+          />
         ))}
 
         {pendente && (
@@ -438,16 +566,29 @@ export default function Chat({
       </div>
 
       <form onSubmit={enviar} className="form-pergunta">
-        <input
+        <label htmlFor="campo-pergunta" className="sr-only">
+          Sua pergunta sobre as vendas
+        </label>
+        <textarea
+          id="campo-pergunta"
+          ref={campoRef}
+          rows={1}
           value={texto}
           onChange={(e) => setTexto(e.target.value)}
+          onKeyDown={aoTeclar}
           placeholder="Pergunte sobre suas vendas..."
           disabled={carregando}
+          maxLength={500}
+          aria-describedby="dica-pergunta"
         />
-        <button type="submit" disabled={carregando}>
-          Enviar
+        <button type="submit" disabled={carregando || !texto.trim()} aria-label="Enviar pergunta">
+          <span className="form-pergunta-rotulo">Enviar</span>
+          <Icone nome="seta-direita" size={18} className="form-pergunta-icone" />
         </button>
       </form>
+      <p id="dica-pergunta" className="form-pergunta-dica">
+        <kbd>Enter</kbd> envia · <kbd>Shift</kbd> + <kbd>Enter</kbd> quebra a linha
+      </p>
     </div>
   );
 }

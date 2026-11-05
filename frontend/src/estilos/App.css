@@ -543,9 +543,8 @@ img.logo {
 
 /* ---- Início: painel de visão geral (design system v2) ----
    Deixou de ser tela de entrada de pergunta pra virar leitura: panorama,
-   gráfico, resumo em texto, ranking, observações — tudo isso é conteúdo
-   MOCK enquanto o contrato de dados não existe no backend (ver
-   utils/resumoExemplo.js e a proposta em docs/contratos.md). Por ser um
+   gráfico, resumo em texto, ranking, observações — com dado real do
+   GET /resumo (backend/app/resumo.py, contrato em docs/contratos.md). Por ser um
    painel com bastante conteúdo, a página rola normalmente — nada de
    "caber numa tela só" como na versão anterior. */
 .home,
@@ -621,15 +620,28 @@ img.logo {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background: none;
+  background: var(--surface);
   border: 1px solid var(--border-2);
-  color: var(--text);
+  color: var(--text-h);
   font-family: inherit;
   font-size: 13.5px;
   font-weight: 600;
   padding: 8px 14px;
   border-radius: 9px;
+  cursor: pointer;
+  transition: border-color 0.16s ease, color 0.16s ease, background 0.16s ease;
+}
+.painel-botao-secundario:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.painel-botao-secundario:disabled {
+  opacity: 0.6;
   cursor: not-allowed;
+}
+.painel-botao-secundario:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 .painel-secao {
@@ -1892,7 +1904,13 @@ img.logo {
   gap: 12px;
   margin-top: 16px;
 }
-.form-pergunta input {
+.form-pergunta textarea {
+  resize: none;
+  line-height: 1.45;
+  max-height: 160px;
+}
+.form-pergunta input,
+.form-pergunta textarea {
   flex: 1;
   min-width: 0;
   padding: 14px 18px;
@@ -1904,7 +1922,8 @@ img.logo {
   font-family: var(--sans);
   transition: border-color 0.16s ease, box-shadow 0.16s ease;
 }
-.form-pergunta input:focus {
+.form-pergunta input:focus,
+.form-pergunta textarea:focus {
   outline: none;
   border-color: var(--accent);
   box-shadow: 0 0 0 3px var(--accent-bg);
@@ -1926,7 +1945,8 @@ img.logo {
   transform: translateY(-1px);
 }
 .form-pergunta button:disabled,
-.form-pergunta input:disabled {
+.form-pergunta input:disabled,
+.form-pergunta textarea:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
@@ -2122,7 +2142,7 @@ img.logo {
   --surface: #0f2131;
   --text: #9db0bf;
   --text-h: #e9f0f6;
-  --text-3: #647787;
+  --text-3: #8396a5; /* 5,4:1 sobre a superfície escura (WCAG AA); era #647787, 3,5:1 */
   --border: #1c2e3f;
   --accent: #4c86c6;
   --accent-2: #e7b24e;
@@ -4015,4 +4035,887 @@ h1.auth-sub {
 .contato-botao-gmail {
   gap: 9px;
   justify-content: center;
+}
+
+/* ==========================================================
+   Início com dados reais (GET /resumo)
+   ========================================================== */
+.painel-conteudo {
+  display: flex;
+  flex-direction: column;
+  gap: 44px;
+  transition: opacity 0.2s ease;
+}
+/* Trocando de mês: o panorama anterior fica, esmaecido, até o novo chegar
+   — sem piscar a tela inteira de volta para o esqueleto. */
+.painel-conteudo.atualizando {
+  opacity: 0.55;
+  pointer-events: none;
+}
+.painel-subtitulo strong {
+  color: var(--text-h);
+  font-weight: 600;
+}
+.painel-status .icone {
+  color: var(--text-3);
+}
+.painel-status-ponto.erro {
+  background: var(--accent-2);
+}
+.painel-aviso {
+  margin: 0;
+  font-size: 13px;
+  color: var(--accent-2-text);
+  background: var(--accent-2-bg);
+  border-radius: 9px;
+  padding: 9px 12px;
+}
+/* Os eyebrows viraram <h2> (estrutura de títulos para leitor de tela), mas
+   continuam com a cara de rótulo de seção. */
+h2.eyebrow {
+  font-family: inherit;
+  line-height: 1.4;
+}
+
+.painel-seletor-mes {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 4px 0 12px;
+  border: 1px solid var(--border-2);
+  border-radius: 9px;
+  background: var(--surface);
+  color: var(--text-3);
+  transition: border-color 0.16s ease;
+}
+.painel-seletor-mes:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-bg);
+}
+.painel-seletor-mes select {
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text-h);
+  background: transparent;
+  border: none;
+  padding: 8px 6px;
+  cursor: pointer;
+  outline: none;
+}
+
+/* KPIs: rótulo em cima, número, variação "vs mês anterior" e, no de
+   faturamento, a tendência de 12 meses em miniatura. */
+.painel-kpis {
+  gap: 18px;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+}
+.painel-kpi {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 16px 16px 14px;
+}
+.painel-kpi .painel-kpi-rotulo {
+  margin: 0;
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--text-3);
+  text-transform: uppercase;
+}
+.painel-kpi .painel-kpi-valor {
+  font-size: 24px;
+  overflow-wrap: anywhere;
+}
+.painel-kpi-sparkline {
+  margin: 6px -4px -6px;
+}
+.painel-kpi-cor-4 {
+  border-top-color: var(--marinho);
+}
+.painel-variacao {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 12.5px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.painel-variacao.positiva {
+  color: var(--ok-texto);
+}
+.painel-variacao.negativa {
+  color: var(--erro-texto);
+}
+.painel-variacao.neutra {
+  color: var(--text-3);
+}
+.painel-variacao-ref {
+  margin-left: 4px;
+  font-weight: 500;
+  color: var(--text-3);
+}
+
+.painel-categoria-valor {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+.painel-categoria-moeda {
+  font-weight: 400;
+  font-size: 12px;
+  color: var(--text-3);
+}
+
+/* Ranking com barra proporcional sob o nome. */
+.painel-ranking-nome {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.painel-ranking-barra {
+  display: block;
+  height: 4px;
+  border-radius: 99px;
+  background: var(--code-bg);
+  overflow: hidden;
+}
+.painel-ranking-barra span {
+  display: block;
+  height: 100%;
+  border-radius: 99px;
+  background: var(--accent);
+  opacity: 0.7;
+  animation: crescer-barra 0.7s cubic-bezier(0.22, 0.68, 0.36, 1) both;
+}
+.painel-ranking .painel-variacao {
+  width: 58px;
+  justify-content: flex-end;
+  flex-shrink: 0;
+}
+
+/* Observações: as que têm pergunta são botões que levam ao chat. */
+.painel-observacoes {
+  gap: 6px;
+}
+.painel-observacao {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 10px;
+  margin: 0 -10px;
+  border: none;
+  border-radius: 10px;
+  background: none;
+  font: inherit;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text-h);
+  text-align: left;
+}
+button.painel-observacao {
+  cursor: pointer;
+  transition: background 0.16s ease;
+}
+button.painel-observacao:hover {
+  background: var(--hover-bg);
+}
+button.painel-observacao:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+.painel-observacao-acao {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-left: 8px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--accent);
+  opacity: 0;
+  transition: opacity 0.16s ease;
+}
+button.painel-observacao:hover .painel-observacao-acao,
+button.painel-observacao:focus-visible .painel-observacao-acao {
+  opacity: 1;
+}
+@media (hover: none) {
+  .painel-observacao-acao {
+    opacity: 1;
+  }
+}
+
+/* Atalhos "Aprofunde": perguntas prontas sobre o mês escolhido. */
+.painel-atalhos {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 10px;
+  margin-top: 10px;
+}
+.painel-atalho {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  background: var(--surface);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-h);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.16s ease, transform 0.16s ease, box-shadow 0.16s ease;
+}
+.painel-atalho .icone {
+  color: var(--accent-3);
+  flex-shrink: 0;
+}
+.painel-atalho:hover {
+  border-color: var(--accent-border);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-2);
+}
+.painel-atalho:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Atividade recente: conversas reais do histórico, clicáveis. */
+.painel-atividade li {
+  align-items: center;
+}
+.painel-atividade li > .icone {
+  color: var(--text-3);
+}
+.painel-atividade-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 34ch;
+  padding: 4px 6px;
+  margin: 0 -6px;
+  border: none;
+  border-radius: 7px;
+  background: none;
+  font: inherit;
+  font-size: 13.5px;
+  color: var(--text-h);
+  cursor: pointer;
+}
+.painel-atividade-item span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.painel-atividade-item .icone {
+  color: var(--text-3);
+  flex-shrink: 0;
+}
+.painel-atividade-item:hover {
+  background: var(--hover-bg);
+  color: var(--accent);
+}
+
+/* Estado vazio / erro */
+.painel-vazio {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 10px;
+  padding: 48px 24px;
+  border: 1px dashed var(--border-2);
+  border-radius: 16px;
+  background: var(--surface);
+}
+.painel-vazio-icone {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  background: var(--accent-bg);
+  color: var(--accent);
+}
+.painel-vazio h2 {
+  font-family: var(--heading);
+  font-size: 19px;
+  color: var(--text-h);
+  margin: 6px 0 0;
+}
+.painel-vazio p {
+  max-width: 52ch;
+  margin: 0 0 8px;
+  color: var(--text);
+  line-height: 1.55;
+}
+
+/* Esqueleto de carregamento */
+.painel-esqueleto {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+.esqueleto {
+  border-radius: 12px;
+  background: linear-gradient(90deg, var(--surface-2) 0%, var(--border) 50%, var(--surface-2) 100%);
+  background-size: 200% 100%;
+  animation: esqueleto-brilho 1.3s ease-in-out infinite;
+}
+.esqueleto-kpi {
+  height: 112px;
+}
+.esqueleto-grafico {
+  height: 240px;
+}
+.esqueleto-texto {
+  height: 110px;
+  max-width: 640px;
+}
+@keyframes esqueleto-brilho {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: -100% 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .esqueleto,
+  .painel-ranking-barra span {
+    animation: none;
+  }
+}
+@media (max-width: 860px) {
+  .painel-acoes-topo {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+}
+
+/* ==========================================================
+   Chat: campo, sugestões, continuação, tentar de novo
+   ========================================================== */
+.form-pergunta {
+  align-items: flex-end;
+}
+.form-pergunta button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 52px;
+}
+.form-pergunta-icone {
+  display: none;
+}
+.form-pergunta-dica {
+  margin: 8px 2px 0;
+  font-size: 12px;
+  color: var(--text-3);
+}
+kbd {
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 1px 6px;
+  border: 1px solid var(--border-2);
+  border-bottom-width: 2px;
+  border-radius: 5px;
+  background: var(--surface);
+  color: var(--text);
+}
+
+/* Chat vazio: marca, pergunta-convite e sugestões por tema. */
+.tela-inicial {
+  max-width: 860px;
+  width: 100%;
+}
+.tela-inicial-marca {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 20px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-2);
+}
+.tela-inicial-titulo {
+  font-family: var(--heading);
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.4px;
+  color: var(--text-h);
+  margin: 18px 0 6px;
+}
+.tela-inicial-texto {
+  margin: 0 0 22px;
+  color: var(--text);
+}
+.sugestoes-grade {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 14px;
+  text-align: left;
+}
+.sugestao-grupo {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+}
+.sugestao-tema {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0 0 2px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--accent-3);
+}
+.sugestao-grupo .exemplo {
+  padding: 9px 12px;
+  border-radius: 10px;
+  font-size: 13.5px;
+  text-align: left;
+  line-height: 1.35;
+}
+
+/* Perguntas clicáveis (erro, resposta incerta) */
+.perguntas-clicaveis {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.perguntas-clicaveis button,
+.continuar-opcao {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  border: 1px solid var(--border-2);
+  border-radius: 999px;
+  background: var(--surface);
+  font: inherit;
+  font-size: 13.5px;
+  color: var(--text-h);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.16s ease, color 0.16s ease, background 0.16s ease;
+}
+.perguntas-clicaveis button .icone {
+  color: var(--text-3);
+}
+.perguntas-clicaveis button:hover:not(:disabled),
+.continuar-opcao:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-bg);
+}
+.perguntas-clicaveis button:focus-visible,
+.continuar-opcao:focus-visible,
+.botao-tentar:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.perguntas-clicaveis button:disabled,
+.continuar-opcao:disabled,
+.botao-tentar:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.mensagem-erro-dica {
+  margin: 10px 0 0;
+  font-size: 13px;
+  color: var(--text);
+}
+.botao-tentar {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 10px;
+  padding: 7px 14px;
+  border: 1px solid var(--erro-borda);
+  border-radius: 9px;
+  background: var(--surface);
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--erro-texto);
+  cursor: pointer;
+}
+.botao-tentar:hover:not(:disabled) {
+  background: var(--erro-bg);
+}
+
+/* Continue a análise: próximos passos sugeridos após a resposta. */
+.continuar {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px dashed var(--border-2);
+}
+.continuar-titulo {
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--accent-3);
+}
+.continuar-opcoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+@media (max-width: 560px) {
+  .form-pergunta button {
+    padding: 0 16px;
+  }
+  .form-pergunta-rotulo {
+    display: none;
+  }
+  .form-pergunta-icone {
+    display: inline;
+  }
+  .form-pergunta-dica {
+    display: none;
+  }
+  .tela-inicial-titulo {
+    font-size: 20px;
+  }
+}
+/* Copiar: neutro ao lado do verde do Excel e do vermelho do PDF. */
+.meta-acao:not(.meta-acao-excel):not(.meta-acao-pdf) {
+  border: 1px solid var(--border-2);
+  background: var(--surface);
+  color: var(--text);
+}
+.meta-acao:not(.meta-acao-excel):not(.meta-acao-pdf):hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.form-pergunta textarea {
+  box-sizing: border-box;
+  min-height: 52px;
+}
+.resultado-tabela td.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.mensagem-erro .perguntas-clicaveis {
+  padding-left: 0;
+  align-items: flex-start;
+}
+
+/* Troca de página enquanto o arquivo dela chega (code splitting). Aparece
+   com atraso: em conexão boa a página chega antes e nada pisca. */
+.carregando-pagina {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 50vh;
+  animation: aparecer-tarde 0.2s ease 0.25s both;
+}
+.carregando-pagina-anel {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 3px solid var(--border);
+  border-top-color: var(--accent);
+  animation: girar 0.8s linear infinite;
+}
+@keyframes girar {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes aparecer-tarde {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* ==========================================================
+   Navegação: pular para o conteúdo, busca no topo, paleta
+   ========================================================== */
+.pular-conteudo {
+  position: fixed;
+  top: 10px;
+  left: 10px;
+  z-index: 100;
+  padding: 10px 16px;
+  border-radius: 10px;
+  background: var(--accent);
+  color: #fff;
+  font-weight: 600;
+  text-decoration: none;
+  transform: translateY(-160%);
+  transition: transform 0.16s ease;
+}
+.pular-conteudo:focus {
+  transform: translateY(0);
+  outline: 2px solid var(--text-h);
+  outline-offset: 2px;
+}
+/* O <main> recebe foco programático (troca de página); não precisa de anel
+   — o anel visível fica para os elementos que a pessoa alcança com Tab. */
+#conteudo:focus {
+  outline: none;
+}
+
+.topo-busca {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 38px;
+  min-width: 240px;
+  padding: 0 8px 0 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-2);
+  color: var(--text-3);
+  font: inherit;
+  font-size: 13.5px;
+  cursor: pointer;
+  transition: border-color 0.16s ease, color 0.16s ease;
+}
+.topo-busca:hover {
+  border-color: var(--accent-border);
+  color: var(--text);
+}
+.topo-busca:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.topo-busca-texto {
+  flex: 1;
+  text-align: left;
+}
+.topo .tema-toggle {
+  margin-left: 0;
+}
+
+.paleta-fundo {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 12vh 16px 16px;
+  background: rgba(11, 22, 34, 0.42);
+  backdrop-filter: blur(3px);
+  animation: aparecer-tarde 0.14s ease both;
+}
+.paleta {
+  width: min(620px, 100%);
+  max-height: 70vh;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: 0 24px 60px rgba(11, 22, 34, 0.28);
+  overflow: hidden;
+  animation: entrada 0.18s ease both;
+}
+.paleta-busca {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-3);
+}
+.paleta-busca input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  font: inherit;
+  font-size: 16px;
+  color: var(--text-h);
+}
+.paleta-lista {
+  list-style: none;
+  margin: 0;
+  padding: 6px 8px 8px;
+  overflow-y: auto;
+}
+.paleta-grupo {
+  margin: 10px 8px 4px;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+.paleta-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 10px;
+  border-radius: 10px;
+  font-size: 14.5px;
+  color: var(--text-h);
+  cursor: pointer;
+}
+.paleta-item .icone {
+  color: var(--text-3);
+  flex-shrink: 0;
+}
+.paleta-item.ativo {
+  background: var(--accent-bg);
+  color: var(--accent);
+}
+.paleta-item.ativo .icone {
+  color: var(--accent);
+}
+.paleta-rotulo {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.paleta-vazio {
+  padding: 18px 10px;
+  color: var(--text-3);
+  font-size: 14px;
+}
+.paleta-rodape {
+  display: flex;
+  gap: 18px;
+  margin: 0;
+  padding: 10px 16px;
+  border-top: 1px solid var(--border);
+  font-size: 12px;
+  color: var(--text-3);
+  background: var(--surface-2);
+}
+
+/* ==========================================================
+   Preferências de exibição (Meu perfil)
+   ========================================================== */
+.preferencias {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+.preferencia {
+  border: none;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+}
+.preferencia legend {
+  padding: 0;
+  margin-bottom: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-h);
+}
+.segmentado {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-2);
+}
+.segmentado label {
+  position: relative;
+  padding: 8px 14px;
+  border-radius: 9px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text);
+  cursor: pointer;
+  transition: background 0.16s ease, color 0.16s ease, box-shadow 0.16s ease;
+}
+.segmentado label:hover {
+  color: var(--text-h);
+}
+.segmentado label.marcado {
+  background: var(--surface);
+  color: var(--accent);
+  box-shadow: var(--shadow-2);
+}
+/* Rádio nativo escondido visualmente, mas no lugar: setas e Tab continuam
+   funcionando como em qualquer grupo de rádio. */
+.segmentado input {
+  position: absolute;
+  opacity: 0;
+  inset: 0;
+  margin: 0;
+  cursor: pointer;
+}
+.segmentado label:has(input:focus-visible) {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+.preferencia-dica {
+  margin: 6px 0 0;
+  font-size: 12.5px;
+  color: var(--text-3);
+  max-width: 60ch;
+}
+
+/* Tamanho do texto: zoom na página toda (o CSS do projeto é em px, então
+   mudar só o font-size da raiz não alcançaria botões, gráficos e espaços). */
+:root[data-texto="grande"] body {
+  zoom: 1.12;
+}
+:root[data-texto="maior"] body {
+  zoom: 1.25;
+}
+
+/* Reduzir animações por escolha, além da preferência do sistema. */
+:root[data-movimento="reduzido"] *,
+:root[data-movimento="reduzido"] *::before,
+:root[data-movimento="reduzido"] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  animation-delay: 0ms !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+
+@media (max-width: 860px) {
+  .topo-busca {
+    min-width: 0;
+    width: 38px;
+    padding: 0;
+    justify-content: center;
+  }
+  .topo-busca-texto,
+  .topo-busca-atalho {
+    display: none;
+  }
 }

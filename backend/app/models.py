@@ -26,6 +26,10 @@ class ResultSet(BaseModel):
     parametros: dict[str, Any] = {}
     confianca: float = 1.0
     gerado_em: str
+    # Chave do template que respondeu (ver app/sql/templates.py). O frontend
+    # usa para sugerir a próxima pergunta; opcional para não quebrar quem
+    # já consome o contrato.
+    intencao: str | None = None
 
 
 class Pergunta(BaseModel):

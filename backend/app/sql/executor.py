@@ -83,4 +83,5 @@ def executar_template(interp: Interpretacao, empresa_id: str, conn: psycopg.Conn
         parametros=interp.entidades,
         confianca=interp.confianca,
         gerado_em=datetime.now(timezone.utc).isoformat(),
+        intencao=interp.intencao,
     )
