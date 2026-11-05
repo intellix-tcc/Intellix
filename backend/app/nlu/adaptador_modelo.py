@@ -23,6 +23,7 @@ import re
 
 from app.models import Interpretacao
 from app.nlu import regras as R
+
 # O import de ModeloIntellix (que puxa torch) é feito dentro de __init__, não
 # aqui no topo: assim outros módulos podem reaproveitar os helpers de slot
 # deste arquivo (ex.: app/contexto.py) sem pagar o custo do torch, e o modo
@@ -64,6 +65,10 @@ def _nome_vendedor(entidades_modelo: dict) -> str | None:
     v = entidades_modelo.get("VENDEDOR")
     if isinstance(v, list):
         v = v[0] if v else None
+    # o modelo às vezes marca a própria palavra "vendedor" como nome
+    # ("desempenho do vendedor"): sem nome de verdade, não há entidade.
+    if v and all(p in _NAO_E_NOME or p in ("o", "a", "do", "da") for p in v.lower().split()):
+        return None
     return v
 
 
@@ -74,8 +79,8 @@ _NAO_E_NOME = {
     "time", "equipe", "vendas", "venda", "loja", "mês", "mes", "ano",
     "período", "periodo", "trimestre", "semestre", "empresa", "setor",
     "quem", "quanto", "quantos", "quanta", "quantas", "qual", "quais",
-    "como", "quando", "onde", "quem", "performance", "desempenho",
-    "ranking", "me", "quem", "todos", "cada",
+    "como", "quando", "onde", "performance", "desempenho",
+    "ranking", "me", "todos", "cada", "vendedor", "vendedora", "vendedores",
 }
 
 # O modelo erra o nome do vendedor em ~metade dos casos (BIO F1 ~0,85): "da
@@ -152,7 +157,7 @@ def _dois_periodos(texto: str) -> tuple[str, str, str, str] | None:
     """Resolve (atual_inicio, atual_fim, anterior_inicio, anterior_fim) ou None
     quando a frase não dá para montar dois períodos (falha segura -> 422)."""
     ano_m = re.search(r"\b(20\d{2})\b", texto)
-    ano = int(ano_m.group(1)) if ano_m else R.ANO_PADRAO
+    ano = int(ano_m.group(1)) if ano_m else R.ano_atual()
 
     # 1) dois anos distintos: "2023 comparado com 2024"
     anos = _anos_distintos(texto)
@@ -175,11 +180,12 @@ def _dois_periodos(texto: str) -> tuple[str, str, str, str] | None:
 
     # 5) ano relativo: "em relação ao ano passado", "variação ... esse ano"
     if re.search(r"\bano\s+(passad|anterior)", texto) or re.search(r"\b(es[st]e|des[st]e)\s+ano\b", texto):
-        return _ordenar(R._ano_inteiro(R.ANO_PADRAO - 1), R._ano_inteiro(R.ANO_PADRAO))
+        return _ordenar(R._ano_inteiro(R.ano_atual() - 1), R._ano_inteiro(R.ano_atual()))
 
     # 6) trimestres genéricos: "variação de vendas entre os trimestres"
     if "trimestre" in texto:
-        return _ordenar(R._trimestre(3, R.ANO_PADRAO), R._trimestre(4, R.ANO_PADRAO))
+        t_ant, a_ant = R.trimestre_anterior()
+        return _ordenar(R._trimestre(t_ant, a_ant), R._trimestre(R.trimestre_atual(), R.ano_atual()))
 
     # 7) um único mês por extenso: "crescimento em março de 2024" -> mês vs anterior
     if len(meses) == 1:
@@ -189,6 +195,43 @@ def _dois_periodos(texto: str) -> tuple[str, str, str, str] | None:
         return _ordenar(R._periodo_do_mes(anterior_mes, anterior_ano), atual)
 
     return None
+
+
+# ---- um período relativo: "mês passado", "último trimestre", "1º semestre" --
+# Antes só as intenções de DOIS períodos entendiam essas formas; nas de um
+# período, "quanto vendi no mês passado?" caía no ano inteiro (ou em 422).
+# Mesma âncora (R.referencia(): no /chat, a data de hoje limitada à última
+# venda do dataset) e mesma regra de ano do _dois_periodos.
+_ORDINAIS = {"primeiro": 1, "segundo": 2, "terceiro": 3, "quarto": 4, "1": 1, "2": 2, "3": 3, "4": 4}
+
+
+def _periodo_relativo(texto: str) -> dict[str, str] | None:
+    if _meses_em_ordem(texto):
+        return None  # mês por extenso: R._extrai_periodo resolve
+    ano_m = re.search(r"\b(20\d{2})\b", texto)
+    ano = int(ano_m.group(1)) if ano_m else R.ano_atual()
+    par = None
+    m = re.search(r"\b(primeiro|segundo|terceiro|quarto|[1-4])[ºo°]?\s+trimestre", texto)
+    s = re.search(r"\b(primeiro|segundo|[12])[ºo°]?\s+semestre", texto)
+    if m:
+        par = R._trimestre(_ORDINAIS[m.group(1)], ano)
+    elif re.search(r"[úu]ltimo\s+trimestre|trimestre\s+passado", texto):
+        # o último trimestre COMPLETO (em novembro, julho a setembro)
+        par = R._trimestre(4, ano) if ano_m else R._trimestre(*R.trimestre_anterior())
+    elif s:
+        primeiro = _ORDINAIS[s.group(1)] == 1
+        par = (f"{ano}-01-01", f"{ano}-06-30") if primeiro else (f"{ano}-07-01", f"{ano}-12-31")
+    elif ano_m:
+        return None  # "em 2025": R._extrai_periodo resolve
+    elif re.search(r"\bm[eê]s\s+(passad|anterior)|[úu]ltimo\s+m[eê]s", texto):
+        par = R._mes_relativo(-1)
+    elif re.search(r"\b(es[st]e|nes[st]e|d?es[st]e)\s+m[eê]s\b|\bm[eê]s\s+atual\b", texto):
+        par = R._mes_relativo(0)
+    elif re.search(r"\bano\s+(passad|anterior)", texto):
+        par = R._ano_inteiro(R.ano_atual() - 1)
+    if par is None:
+        return None
+    return {"periodo_inicio": par[0], "periodo_fim": par[1]}
 
 
 # ---- item 6: filtro de domínio antes de aceitar a classificação -------------
@@ -234,7 +277,7 @@ def _resolver_entidades(intencao: str, texto: str, entidades_modelo: dict,
         return {k[0]: par[0], k[1]: par[1], k[2]: par[2], k[3]: par[3]}
 
     # ---- intenções de UM período -------------------------------------
-    entidades = R._extrai_periodo(texto, ano_completo_se_ausente=True)
+    entidades = _periodo_relativo(texto) or R._extrai_periodo(texto, ano_completo_se_ausente=True)
 
     if intencao in _COM_LIMITE:
         entidades["limite"] = R._extrai_limite(texto)
@@ -259,11 +302,17 @@ class ModeloTreinadoNLU:
     def __init__(self, caminho_pt: str | None = None):
         from app.nlu.modelo_nlu import ModeloIntellix  # lazy: só aqui paga torch
 
+        # NLU_MODELO: outro .pt sem novo deploy de código (comparar versões,
+        # ou voltar à anterior se a nova se comportar mal em produção).
+        caminho_pt = caminho_pt or os.environ.get("NLU_MODELO") or None
         if caminho_pt is None:
             base = os.path.dirname(__file__)
-            # v1.1.0: dataset aumentado (comparacao/variacao/canal/pagamento),
-            # 85,6% vs 80,0% do v1.0.0 nas 100 perguntas offline (tier 2).
-            caminho_pt = os.path.join(base, "intellix_nlu_v1.1.0.pt")
+            # v1.2.0: moldes v3 (períodos relativos, detalhe de produto em
+            # vendedor/cliente/canal, contagem de peças e mês de maior venda,
+            # nas mesmas 12 intenções): 92,2% vs 85,6% do v1.1.0 nas 90
+            # perguntas offline.
+            # O v1.1.0 continua no repositório: NLU_MODELO aponta para ele.
+            caminho_pt = os.path.join(base, "intellix_nlu_v1.2.0.pt")
         self._modelo = ModeloIntellix(caminho_pt)
 
     def parse(self, texto: str) -> Interpretacao:
@@ -272,11 +321,18 @@ class ModeloTreinadoNLU:
         # fallback do modelo (baixa confiança) ou nada reconhecido:
         # devolve confiança baixa e deixa o verificar_confianca/executor cuidarem.
         if r["fallback"] or r["intencao"] is None:
+            # Os slots são resolvidos mesmo assim (é determinístico e barato):
+            # a confiança baixa continua barrando a resposta, mas o contexto da
+            # conversa e o refino (app/refino.py) podem completá-la.
+            entidades = {}
+            if r["intencao"] and _tem_termo_dominio(texto):
+                entidades = _resolver_entidades(r["intencao"], texto.lower(), r["entidades"], texto)
             return Interpretacao(
                 intencao=r["intencao"],
                 confianca=r["confianca"],
-                entidades={},
+                entidades=entidades,
                 texto_original=texto,
+                entidades_modelo=r["entidades"],
             )
 
         # item 6: mesmo confiante, rejeita se a frase não tem termo do domínio.
@@ -287,6 +343,7 @@ class ModeloTreinadoNLU:
                 confianca=0.0,
                 entidades={},
                 texto_original=texto,
+                entidades_modelo=r["entidades"],
             )
 
         entidades = _resolver_entidades(r["intencao"], texto.lower(), r["entidades"], texto)
@@ -295,4 +352,5 @@ class ModeloTreinadoNLU:
             confianca=r["confianca"],
             entidades=entidades,
             texto_original=texto,
+            entidades_modelo=r["entidades"],
         )

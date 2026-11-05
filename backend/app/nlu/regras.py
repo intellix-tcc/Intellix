@@ -1,5 +1,7 @@
 import calendar
 import re
+from contextlib import contextmanager
+from contextvars import ContextVar
 from datetime import date
 
 from app.models import Interpretacao
@@ -27,11 +29,43 @@ MESES = {
 CONFIANCA_MINIMA = 0.70
 
 # "Hoje" de referencia para periodos relativos ("mes passado", "ano passado",
-# "esse mes", "entre os trimestres"). Os dados sinteticos cobrem 2023-2026 e o
-# ANO_PADRAO documentado e 2024; ancorar no fim do ano de referencia mantem a
-# avaliacao reprodutivel e sempre dentro da faixa com dados (todos os meses de
-# 2024 tem vendas). Em producao com dados ao vivo, troque por date.today().
+# "esse mes", "ultimo trimestre") e para o ano de quem nao cita ano ("em
+# marco"). Fora do /chat (testes, avaliacao offline) vale DATA_REFERENCIA,
+# fixa, para os resultados serem reprodutiveis. No /chat, a data de hoje,
+# limitada a ultima venda do dataset (app/periodo_dataset.py), e ativada com
+# usar_referencia(): em novembro de 2026, "ano passado" e 2025 e "mes
+# passado" e outubro de 2026.
 DATA_REFERENCIA = date(ANO_PADRAO, 12, 1)
+_REFERENCIA: ContextVar[date] = ContextVar("data_referencia", default=DATA_REFERENCIA)
+
+
+def referencia() -> date:
+    """O "hoje" da pergunta em andamento."""
+    return _REFERENCIA.get()
+
+
+def ano_atual() -> int:
+    return _REFERENCIA.get().year
+
+
+@contextmanager
+def usar_referencia(data: date):
+    """Resolve os periodos do bloco a partir de `data` (ver acima)."""
+    token = _REFERENCIA.set(data)
+    try:
+        yield
+    finally:
+        _REFERENCIA.reset(token)
+
+
+def trimestre_atual() -> int:
+    return (referencia().month - 1) // 3 + 1
+
+
+def trimestre_anterior() -> tuple[int, int]:
+    """(numero, ano) do ultimo trimestre completo antes do atual."""
+    t, ano = trimestre_atual() - 1, ano_atual()
+    return (t, ano) if t else (4, ano - 1)
 
 
 def _periodo_do_mes(mes: int, ano: int) -> tuple[str, str]:
@@ -40,9 +74,10 @@ def _periodo_do_mes(mes: int, ano: int) -> tuple[str, str]:
 
 
 def _mes_relativo(desloc: int) -> tuple[str, str]:
-    """Periodo de um mes deslocado em relacao ao mes de DATA_REFERENCIA.
+    """Periodo de um mes deslocado em relacao ao mes de referencia().
     desloc=0 -> mes de referencia; -1 -> mes anterior; +1 -> proximo mes."""
-    total = (DATA_REFERENCIA.year * 12 + (DATA_REFERENCIA.month - 1)) + desloc
+    ref = referencia()
+    total = (ref.year * 12 + (ref.month - 1)) + desloc
     ano, mes = divmod(total, 12)
     return _periodo_do_mes(mes + 1, ano)
 
@@ -63,7 +98,7 @@ def _extrai_periodo(texto: str, ano_completo_se_ausente: bool = False) -> dict[s
     for nome_mes, numero_mes in MESES.items():
         if re.search(rf"\b{nome_mes}\b", texto):
             ano_encontrado = re.search(r"\b(20\d{2})\b", texto)
-            ano = int(ano_encontrado.group(1)) if ano_encontrado else ANO_PADRAO
+            ano = int(ano_encontrado.group(1)) if ano_encontrado else ano_atual()
             inicio, fim = _periodo_do_mes(numero_mes, ano)
             return {"periodo_inicio": inicio, "periodo_fim": fim}
 
@@ -73,7 +108,8 @@ def _extrai_periodo(texto: str, ano_completo_se_ausente: bool = False) -> dict[s
         return {"periodo_inicio": f"{ano}-01-01", "periodo_fim": f"{ano}-12-31"}
 
     if ano_completo_se_ausente:
-        return {"periodo_inicio": f"{ANO_PADRAO}-01-01", "periodo_fim": f"{ANO_PADRAO}-12-31"}
+        ano = ano_atual()
+        return {"periodo_inicio": f"{ano}-01-01", "periodo_fim": f"{ano}-12-31"}
 
     return {}
 

@@ -1,8 +1,9 @@
 import os
 
 import pytest
-from app.main import app
 from fastapi.testclient import TestClient
+
+from app.main import app
 
 pytestmark = pytest.mark.skipif(
     not os.environ.get("DATABASE_URL"),
@@ -75,3 +76,66 @@ def test_faturamento_de_um_ano_vira_serie_mensal_em_linha():
     assert dados["tipo_visualizacao"] == "linha"
     assert len(dados["linhas"]) == 12
     assert [linha[0] for linha in dados["linhas"]][:2] == ["2024-01", "2024-02"]
+
+
+def test_faturamento_de_um_mes_traz_evolucao_de_12_meses():
+    r = client.post("/chat", json={"pergunta": "quanto faturei em março de 2024"})
+    assert r.status_code == 200
+    ctx = r.json()["evolucao"]
+    assert ctx["destaque"] == "2024-03"
+    assert len(ctx["linhas"]) == 12
+    assert ctx["linhas"][-1][0] == "2024-03"
+    # o valor destacado é o mesmo da resposta principal
+    assert abs(ctx["linhas"][-1][1] - r.json()["linhas"][0][1]) < 0.01
+
+
+# ---- detalhes (filtros do catálogo), refino e contexto, com o banco ---------
+
+def _perguntar(pergunta, anterior=None):
+    corpo = {"pergunta": pergunta}
+    if anterior is not None:
+        corpo["contexto"] = {"intencao": anterior["intencao"], "entidades": anterior["parametros"]}
+    return client.post("/chat", json=corpo)
+
+
+def test_produto_citado_vira_filtro_com_o_nome_do_cadastro():
+    r = _perguntar("quanto vendi de botas de couro em 2025")
+    assert r.status_code == 200
+    dados = r.json()
+    assert dados["parametros"]["produto"] == "Bota couro"
+    assert dados["titulo"].endswith("· Bota couro")
+    loja = _perguntar("quanto vendi em 2025").json()
+    # o recorte é uma parte do total da loja, mês a mês
+    assert sum(v for _, v in dados["linhas"]) < sum(v for _, v in loja["linhas"])
+    assert len(dados["linhas"]) == 12  # meses sem venda do produto entram com 0
+
+
+def test_mes_que_mais_vendeu_um_produto():
+    r = _perguntar("qual foi o mês que mais vendeu bota couro em 2025?")
+    assert r.status_code == 200
+    dados = r.json()
+    assert dados["intencao"] == "melhor_mes"
+    assert dados["colunas"] == ["periodo", "unidades"]
+    melhor = dados["linhas"][0]
+    serie = dados["evolucao"]["linhas"]
+    assert dados["evolucao"]["destaque"] == melhor[0]
+    assert melhor[1] == max(v for _, v in serie)
+
+
+def test_conversa_troca_so_o_recorte_e_depois_so_o_periodo():
+    top = _perguntar("top 5 produtos de 2025").json()
+    calcados = _perguntar("e de calçados?", top)
+    assert calcados.status_code == 200
+    c = calcados.json()
+    assert c["intencao"] == "top_produtos"
+    assert c["parametros"]["categoria"] == "Calçados"
+    assert c["parametros"]["periodo_inicio"] == "2025-01-01"
+    outro_ano = _perguntar("e em 2024?", c).json()
+    assert outro_ano["parametros"]["categoria"] == "Calçados"
+    assert outro_ano["parametros"]["periodo_inicio"] == "2024-01-01"
+
+
+def test_nome_que_nao_existe_no_cadastro_nao_filtra():
+    r = _perguntar("quanto vendi de patinete em 2025")
+    assert r.status_code == 200
+    assert "produto" not in r.json()["parametros"]

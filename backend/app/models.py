@@ -1,6 +1,6 @@
 from typing import Any
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class Interpretacao(BaseModel):
@@ -10,6 +10,9 @@ class Interpretacao(BaseModel):
     confianca: float
     entidades: dict[str, Any] = {}
     texto_original: str
+    # Trechos que o modelo marcou na frase (tags BIO), crus: {"PRODUTO": "botas de couro"}.
+    # Não vão para o SQL; servem de pista para app/filtros.py achar o valor no catálogo.
+    entidades_modelo: dict[str, Any] = {}
 
 
 class ResultSet(BaseModel):
@@ -30,6 +33,11 @@ class ResultSet(BaseModel):
     # usa para sugerir a próxima pergunta; opcional para não quebrar quem
     # já consome o contrato.
     intencao: str | None = None
+    # Resposta de um mês só (faturamento, quantidade de vendas, ticket médio):
+    # a mesma métrica nos 12 meses até ele, para o frontend mostrar a
+    # evolução com o mês em destaque. Ver app/sql/evolucao.py. (Não confundir
+    # com Pergunta.contexto, que é o contexto conversacional da pergunta.)
+    evolucao: dict[str, Any] | None = None
 
 
 class Contexto(BaseModel):
@@ -42,7 +50,9 @@ class Contexto(BaseModel):
 
 
 class Pergunta(BaseModel):
-    pergunta: str
+    # Mesmo limite do campo da tela (500 caracteres): uma pergunta de vendas
+    # não precisa de mais, e texto gigante só serviria para gastar CPU do NLU.
+    pergunta: str = Field(min_length=1, max_length=500)
     # Dataset a consultar. Quando o usuário importa uma planilha, o /import
     # cria uma empresa própria e devolve o id; o frontend o reenvia aqui para
     # as perguntas caírem sobre os dados importados, não sobre a base demo.

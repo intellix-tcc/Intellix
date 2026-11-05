@@ -4,7 +4,9 @@ import {
   AreaChart,
   Bar,
   BarChart,
+  CartesianGrid,
   Cell,
+  ReferenceLine,
   LabelList,
   ResponsiveContainer,
   Tooltip,
@@ -240,65 +242,32 @@ export default function Home({ usuario, conversas = [], onPerguntar, onAbrirConv
               </p>
             )}
 
-            <div className="painel-duas-colunas">
-              <section className="painel-secao anima-entrada" aria-labelledby="h-diario">
-                <h2 id="h-diario" className="eyebrow">Vendas por dia</h2>
+            {/* A Início conta a história do mês em capítulos: o resultado e o
+                que o explica, o ritmo das vendas, o que vendeu, como os
+                clientes compraram, a evolução, e por onde aprofundar. */}
+            <Capitulo numero="01" titulo="O mês em resumo" descricao="O resultado, o que puxou e por quê." />
+            <HistoriaDoMes r={r} />
+            {r.observacoes.length > 0 && <Destaques observacoes={r.observacoes} onPerguntar={onPerguntar} />}
+
+            <Capitulo numero="02" titulo="Ritmo de vendas" descricao="Em que dias o faturamento aconteceu." />
+            <div className="painel-grade grade-2-1">
+              <Cartao id="h-diario" titulo="Vendas por dia" icone="grafico" cor="var(--dado-4)">
                 <LimiteErro alternativo={<p className="painel-legenda">Não foi possível desenhar este gráfico.</p>}>
                   <GraficoDiario serie={r.serie_diaria} mes={r.periodo.mes} />
                 </LimiteErro>
-              </section>
-
-              <section className="painel-secao anima-entrada" aria-labelledby="h-categorias">
-                <h2 id="h-categorias" className="eyebrow">Por categoria</h2>
-                <Fatias itens={r.categorias} />
-              </section>
+              </Cartao>
+              {r.dias_semana && (
+                <Cartao id="h-semana" titulo="Média por dia da semana" icone="calendario" cor="var(--dado-2)">
+                  <LimiteErro alternativo={<p className="painel-legenda">Não foi possível desenhar este gráfico.</p>}>
+                    <GraficoSemana dias={r.dias_semana} />
+                  </LimiteErro>
+                </Cartao>
+              )}
             </div>
 
-            <div className="painel-duas-colunas">
-              <section className="painel-secao anima-entrada" aria-labelledby="h-tendencia">
-                <h2 id="h-tendencia" className="eyebrow">Tendência: últimos 12 meses</h2>
-                <LimiteErro alternativo={<p className="painel-legenda">Não foi possível desenhar este gráfico.</p>}>
-                  <GraficoTendencia serie={r.serie_mensal} />
-                </LimiteErro>
-              </section>
-
-              <section className="painel-secao anima-entrada" aria-labelledby="h-canais">
-                <h2 id="h-canais" className="eyebrow">Por canal</h2>
-                <Fatias itens={r.canais} />
-              </section>
-            </div>
-
-            {(r.dias_semana || r.pagamentos) && (
-              <div className="painel-duas-colunas">
-                {r.dias_semana && (
-                  <section className="painel-secao anima-entrada" aria-labelledby="h-semana">
-                    <h2 id="h-semana" className="eyebrow">Média por dia da semana</h2>
-                    <LimiteErro alternativo={<p className="painel-legenda">Não foi possível desenhar este gráfico.</p>}>
-                      <GraficoSemana dias={r.dias_semana} />
-                    </LimiteErro>
-                  </section>
-                )}
-                {r.pagamentos && (
-                  <section className="painel-secao anima-entrada" aria-labelledby="h-pagamentos">
-                    <h2 id="h-pagamentos" className="eyebrow">Formas de pagamento</h2>
-                    <Fatias itens={r.pagamentos} />
-                  </section>
-                )}
-              </div>
-            )}
-
-            <section className="painel-secao anima-entrada" aria-labelledby="h-resumo">
-              <h2 id="h-resumo" className="eyebrow">Resumo do mês</h2>
-              <div className="painel-resumo coluna-leitura">
-                {r.resumo_texto.map((p, i) => (
-                  <p key={i}>{p}</p>
-                ))}
-              </div>
-            </section>
-
-            <div className="painel-duas-colunas">
-              <section className="painel-secao anima-entrada" aria-labelledby="h-ranking">
-                <h2 id="h-ranking" className="eyebrow">Produtos que mais faturaram</h2>
+            <Capitulo numero="03" titulo="O que vendeu" descricao="Os produtos e as categorias que fizeram o mês." />
+            <div className="painel-grade grade-1-1">
+              <Cartao id="h-ranking" titulo="Produtos que mais faturaram" icone="selo" cor="var(--dado-1)">
                 {r.top_produtos.length ? (
                   <ol className="painel-ranking">
                     {r.top_produtos.map((p, i) => (
@@ -318,64 +287,185 @@ export default function Home({ usuario, conversas = [], onPerguntar, onAbrirConv
                 ) : (
                   <p className="painel-legenda">Nenhum produto vendido no mês.</p>
                 )}
-              </section>
-
-              <section className="painel-secao anima-entrada" aria-labelledby="h-observacoes">
-                <h2 id="h-observacoes" className="eyebrow">Observações</h2>
-                {r.observacoes.length ? (
-                  <ul className="painel-observacoes">
-                    {r.observacoes.map((o, i) => (
-                      <li key={i}>
-                        {o.pergunta ? (
-                          <button
-                            type="button"
-                            className="painel-observacao"
-                            onClick={() => onPerguntar(o.pergunta)}
-                            title={`Perguntar: ${o.pergunta}`}
-                          >
-                            <SeloObservacao tipo={o.tipo} />
-                            <span>
-                              {o.texto}
-                              <span className="painel-observacao-acao">
-                                Analisar <Icone nome="seta-direita" size={12} />
-                              </span>
-                            </span>
-                          </button>
-                        ) : (
-                          <div className="painel-observacao">
-                            <SeloObservacao tipo={o.tipo} />
-                            <span>{o.texto}</span>
-                          </div>
-                        )}
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="painel-legenda">Nenhuma mudança relevante em relação ao mês anterior.</p>
-                )}
-              </section>
+              </Cartao>
+              <Cartao id="h-categorias" titulo="Por categoria" icone="pizza" cor="var(--dado-3)">
+                <Fatias itens={r.categorias} />
+              </Cartao>
             </div>
 
-            <section className="painel-secao anima-entrada" aria-labelledby="h-aprofunde">
-              <h2 id="h-aprofunde" className="eyebrow">Aprofunde em {r.periodo.rotulo}</h2>
-              <div className="painel-atalhos">
-                {atalhos(r.periodo.rotulo).map((a) => (
-                  <button key={a.pergunta} type="button" className="painel-atalho" onClick={() => onPerguntar(a.pergunta)}>
-                    <Icone nome={a.icone} size={16} />
-                    {a.rotulo}
-                  </button>
-                ))}
-              </div>
-            </section>
+            <Capitulo numero="04" titulo="Como os clientes compraram" descricao="Canais de venda e formas de pagamento." />
+            <div className="painel-grade grade-1-1">
+              <Cartao id="h-canais" titulo="Por canal" icone="api" cor="var(--dado-6)">
+                <Fatias itens={r.canais} />
+              </Cartao>
+              {r.pagamentos && (
+                <Cartao id="h-pagamentos" titulo="Formas de pagamento" icone="cartao" cor="var(--dado-7)">
+                  <Fatias itens={r.pagamentos} />
+                </Cartao>
+              )}
+            </div>
+
+            <Capitulo numero="05" titulo="Evolução" descricao="Como este mês se compara aos últimos 12." />
+            <Cartao id="h-tendencia" titulo="Faturamento dos últimos 12 meses" icone="linha" cor="var(--dado-8)">
+              <LimiteErro alternativo={<p className="painel-legenda">Não foi possível desenhar este gráfico.</p>}>
+                <GraficoTendencia serie={r.serie_mensal} />
+              </LimiteErro>
+            </Cartao>
+
+            <Capitulo numero="06" titulo={`Aprofunde em ${r.periodo.rotulo}`} descricao="Cada atalho abre a análise pronta no chat." />
+            <div className="painel-atalhos" role="group" aria-label="Perguntas prontas sobre o mês">
+              {atalhos(r.periodo.rotulo).map((a) => (
+                <button key={a.pergunta} type="button" className="painel-atalho" onClick={() => onPerguntar(a.pergunta)}>
+                  <span className="painel-atalho-icone" aria-hidden="true">
+                    <Icone nome={a.icone} size={18} />
+                  </span>
+                  <span className="painel-atalho-rotulo">{a.rotulo}</span>
+                  <span className="painel-atalho-acao" aria-hidden="true">
+                    Perguntar <Icone nome="seta-direita" size={13} />
+                  </span>
+                </button>
+              ))}
+            </div>
           </div>
         )}
 
-        <section className="painel-secao anima-entrada" aria-labelledby="h-atividade">
-          <h2 id="h-atividade" className="eyebrow">Atividade recente</h2>
+        <Cartao id="h-atividade" titulo="Atividade recente" icone="historico" cor="var(--dado-10)">
           <Atividade conversas={conversas} dataset={dataset} onAbrirConversa={onAbrirConversa} onIrPara={onIrPara} />
-        </section>
+        </Cartao>
       </div>
     </div>
+  );
+}
+
+// Título de capítulo: mesma linguagem do cabeçalho (fonte mono, linha de
+// luz turquesa -> roxo), para o painel escuro e os cartões claros lerem como
+// uma peça só. O número é a ordem de leitura da história do mês.
+function Capitulo({ numero, titulo, descricao }) {
+  return (
+    <div className="capitulo anima-entrada">
+      <span className="capitulo-numero" aria-hidden="true">{numero}</span>
+      <div className="capitulo-texto">
+        <h2>{titulo}</h2>
+        {descricao && <p>{descricao}</p>}
+      </div>
+      <span className="capitulo-linha" aria-hidden="true" />
+    </div>
+  );
+}
+
+// Cartão de seção com selo de ícone colorido (o mesmo selo dos indicadores
+// do cabeçalho).
+function Cartao({ id, titulo, icone, cor, children, className = "" }) {
+  return (
+    <section className={`painel-secao cartao anima-entrada ${className}`} aria-labelledby={id} style={{ "--cor-cartao": cor }}>
+      <header className="cartao-topo">
+        <span className="cartao-selo" aria-hidden="true">
+          <Icone nome={icone} size={15} />
+        </span>
+        <h3 id={id}>{titulo}</h3>
+      </header>
+      {children}
+    </section>
+  );
+}
+
+// O mês em três cartões com hierarquia: o resultado (principal, número
+// grande), o que puxou (categoria e produto líderes) e por quê (vendas x
+// ticket). Tudo calculado no /resumo; aqui é só a forma de ler.
+function HistoriaDoMes({ r }) {
+  const kpi = (chave) => r.kpis.find((k) => k.chave === chave);
+  const fat = kpi("faturamento");
+  const vendas = kpi("vendas");
+  const ticket = kpi("ticket_medio");
+  const categoria = r.categorias[0];
+  const produto = r.top_produtos[0];
+  const anterior = r.periodo_anterior.rotulo.split(" de ")[0];
+  const conclusao = r.resumo_texto.find((t) => t.startsWith("A alta") || t.startsWith("A queda"));
+  const corCategoria = categoria ? coresDistintas([categoria.nome])[0] : null;
+
+  return (
+    <div className="historia">
+      <article className="historia-cartao historia-principal anima-entrada">
+        <p className="historia-rotulo">Resultado do mês</p>
+        <p className="historia-numero">{fat ? moeda(fat.valor) : "—"}</p>
+        {fat && <Variacao valor={fat.variacao_pct} referencia={anterior} />}
+        <p className="historia-texto">{r.resumo_texto[0]}</p>
+      </article>
+
+      <article className="historia-cartao anima-entrada" style={{ animationDelay: "60ms" }}>
+        <p className="historia-rotulo">O que puxou</p>
+        {categoria ? (
+          <div className="historia-item">
+            <span className="historia-ponto" style={{ background: corCategoria }} aria-hidden="true" />
+            <div>
+              <p className="historia-item-titulo">{categoria.nome}</p>
+              <p className="historia-item-sub">categoria líder · {pct(categoria.pct)} do faturamento</p>
+            </div>
+          </div>
+        ) : (
+          <p className="historia-texto">Sem vendas por categoria no mês.</p>
+        )}
+        {produto && (
+          <div className="historia-item">
+            <span className="historia-ponto historia-ponto-produto" aria-hidden="true">
+              <Icone nome="selo" size={12} />
+            </span>
+            <div>
+              <p className="historia-item-titulo">{produto.nome}</p>
+              <p className="historia-item-sub">produto que mais faturou · {moeda(produto.valor)}</p>
+            </div>
+          </div>
+        )}
+      </article>
+
+      <article className="historia-cartao anima-entrada" style={{ animationDelay: "120ms" }}>
+        <p className="historia-rotulo">Por quê</p>
+        <ul className="historia-fatores">
+          {vendas && (
+            <li>
+              <span>Número de vendas</span>
+              <Variacao valor={vendas.variacao_pct} />
+            </li>
+          )}
+          {ticket && (
+            <li>
+              <span>Ticket médio</span>
+              <Variacao valor={ticket.variacao_pct} />
+            </li>
+          )}
+        </ul>
+        <p className="historia-texto">
+          {conclusao || `Comparação com ${anterior}: veja os indicadores acima.`}
+        </p>
+      </article>
+    </div>
+  );
+}
+
+// Destaques e alertas do mês (as observações do /resumo), em cartões
+// clicáveis lado a lado: cada um leva à análise no chat.
+function Destaques({ observacoes, onPerguntar }) {
+  return (
+    <ul className="destaques" aria-label="Destaques e alertas do mês">
+      {observacoes.map((o, i) => (
+        <li key={i} className={`destaque destaque-${o.tipo}`}>
+          {o.pergunta ? (
+            <button type="button" onClick={() => onPerguntar(o.pergunta)} title={`Perguntar: ${o.pergunta}`}>
+              <SeloObservacao tipo={o.tipo} />
+              <span className="destaque-texto">{o.texto}</span>
+              <span className="destaque-acao">
+                Analisar <Icone nome="seta-direita" size={12} />
+              </span>
+            </button>
+          ) : (
+            <div>
+              <SeloObservacao tipo={o.tipo} />
+              <span className="destaque-texto">{o.texto}</span>
+            </div>
+          )}
+        </li>
+      ))}
+    </ul>
   );
 }
 
@@ -481,8 +571,9 @@ function GraficoDiario({ serie, mes }) {
     <>
       <p className="grafico-unidade">Valores em {escalaDiaria.unidade}</p>
       <div role="img" aria-label={`Gráfico de barras do faturamento diário. Pico no dia ${pico.dia}, com ${moeda(pico.valor)}; média de ${moeda(media)} por dia.`}>
-        <ResponsiveContainer width="100%" height={250}>
-          <BarChart data={serie} margin={{ top: 34, right: 4, left: 0, bottom: 0 }}>
+        <ResponsiveContainer width="100%" height={230}>
+          <BarChart data={serie} margin={{ top: 30, right: 4, left: 0, bottom: 0 }}>
+            <CartesianGrid vertical={false} stroke="var(--border)" strokeDasharray="3 4" />
             <XAxis dataKey="dia" interval={2} tick={{ fontSize: 11, fill: "var(--text-3)" }} axisLine={false} tickLine={false} />
             <YAxis hide />
             <Tooltip
@@ -491,13 +582,12 @@ function GraficoDiario({ serie, mes }) {
               formatter={(v) => [moeda(v), "Faturamento"]}
               labelFormatter={(d) => `Dia ${String(d).padStart(2, "0")}/${mm}`}
             />
-            <defs>
-              <linearGradient id="grad-barra" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="var(--accent-3)" />
-                <stop offset="100%" stopColor="var(--accent)" stopOpacity={0.85} />
-              </linearGradient>
-            </defs>
-            <Bar dataKey="valor" fill="url(#grad-barra)" radius={[4, 4, 0, 0]} {...animar()}>
+            <ReferenceLine y={media} stroke="var(--text-3)" strokeDasharray="5 5" />
+            {/* Cor fixa (azul da marca); o dia de pico em turquesa. */}
+            <Bar dataKey="valor" radius={[4, 4, 0, 0]} {...animar()}>
+              {serie.map((d) => (
+                <Cell key={d.dia} fill={d === pico ? "var(--dado-2)" : "var(--dado-4)"} />
+              ))}
               {/* rótulo de valor na vertical, acima de cada barra: com 31
                   dias não cabe na horizontal */}
               <LabelList dataKey="valor" content={criarRotuloVertical(escalaDiaria)} />
@@ -506,7 +596,10 @@ function GraficoDiario({ serie, mes }) {
         </ResponsiveContainer>
       </div>
       <p className="painel-legenda">
-        Pico no dia {String(pico.dia).padStart(2, "0")}/{mm} ({moeda(pico.valor)}) · média diária {moeda(media)}
+        <span className="legenda-cor" style={{ background: "var(--dado-2)" }} aria-hidden="true" />
+        Pico no dia {String(pico.dia).padStart(2, "0")}/{mm} ({moeda(pico.valor)})
+        <span className="legenda-tracejado" aria-hidden="true" />
+        média diária {moeda(media)}
       </p>
     </>
   );
@@ -596,14 +689,16 @@ function GraficoSemana({ dias }) {
   const melhor = dias.reduce((a, b) => (b.valor > a.valor ? b : a), dias[0]);
   const pior = dias.reduce((a, b) => (b.valor < a.valor ? b : a), dias[0]);
   if (!melhor.valor) return <p className="painel-legenda">Sem vendas no período.</p>;
+  const escala = escalaDe(dias.map((d) => d.valor));
   return (
     <>
+      <p className="grafico-unidade">Valores em {escala.unidade}</p>
       <div
         role="img"
         aria-label={`Gráfico de barras do faturamento médio por dia da semana. Melhor: ${melhor.dia}, ${moeda(melhor.valor)}. Mais fraco: ${pior.dia}, ${moeda(pior.valor)}.`}
       >
-        <ResponsiveContainer width="100%" height={200}>
-          <BarChart data={dias} margin={{ top: 20, right: 4, left: 0, bottom: 0 }}>
+        <ResponsiveContainer width="100%" height={230}>
+          <BarChart data={dias} margin={{ top: 30, right: 4, left: 0, bottom: 0 }}>
             <XAxis dataKey="dia" tick={{ fontSize: 12, fill: "var(--text)" }} axisLine={false} tickLine={false} />
             <YAxis hide />
             <Tooltip
@@ -613,14 +708,20 @@ function GraficoSemana({ dias }) {
             />
             <Bar dataKey="valor" radius={[6, 6, 0, 0]} maxBarSize={46} {...animar()}>
               {dias.map((d) => (
-                <Cell key={d.dia} fill={d === melhor ? "var(--dado-2)" : "var(--dado-8)"} fillOpacity={d === melhor ? 1 : 0.75} />
+                <Cell key={d.dia} fill={d === melhor ? "var(--dado-2)" : "var(--dado-4)"} />
               ))}
-              <LabelList dataKey="valor" position="top" formatter={moedaCurta} style={{ fontSize: 11, fill: "var(--text-3)" }} />
+              <LabelList
+                dataKey="valor"
+                position="top"
+                formatter={(v) => numeroNaEscala(v, escala)}
+                style={{ fontSize: 11, fill: "var(--text)", fontFamily: "var(--mono)" }}
+              />
             </Bar>
           </BarChart>
         </ResponsiveContainer>
       </div>
       <p className="painel-legenda">
+        <span className="legenda-cor" style={{ background: "var(--dado-2)" }} aria-hidden="true" />
         Melhor dia: {melhor.dia} ({moeda(melhor.valor)} em média) · mais fraco: {pior.dia}
       </p>
     </>

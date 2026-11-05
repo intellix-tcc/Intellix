@@ -21,8 +21,23 @@ INTENCOES_ESPERADAS = {
 }
 
 
+# Refinamentos sobre a intenção do modelo (app/refino.py), sem classe própria.
+REFINAMENTOS = {"unidades_vendidas", "melhor_mes"}
+
+
 def test_todas_as_12_intencoes_tem_template():
-    assert TEMPLATES.keys() == INTENCOES_ESPERADAS
+    assert TEMPLATES.keys() == INTENCOES_ESPERADAS | REFINAMENTOS
+
+
+def test_toda_consulta_sobre_vendas_aceita_os_filtros():
+    # Os seis recortes (produto, categoria...) entram em toda consulta que lê
+    # fato_item_venda; produtos_sem_saida só filtra por categoria.
+    for nome, template in TEMPLATES.items():
+        if nome == "produtos_sem_saida":
+            assert "%(categoria)s" in template["sql"]
+            continue
+        for filtro in ("produto", "categoria", "vendedor", "cliente", "canal", "forma_pagamento"):
+            assert f"%({filtro})s::text is null" in template["sql"], f"{nome}.{filtro}"
 
 
 def test_templates_tem_formato_correto():

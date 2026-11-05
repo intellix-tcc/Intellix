@@ -60,7 +60,17 @@ export default function Sidebar({
         aria-hidden="true"
       />
 
-      <aside className={classe}>
+      <aside
+        className={classe}
+        // Aberta como gaveta (celular/tablet), é um diálogo: o resto da tela
+        // fica inerte (ver App.jsx) e o leitor de tela anuncia o menu.
+        {...(aberta ? { role: "dialog", "aria-modal": "true", "aria-label": "Menu de navegação" } : {})}
+      >
+        {aberta && (
+          <button type="button" className="sidebar-fechar" onClick={onFechar} aria-label="Fechar menu">
+            <Icone nome="fechar" size={18} />
+          </button>
+        )}
         {/* --- Região 1: identidade + navegação. Encolhe quando preciso. --- */}
         <div className="sidebar-nav">
           <a

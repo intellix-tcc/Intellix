@@ -133,7 +133,10 @@ def avaliar_api(perguntas: list[dict], base: str, timeout: float) -> list[dict]:
         status, dados, ms = _post(base + "/chat", p["pergunta"], timeout)
         detalhe = dados.get("detail") if isinstance(dados.get("detail"), dict) else {}
         tipo_erro = detalhe.get("tipo", "")
-        obtido = TITULO_PARA_INTENCAO.get(dados.get("titulo", ""), "") if status == 200 else tipo_erro
+        # O título pode vir com o recorte depois de " · " ("Faturamento no
+        # período · pagamento em Pix"); a intenção é a parte antes dele.
+        titulo_base = dados.get("titulo", "").split(" · ")[0]
+        obtido = TITULO_PARA_INTENCAO.get(titulo_base, "") if status == 200 else tipo_erro
 
         cat = p["categoria"]
         if cat in TITULOS:
@@ -159,11 +162,11 @@ def avaliar_api(perguntas: list[dict], base: str, timeout: float) -> list[dict]:
 # --------------------------------------------------------------------------- #
 # Modo NLU (sem servidor, sem banco)                                           #
 # --------------------------------------------------------------------------- #
-def avaliar_nlu(perguntas: list[dict], backend: str) -> list[dict]:
+def avaliar_nlu(perguntas: list[dict], backend: str, caminho_modelo: str | None = None) -> list[dict]:
     sys.path.insert(0, str(RAIZ / "backend"))
     if backend == "modelo":
         from app.nlu.adaptador_modelo import ModeloTreinadoNLU
-        nlu = ModeloTreinadoNLU()
+        nlu = ModeloTreinadoNLU(caminho_modelo)
     else:
         from app.nlu.regras import RuleBasedNLU
         nlu = RuleBasedNLU()
@@ -305,6 +308,8 @@ def main() -> None:
     ap.add_argument("--modo", choices=["api", "nlu"], default="api")
     ap.add_argument("--url", default="http://127.0.0.1:8000", help="base da API (modo api)")
     ap.add_argument("--backend", choices=["regras", "modelo"], default="regras", help="NLU (modo nlu)")
+    ap.add_argument("--modelo", default=None,
+                    help="arquivo .pt a avaliar (modo nlu); padrão: o que o backend usa")
     ap.add_argument("--timeout", type=float, default=60.0)
     ap.add_argument("--saida", default=str(RAIZ / "docs" / "evidencias"))
     args = ap.parse_args()
@@ -316,7 +321,7 @@ def main() -> None:
     if args.modo == "api":
         resultados, alvo, rotulo = avaliar_api(perguntas, args.url, args.timeout), args.url, "api"
     else:
-        resultados = avaliar_nlu(perguntas, args.backend)
+        resultados = avaliar_nlu(perguntas, args.backend, args.modelo)
         alvo, rotulo = f"NLU `{args.backend}` (sem servidor, sem banco)", f"nlu-{args.backend}"
 
     # Ledger (F03): classifica a causa de cada resultado para o CSV e o MD.

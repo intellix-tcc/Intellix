@@ -819,3 +819,681 @@ h2.eyebrow::before {
   font-size: 11px;
   color: var(--text-3);
 }
+
+/* ==========================================================================
+   Início em capítulos (a história do mês)
+   ========================================================================== */
+/* Mais largura em telas grandes: os blocos respiram em vez de espremer. */
+.painel-inicio {
+  max-width: 1280px;
+}
+
+/* Título de capítulo: mesma linguagem do cabeçalho — número em mono, linha
+   de luz turquesa -> roxo. */
+.capitulo {
+  display: grid;
+  grid-template-columns: auto auto minmax(24px, 1fr);
+  align-items: center;
+  gap: 14px;
+  margin-top: 22px;
+}
+.capitulo-numero {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 38px;
+  height: 28px;
+  padding: 0 8px;
+  border-radius: 9px;
+  font-family: var(--mono);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #ffffff;
+  background: var(--navy-800);
+  box-shadow: inset 0 0 0 1px rgba(38, 201, 197, 0.45), 0 6px 16px -8px rgba(11, 31, 51, 0.6);
+}
+.capitulo-texto h2 {
+  margin: 0;
+  font-family: var(--heading);
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: -0.2px;
+  color: var(--text-h);
+}
+.capitulo-texto p {
+  margin: 2px 0 0;
+  font-size: 13.5px;
+  color: var(--text-3);
+}
+.capitulo-linha {
+  height: 1px;
+  background: linear-gradient(90deg, rgba(38, 201, 197, 0.7), rgba(155, 95, 184, 0.45), transparent);
+}
+
+/* Grades de cartões: pares de altura parecida, para não sobrar branco. */
+.painel-grade {
+  display: grid;
+  gap: 20px;
+  align-items: stretch;
+}
+.grade-2-1 {
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+}
+.grade-1-1 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+@media (max-width: 980px) {
+  .grade-2-1,
+  .grade-1-1 {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .capitulo {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+  .capitulo-linha {
+    display: none;
+  }
+}
+
+/* Cartão de seção: selo de ícone colorido (o mesmo dos indicadores) e a
+   linha de luz do cabeçalho, bem suave, no topo. */
+.cartao {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  container-type: inline-size;
+}
+.cartao::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 2px;
+  background: linear-gradient(90deg, var(--cor-cartao, var(--teal-vivo)), transparent 70%);
+  opacity: 0.7;
+}
+.cartao-topo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.cartao-topo h3 {
+  margin: 0;
+  font-family: var(--heading);
+  font-size: 15.5px;
+  font-weight: 600;
+  color: var(--text-h);
+}
+.cartao-selo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  color: var(--cor-cartao, var(--accent));
+  background: color-mix(in srgb, var(--cor-cartao, var(--accent)) 14%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--cor-cartao, var(--accent)) 28%, transparent);
+  flex-shrink: 0;
+}
+.cartao .painel-legenda {
+  margin-top: auto;
+  padding-top: 10px;
+}
+.legenda-cor {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+  margin-right: 6px;
+  vertical-align: 0;
+}
+
+/* Rosca com espaço: gráfico à esquerda, legenda à direita, nomes inteiros. */
+.cartao .rosca-nome {
+  white-space: nowrap;
+}
+@container (min-width: 340px) {
+  .cartao .rosca {
+    grid-template-columns: minmax(130px, 180px) minmax(0, 1fr);
+    align-items: center;
+    gap: 18px;
+  }
+}
+/* Na Início, cada item da legenda em duas linhas: nome e % em cima, valor em
+   reais menor embaixo — cabe inteiro mesmo com a rosca ao lado. */
+.cartao .rosca-legenda li {
+  grid-template-columns: 10px minmax(0, 1fr) auto;
+  row-gap: 1px;
+  padding: 5px 0;
+  border-bottom: 1px dashed var(--border);
+}
+.cartao .rosca-legenda .rosca-valor {
+  grid-column: 2 / -1;
+  text-align: left;
+  min-width: 0;
+  font-size: 11.5px;
+}
+.cartao .rosca-legenda li:last-child {
+  border-bottom: none;
+}
+
+/* ---- 01 · O mês em resumo: três cartões com hierarquia ---- */
+.historia {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr) minmax(0, 1fr);
+  gap: 20px;
+}
+@media (max-width: 980px) {
+  .historia {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.historia-cartao {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 22px 24px 24px;
+  border: 1px solid var(--border);
+  border-radius: var(--cartao-raio);
+  background: var(--surface);
+  box-shadow: var(--cartao-sombra);
+  min-width: 0;
+}
+/* O resultado é o protagonista: borda de luz no topo e fundo levemente
+   tingido do marinho do cabeçalho. */
+.historia-principal {
+  background:
+    linear-gradient(160deg, color-mix(in srgb, var(--accent) 7%, transparent), transparent 60%),
+    var(--surface);
+  border-color: color-mix(in srgb, var(--accent) 25%, var(--border));
+}
+.historia-principal::before {
+  content: "";
+  position: absolute;
+  inset: -1px -1px auto;
+  height: 3px;
+  border-radius: var(--cartao-raio) var(--cartao-raio) 0 0;
+  background: var(--grad-dado);
+}
+.historia-rotulo {
+  margin: 0;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent-3);
+}
+.historia-numero {
+  margin: 0;
+  font-family: var(--heading);
+  font-size: clamp(26px, 2.4vw, 34px);
+  font-weight: 700;
+  letter-spacing: -0.8px;
+  color: var(--text-h);
+  font-variant-numeric: tabular-nums;
+}
+.historia-principal .painel-variacao {
+  align-self: flex-start;
+}
+.historia-texto {
+  margin: 0;
+  font-size: 14.5px;
+  line-height: 1.55;
+  color: var(--text);
+}
+.historia-principal .historia-texto {
+  margin-top: auto;
+}
+.historia-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px dashed var(--border);
+}
+.historia-item:last-child {
+  border-bottom: none;
+}
+.historia-ponto {
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
+  margin-top: 4px;
+  border-radius: 4px;
+}
+.historia-ponto-produto {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  margin-top: 0;
+  border-radius: 7px;
+  color: var(--accent-3);
+  background: var(--accent-3-bg);
+}
+.historia-item-titulo {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-h);
+}
+.historia-item-sub {
+  margin: 2px 0 0;
+  font-size: 12.5px;
+  color: var(--text-3);
+}
+.historia-fatores {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.historia-fatores li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 0;
+  border-bottom: 1px dashed var(--border);
+  font-size: 14px;
+  color: var(--text-h);
+}
+.historia-fatores li:last-child {
+  border-bottom: none;
+}
+
+/* Destaques e alertas: cartões clicáveis lado a lado */
+.destaques {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 12px;
+}
+.destaque > button,
+.destaque > div {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--cor-destaque, var(--accent));
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow: var(--cartao-sombra);
+  font: inherit;
+  text-align: left;
+  color: var(--text-h);
+}
+.destaque > button {
+  cursor: pointer;
+  transition: transform 0.16s ease, box-shadow 0.16s ease;
+}
+.destaque > button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 30px -16px color-mix(in srgb, var(--cor-destaque) 70%, transparent);
+}
+.destaque > button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.destaque-alta { --cor-destaque: var(--ok-texto); }
+.destaque-queda { --cor-destaque: var(--erro-texto); }
+.destaque-atencao { --cor-destaque: var(--accent-2); }
+.destaque-padrao { --cor-destaque: var(--accent-3); }
+.destaque-texto {
+  font-size: 14px;
+  line-height: 1.45;
+}
+.destaque-acao {
+  margin-top: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+/* ---- 06 · Aprofunde: seis botões numa linha (3 + 3 em telas médias) ---- */
+.painel-atalhos {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 0;
+}
+@media (max-width: 1200px) {
+  .painel-atalhos {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@media (max-width: 560px) {
+  .painel-atalhos {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.painel-atalho {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  min-height: 128px;
+  padding: 16px;
+  border: 1px solid var(--border-2);
+  border-radius: 16px;
+  box-shadow: var(--cartao-sombra);
+}
+.painel-atalho .icone {
+  width: auto;
+  height: auto;
+  padding: 0;
+  background: none;
+  color: inherit;
+}
+.painel-atalho-icone {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 11px;
+  color: var(--cor-atalho, var(--accent));
+  background: color-mix(in srgb, var(--cor-atalho, var(--accent)) 14%, transparent);
+}
+.painel-atalho-rotulo {
+  font-size: 14.5px;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--text-h);
+}
+.painel-atalho-acao {
+  margin-top: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--cor-atalho, var(--accent));
+}
+.painel-atalho:hover .painel-atalho-acao .icone {
+  transform: translateX(3px);
+}
+.painel-atalho-acao .icone {
+  transition: transform 0.16s ease;
+}
+@media (max-width: 560px) {
+  .painel-atalho {
+    flex-direction: row;
+    align-items: center;
+    min-height: 0;
+  }
+  .painel-atalho-acao {
+    margin: 0 0 0 auto;
+  }
+}
+.legenda-tracejado {
+  display: inline-block;
+  width: 16px;
+  margin: 0 6px 0 12px;
+  border-top: 2px dashed var(--text-3);
+  vertical-align: 3px;
+}
+
+/* Indicadores do cabeçalho: os cinco numa linha sempre que couberem; no
+   estreito, faturamento na linha toda e os outros quatro em 2 x 2 — nunca
+   um cartão sozinho na última linha. */
+.painel-hero {
+  container: hero / inline-size;
+}
+.painel-hero .painel-kpis {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+@container hero (max-width: 860px) {
+  .painel-hero .painel-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .painel-hero .painel-kpi:first-child {
+    grid-column: 1 / -1;
+  }
+}
+@container hero (min-width: 861px) and (max-width: 1040px) {
+  .painel-hero .painel-kpi {
+    padding: 14px 12px 12px;
+  }
+  .painel-hero .painel-kpi .painel-kpi-valor {
+    font-size: 19px;
+  }
+}
+
+/* ==========================================================================
+   Chat: evolução do número de um mês só (evolução com o mês em destaque)
+   ========================================================================== */
+.evolucao-mensal {
+  margin: 4px 0 6px;
+  padding: 16px 18px 12px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow: var(--cartao-sombra);
+}
+.evolucao-comparacoes {
+  list-style: none;
+  margin: 0 0 14px;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.evolucao-comparacoes li {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  font-size: 13px;
+}
+.evolucao-rotulo {
+  color: var(--text);
+}
+.evolucao-delta,
+.evolucao-posicao {
+  font-family: var(--mono);
+  font-size: 12.5px;
+}
+.evolucao-delta.positiva {
+  color: var(--ok-texto);
+}
+.evolucao-delta.negativa {
+  color: var(--erro-texto);
+}
+.evolucao-delta.neutra,
+.evolucao-posicao {
+  color: var(--text-h);
+}
+.evolucao-cabecalho {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+.evolucao-titulo {
+  margin: 0;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text-h);
+}
+.evolucao-cabecalho .grafico-unidade {
+  margin: 0;
+}
+.evolucao-legenda {
+  margin: 6px 0 0;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  color: var(--text-3);
+}
+
+/* ==========================================================================
+   Robustez: aviso de conexão, páginas de erro e 404, gaveta acessível,
+   tabelas em cartões no celular
+   ========================================================================== */
+.banner-conexao {
+  position: fixed;
+  left: 50%;
+  top: calc(12px + env(safe-area-inset-top, 0px));
+  z-index: 120;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: min(560px, calc(100vw - 32px));
+  padding: 10px 16px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  box-shadow: 0 14px 34px -14px rgba(8, 23, 38, 0.55);
+  animation: entrada 0.2s ease both;
+}
+.banner-conexao.fora {
+  background: #8a2a1c;
+  color: #ffffff;
+}
+.banner-conexao.ok {
+  background: #13675b;
+  color: #ffffff;
+}
+
+.pagina-aviso {
+  max-width: 560px;
+  margin: 12vh auto 48px;
+  padding: 0 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 12px;
+}
+.pagina-aviso-icone {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 20px;
+  color: var(--accent);
+  background: var(--accent-bg);
+  box-shadow: inset 0 0 0 1px var(--accent-border);
+}
+.pagina-aviso h1 {
+  margin: 8px 0 0;
+  font-family: var(--heading);
+  font-size: 24px;
+  color: var(--text-h);
+}
+.pagina-aviso p {
+  margin: 0;
+  color: var(--text);
+  line-height: 1.55;
+}
+.pagina-aviso-acoes {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 8px;
+}
+.pagina-aviso-acoes .botao-primario {
+  gap: 8px;
+}
+
+/* Botão "Fechar" dentro da gaveta (só existe com ela aberta). */
+.sidebar-fechar {
+  position: absolute;
+  top: 12px;
+  right: 10px;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-2);
+  color: var(--text-h);
+  cursor: pointer;
+}
+.sidebar-fechar:hover {
+  background: var(--hover-bg);
+}
+.sidebar-fechar:focus-visible {
+  outline: 2px solid var(--teal-vivo);
+  outline-offset: 2px;
+}
+@media (min-width: 861px) {
+  .sidebar-fechar {
+    display: none;
+  }
+}
+
+/* Tabela do chat no celular: cada linha vira um cartão "coluna: valor",
+   em vez de rolar de lado escondendo colunas. */
+@media (max-width: 560px) {
+  .resultado .tabela-scroll {
+    overflow: visible;
+    border: none;
+  }
+  .resultado .tabela-scroll table,
+  .resultado .tabela-scroll tbody,
+  .resultado .tabela-scroll tr,
+  .resultado .tabela-scroll td {
+    display: block;
+    width: 100%;
+  }
+  .resultado .tabela-scroll thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+  }
+  .resultado .tabela-scroll tr {
+    margin-bottom: 10px;
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--surface);
+  }
+  .resultado .tabela-scroll td {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 6px 0;
+    border: none;
+    border-bottom: 1px dashed var(--border);
+    text-align: right;
+  }
+  .resultado .tabela-scroll td:last-child {
+    border-bottom: none;
+  }
+  .resultado .tabela-scroll td::before {
+    content: attr(data-rotulo);
+    flex-shrink: 0;
+    font-family: var(--mono);
+    font-size: 11.5px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--text-3);
+    text-align: left;
+  }
+}
