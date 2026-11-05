@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import GraficoResultado from "../componentes/GraficoResultado";
+import LimiteErro from "../componentes/LimiteErro";
 import Icone from "../componentes/Icone";
 import Logo from "../componentes/Logo";
 import { baixarExcel, baixarPdf } from "../utils/exportar";
@@ -276,7 +277,23 @@ function ResultadoVisual({ r }) {
         )}
       </div>
       <p className="resultado-abertura">{abertura}</p>
-      {modo === "tabela" ? <TabelaResultado r={r} /> : <GraficoResultado r={r} modo={modo} />}
+      {modo === "tabela" ? (
+        <TabelaResultado r={r} />
+      ) : (
+        // Se o gráfico falhar com algum dado inesperado, a resposta não some:
+        // vira tabela, com um aviso.
+        <LimiteErro
+          chave={modo}
+          alternativo={
+            <>
+              <p className="aviso-grafico">Não consegui desenhar o gráfico desta resposta; aqui estão os dados.</p>
+              <TabelaResultado r={r} />
+            </>
+          }
+        >
+          <GraficoResultado r={r} modo={modo} />
+        </LimiteErro>
+      )}
       <Destaque r={r} />
       <DetalhesResposta r={r} />
       <LinhaMeta r={r} />
