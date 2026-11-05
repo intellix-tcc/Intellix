@@ -3652,3 +3652,362 @@ h1.auth-sub {
   color: var(--erro-texto);
   transform: scale(1.08);
 }
+
+/* ==========================================================
+   Páginas institucionais: FAQ, Termos de uso, Fale conosco
+   ========================================================== */
+/* Links dentro de texto corrido. Sem regra global de <a> no projeto, então
+   o escopo é só onde há texto institucional. */
+.institucional .pagina-sub a,
+.institucional .painel-texto a,
+.faq-resposta a,
+.termos-texto a,
+.contato-canal a,
+.auth-aceite a {
+  color: var(--accent);
+  font-weight: 600;
+  text-underline-offset: 2px;
+}
+.institucional .pagina-sub a:hover,
+.institucional .painel-texto a:hover,
+.faq-resposta a:hover,
+.termos-texto a:hover,
+.contato-canal a:hover,
+.auth-aceite a:hover {
+  color: var(--accent-3);
+}
+.institucional .pagina-sub {
+  margin: 0;
+}
+
+/* ---- FAQ: acordeão nativo (<details>) ---- */
+.faq-lista {
+  display: flex;
+  flex-direction: column;
+  margin-top: 10px;
+}
+.faq-item {
+  border-top: 1px solid var(--border);
+}
+.faq-item:last-child {
+  border-bottom: 1px solid var(--border);
+}
+.faq-item summary {
+  list-style: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 15px 4px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-h);
+  border-radius: 8px;
+  transition: color 0.14s ease;
+}
+.faq-item summary::-webkit-details-marker {
+  display: none;
+}
+/* "+" que vira "−" ao abrir: indica o estado sem ícone extra. */
+.faq-item summary::after {
+  content: "+";
+  flex: none;
+  font-size: 20px;
+  font-weight: 400;
+  line-height: 1;
+  color: var(--text-3);
+}
+.faq-item[open] summary::after {
+  content: "−";
+}
+.faq-item summary:hover {
+  color: var(--accent);
+}
+.faq-item summary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.faq-resposta {
+  padding: 0 4px 18px;
+  font-size: 14.5px;
+  line-height: 1.62;
+  color: var(--text);
+  max-width: 72ch;
+  animation: entrada 0.2s ease both;
+}
+.faq-resposta p {
+  margin: 0 0 10px;
+}
+.faq-resposta p:last-child,
+.faq-resposta ul:last-child {
+  margin-bottom: 0;
+}
+.faq-resposta ul {
+  margin: 0 0 10px;
+  padding-left: 20px;
+}
+.faq-resposta strong {
+  color: var(--text-h);
+}
+
+/* ---- Termos de uso ---- */
+.termos-sumario ol {
+  margin: 8px 0 0;
+  padding-left: 22px;
+  columns: 2;
+  column-gap: 32px;
+  color: var(--text-3);
+  font-size: 13px;
+}
+.termos-sumario li {
+  break-inside: avoid;
+  padding: 1px 0;
+}
+.termos-sumario .link {
+  text-align: left;
+}
+.termos-texto {
+  font-size: 15px;
+  line-height: 1.68;
+  color: var(--text);
+}
+.termos-secao {
+  max-width: 76ch;
+  scroll-margin-top: 80px;
+}
+.termos-secao + .termos-secao {
+  margin-top: 28px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border);
+}
+.termos-secao h2 {
+  font-family: var(--heading);
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text-h);
+  margin: 0 0 10px;
+}
+.termos-secao p {
+  margin: 0 0 12px;
+}
+.termos-secao ul {
+  margin: 0 0 12px;
+  padding-left: 22px;
+}
+.termos-secao li + li {
+  margin-top: 6px;
+}
+.termos-secao > :last-child {
+  margin-bottom: 0;
+}
+.termos-secao strong {
+  color: var(--text-h);
+}
+
+/* ---- Fale conosco ---- */
+/* Formulário + canais lado a lado; a grade ocupa a largura que um .painel
+   ocuparia sozinho, e os painéis dentro dela deixam de calcular a própria. */
+.contato-grade {
+  width: min(1180px, 100% - 80px);
+  margin: 24px auto 40px;
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+.contato-grade .painel {
+  width: auto;
+  margin: 0;
+}
+.contato-form {
+  max-width: none;
+}
+.auth-campo select,
+.auth-campo textarea {
+  font: inherit;
+  font-weight: 400;
+  padding: 11px 14px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface);
+  color: var(--text-h);
+  transition: border-color 0.16s ease, box-shadow 0.16s ease;
+}
+.auth-campo textarea {
+  resize: vertical;
+  min-height: 130px;
+  line-height: 1.5;
+}
+.auth-campo select:focus,
+.auth-campo textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-bg);
+}
+.auth-campo.com-erro textarea,
+.auth-campo textarea[aria-invalid="true"] {
+  border-color: var(--erro-borda);
+}
+.campo-contador {
+  font-size: 11.5px;
+  font-weight: 400;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+}
+.contato-canal {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 16px 0;
+  border-top: 1px solid var(--border);
+}
+.contato-canal:first-of-type {
+  margin-top: 10px;
+}
+.contato-canal-icone {
+  flex: none;
+  color: var(--accent);
+  margin-top: 2px;
+}
+.contato-canal h3 {
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--text-h);
+  margin: 0 0 4px;
+}
+.contato-canal p {
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--text);
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.contato-copiar {
+  margin: 4px 0 0 -6px;
+}
+
+/* ---- Aceite dos termos no cadastro ---- */
+.auth-aceite {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.auth-aceite-rotulo {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 13.5px;
+  line-height: 1.45;
+  color: var(--text);
+  cursor: pointer;
+}
+.auth-aceite-rotulo input {
+  flex: none;
+  width: 17px;
+  height: 17px;
+  margin: 1px 0 0;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+.auth-aceite.com-erro .auth-aceite-rotulo input {
+  outline: 2px solid var(--erro-borda);
+  outline-offset: 1px;
+}
+
+/* ---- Casca pública (páginas institucionais sem login) ---- */
+.casca-publica {
+  background: var(--bg);
+}
+.casca-publica-marca {
+  display: inline-flex;
+  border-radius: 8px;
+}
+.casca-publica-nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+  margin-right: auto;
+}
+.casca-publica-link {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text);
+  text-decoration: none;
+  padding: 6px 10px;
+  border-radius: 8px;
+  transition: background 0.14s ease, color 0.14s ease;
+}
+.casca-publica-link:hover {
+  background: var(--hover-bg);
+  color: var(--text-h);
+}
+.casca-publica-link.ativo {
+  color: var(--accent);
+  background: var(--accent-bg);
+}
+.casca-publica-conteudo {
+  flex: 1 0 auto;
+  display: flex;
+  flex-direction: column;
+}
+.casca-publica .landing-rodape {
+  width: 100%;
+}
+
+/* ---- Links institucionais: rodapé da vitrine e fim da Sobre ---- */
+.landing-rodape {
+  flex-wrap: wrap;
+}
+.landing-rodape p {
+  margin: 0;
+}
+.landing-rodape-links,
+.sobre-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+}
+.landing-rodape-links {
+  margin-left: auto;
+}
+.landing-rodape-links a,
+.sobre-links a {
+  color: var(--text-3);
+  text-decoration: none;
+  font-size: 12.5px;
+  font-weight: 600;
+}
+.landing-rodape-links a:hover,
+.sobre-links a:hover {
+  color: var(--accent);
+  text-decoration: underline;
+}
+.sobre-links {
+  justify-content: center;
+  max-width: 1180px;
+  margin: 28px auto 0;
+  padding: 0 28px;
+}
+
+@media (max-width: 860px) {
+  .contato-grade {
+    width: min(1180px, 100% - 36px);
+    grid-template-columns: 1fr;
+  }
+  .termos-sumario ol {
+    columns: 1;
+  }
+  .casca-publica-nav {
+    order: 3;
+    width: 100%;
+    margin-right: 0;
+  }
+}
+@media (max-width: 560px) {
+  .landing-rodape-links {
+    margin-left: 0;
+    width: 100%;
+  }
+}

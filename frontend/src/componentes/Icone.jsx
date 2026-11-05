@@ -193,6 +193,29 @@ const DESENHOS = {
       <path d="M8.4 13.4h7.2M8.4 16.6h7.2" />
     </>
   ),
+  // "?" no círculo — perguntas frequentes (par do "i" de Sobre)
+  ajuda: (
+    <>
+      <circle cx="12" cy="12" r="8.2" />
+      <path d="M9.7 9.6a2.4 2.4 0 0 1 4.6.9c0 1.6-2.3 2.1-2.3 3.6" />
+      <path d="M12 16.6h.01" />
+    </>
+  ),
+  // envelope — fale conosco
+  envelope: (
+    <>
+      <rect x="3.6" y="5.6" width="16.8" height="12.8" rx="2" />
+      <path d="m4.4 7 7.6 6 7.6-6" />
+    </>
+  ),
+  // folha com linhas de texto — termos de uso
+  documento: (
+    <>
+      <path d="M6.4 3.8h8.2l4 4v11.2a1.2 1.2 0 0 1-1.2 1.2H6.4a1.2 1.2 0 0 1-1.2-1.2V5a1.2 1.2 0 0 1 1.2-1.2Z" />
+      <path d="M14.6 3.8V7a1 1 0 0 0 1 1h3.2" />
+      <path d="M8.4 11.4h7.2M8.4 14.4h7.2M8.4 17.4h4.4" />
+    </>
+  ),
   // capelo — trabalho acadêmico
   capelo: (
     <>
