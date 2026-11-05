@@ -132,7 +132,10 @@ def avaliar_api(perguntas: list[dict], base: str, timeout: float) -> list[dict]:
         status, dados, ms = _post(base + "/chat", p["pergunta"], timeout)
         detalhe = dados.get("detail") if isinstance(dados.get("detail"), dict) else {}
         tipo_erro = detalhe.get("tipo", "")
-        obtido = TITULO_PARA_INTENCAO.get(dados.get("titulo", ""), "") if status == 200 else tipo_erro
+        # O título pode vir com o recorte depois de " · " ("Faturamento no
+        # período · pagamento em Pix"); a intenção é a parte antes dele.
+        titulo_base = dados.get("titulo", "").split(" · ")[0]
+        obtido = TITULO_PARA_INTENCAO.get(titulo_base, "") if status == 200 else tipo_erro
 
         cat = p["categoria"]
         if cat in TITULOS:

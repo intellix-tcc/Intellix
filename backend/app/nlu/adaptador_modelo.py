@@ -192,6 +192,42 @@ def _dois_periodos(texto: str) -> tuple[str, str, str, str] | None:
     return None
 
 
+# ---- um período relativo: "mês passado", "último trimestre", "1º semestre" --
+# Antes só as intenções de DOIS períodos entendiam essas formas; nas de um
+# período, "quanto vendi no mês passado?" caía no ano inteiro (ou em 422).
+# Mesma âncora (R.DATA_REFERENCIA) e mesma regra de ano do _dois_periodos;
+# o /chat depois desloca para o ano do dataset (periodo_dataset.py).
+_ORDINAIS = {"primeiro": 1, "segundo": 2, "terceiro": 3, "quarto": 4, "1": 1, "2": 2, "3": 3, "4": 4}
+
+
+def _periodo_relativo(texto: str) -> dict[str, str] | None:
+    if _meses_em_ordem(texto):
+        return None  # mês por extenso: R._extrai_periodo resolve
+    ano_m = re.search(r"\b(20\d{2})\b", texto)
+    ano = int(ano_m.group(1)) if ano_m else R.ANO_PADRAO
+    par = None
+    m = re.search(r"\b(primeiro|segundo|terceiro|quarto|[1-4])[ºo°]?\s+trimestre", texto)
+    s = re.search(r"\b(primeiro|segundo|[12])[ºo°]?\s+semestre", texto)
+    if m:
+        par = R._trimestre(_ORDINAIS[m.group(1)], ano)
+    elif re.search(r"[úu]ltimo\s+trimestre|trimestre\s+passado", texto):
+        par = R._trimestre(4, ano) if ano_m else R._trimestre((R.DATA_REFERENCIA.month - 1) // 3 + 1, ano)
+    elif s:
+        primeiro = _ORDINAIS[s.group(1)] == 1
+        par = (f"{ano}-01-01", f"{ano}-06-30") if primeiro else (f"{ano}-07-01", f"{ano}-12-31")
+    elif ano_m:
+        return None  # "em 2025": R._extrai_periodo resolve
+    elif re.search(r"\bm[eê]s\s+(passad|anterior)|[úu]ltimo\s+m[eê]s", texto):
+        par = R._mes_relativo(-1)
+    elif re.search(r"\b(es[st]e|nes[st]e|d?es[st]e)\s+m[eê]s\b|\bm[eê]s\s+atual\b", texto):
+        par = R._mes_relativo(0)
+    elif re.search(r"\bano\s+(passad|anterior)", texto):
+        par = R._ano_inteiro(R.ANO_PADRAO - 1)
+    if par is None:
+        return None
+    return {"periodo_inicio": par[0], "periodo_fim": par[1]}
+
+
 # ---- item 6: filtro de domínio antes de aceitar a classificação -------------
 # Um classificador fechado em 12 classes sempre escolhe uma delas, e às vezes
 # com confiança alta ("capital da França" saiu como variacao_periodo a 0,92).
@@ -235,7 +271,7 @@ def _resolver_entidades(intencao: str, texto: str, entidades_modelo: dict,
         return {k[0]: par[0], k[1]: par[1], k[2]: par[2], k[3]: par[3]}
 
     # ---- intenções de UM período -------------------------------------
-    entidades = R._extrai_periodo(texto, ano_completo_se_ausente=True)
+    entidades = _periodo_relativo(texto) or R._extrai_periodo(texto, ano_completo_se_ausente=True)
 
     if intencao in _COM_LIMITE:
         entidades["limite"] = R._extrai_limite(texto)
@@ -273,11 +309,18 @@ class ModeloTreinadoNLU:
         # fallback do modelo (baixa confiança) ou nada reconhecido:
         # devolve confiança baixa e deixa o verificar_confianca/executor cuidarem.
         if r["fallback"] or r["intencao"] is None:
+            # Os slots são resolvidos mesmo assim (é determinístico e barato):
+            # a confiança baixa continua barrando a resposta, mas o contexto da
+            # conversa e o refino (app/refino.py) podem completá-la.
+            entidades = {}
+            if r["intencao"] and _tem_termo_dominio(texto):
+                entidades = _resolver_entidades(r["intencao"], texto.lower(), r["entidades"], texto)
             return Interpretacao(
                 intencao=r["intencao"],
                 confianca=r["confianca"],
-                entidades={},
+                entidades=entidades,
                 texto_original=texto,
+                entidades_modelo=r["entidades"],
             )
 
         # item 6: mesmo confiante, rejeita se a frase não tem termo do domínio.
@@ -288,6 +331,7 @@ class ModeloTreinadoNLU:
                 confianca=0.0,
                 entidades={},
                 texto_original=texto,
+                entidades_modelo=r["entidades"],
             )
 
         entidades = _resolver_entidades(r["intencao"], texto.lower(), r["entidades"], texto)
@@ -296,4 +340,5 @@ class ModeloTreinadoNLU:
             confianca=r["confianca"],
             entidades=entidades,
             texto_original=texto,
+            entidades_modelo=r["entidades"],
         )
