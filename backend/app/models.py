@@ -10,6 +10,9 @@ class Interpretacao(BaseModel):
     confianca: float
     entidades: dict[str, Any] = {}
     texto_original: str
+    # Trechos que o modelo marcou na frase (tags BIO), crus: {"PRODUTO": "botas de couro"}.
+    # Não vão para o SQL; servem de pista para app/filtros.py achar o valor no catálogo.
+    entidades_modelo: dict[str, Any] = {}
 
 
 class ResultSet(BaseModel):
