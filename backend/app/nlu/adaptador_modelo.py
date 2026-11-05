@@ -261,7 +261,9 @@ class ModeloTreinadoNLU:
 
         if caminho_pt is None:
             base = os.path.dirname(__file__)
-            caminho_pt = os.path.join(base, "intellix_nlu_v1.0.0.pt")
+            # v1.1.0: dataset aumentado (comparacao/variacao/canal/pagamento),
+            # 85,6% vs 80,0% do v1.0.0 nas 100 perguntas offline (tier 2).
+            caminho_pt = os.path.join(base, "intellix_nlu_v1.1.0.pt")
         self._modelo = ModeloIntellix(caminho_pt)
 
     def parse(self, texto: str) -> Interpretacao:
