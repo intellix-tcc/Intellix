@@ -7,8 +7,11 @@
 
 const MESES_CURTOS = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
 
-/** "valor_total" -> "Valor total" (só tira o snake_case). */
+/** "valor_total" -> "Valor total" (tira o snake_case; alguns nomes têm acento). */
+const NOMES_COLUNA = { periodo: "Mês", unidades: "Unidades vendidas", ticket_medio: "Ticket médio" };
+
 export function humanizarColuna(nome) {
+  if (NOMES_COLUNA[nome]) return NOMES_COLUNA[nome];
   const s = String(nome || "").replace(/_/g, " ");
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
