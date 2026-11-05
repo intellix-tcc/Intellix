@@ -7,6 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.acesso import resolver_empresa
 from app.auth import Usuario, usuario_atual
+from app.contexto import aplicar_contexto
 from app.db import fechar_pool, get_connection
 from app.fallbacks import verificar_confianca
 from app.importacao.etl import importar
@@ -122,6 +123,9 @@ def capacidades() -> dict:
 @app.post("/chat", response_model=ResultSet)
 def chat(pergunta: Pergunta, usuario: UsuarioAtual) -> ResultSet:
     interpretacao = nlu.parse(pergunta.pergunta)
+    # Continuação da conversa: "e em abril?" depois de "faturamento em março?"
+    # herda a intenção anterior quando o frontend reenvia o contexto.
+    interpretacao = aplicar_contexto(interpretacao, pergunta.contexto, pergunta.pergunta)
     verificar_confianca(interpretacao)
 
     # O executor.py trata OperationalError que acontece DURANTE a consulta, mas a
