@@ -4,21 +4,24 @@ import { validarNome, forcaSenha } from "../utils/validacao";
 import { prepararFoto, validarImagem, TAMANHO_MAX_MB } from "../utils/imagem";
 import Avatar from "../componentes/Avatar";
 import CampoSenha from "../componentes/CampoSenha";
+import { OPCOES } from "../utils/preferencias";
 
 // Página de perfil (rota #/perfil). Duas áreas independentes: dados da conta
 // (nome + foto) e troca de senha. Cada uma tem o próprio estado de
 // carregando/sucesso/erro, então salvar uma não mexe na outra.
-export default function Perfil({ usuario, onAtualizar, onSair }) {
+export default function Perfil({ usuario, onAtualizar, onSair, preferencias, onPreferencias }) {
   return (
     <div className="pagina perfil">
       <header className="pagina-cabecalho anima-entrada">
         <h1 className="pagina-titulo">Meu perfil</h1>
         <p className="pagina-sub">
-          Ajuste como seu nome e sua foto aparecem no Intellix.
+          Ajuste como seu nome e sua foto aparecem no Intellix e deixe a
+          interface do seu jeito.
         </p>
       </header>
 
       <DadosDaConta usuario={usuario} onAtualizar={onAtualizar} />
+      {preferencias && <Preferencias valor={preferencias} onMudar={onPreferencias} />}
       <TrocarSenha usuario={usuario} onAtualizar={onAtualizar} />
 
       <section className="painel anima-entrada" style={{ animationDelay: "160ms" }}>
@@ -304,6 +307,52 @@ function TrocarSenha({ usuario, onAtualizar }) {
           </button>
         </div>
       </form>
+    </section>
+  );
+}
+
+// Tema, tamanho do texto e animações. Aplicam na hora (sem botão salvar) e
+// ficam guardadas neste navegador — ver utils/preferencias.js.
+function Preferencias({ valor, onMudar }) {
+  const grupos = [
+    {
+      chave: "tema",
+      titulo: "Tema",
+      dica: "\u201cIgual ao sistema\u201d acompanha o modo claro/escuro do seu computador ou celular.",
+    },
+    { chave: "texto", titulo: "Tamanho do texto", dica: "Aumenta textos, botões e gráficos em todas as telas." },
+    {
+      chave: "movimento",
+      titulo: "Animações",
+      dica: "Desliga transições e efeitos de entrada. Útil para quem sente desconforto com movimento na tela.",
+    },
+  ];
+  return (
+    <section className="painel anima-entrada" style={{ animationDelay: "60ms" }} aria-labelledby="h-preferencias">
+      <h2 id="h-preferencias" className="painel-titulo">Preferências de exibição</h2>
+      <p className="painel-texto">Valem para este navegador e mudam na hora.</p>
+      <div className="preferencias">
+        {grupos.map((g) => (
+          <fieldset key={g.chave} className="preferencia">
+            <legend>{g.titulo}</legend>
+            <div className="segmentado">
+              {OPCOES[g.chave].map((o) => (
+                <label key={o.valor} className={valor[g.chave] === o.valor ? "marcado" : undefined}>
+                  <input
+                    type="radio"
+                    name={`pref-${g.chave}`}
+                    value={o.valor}
+                    checked={valor[g.chave] === o.valor}
+                    onChange={() => onMudar({ ...valor, [g.chave]: o.valor })}
+                  />
+                  {o.rotulo}
+                </label>
+              ))}
+            </div>
+            <p className="preferencia-dica">{g.dica}</p>
+          </fieldset>
+        ))}
+      </div>
     </section>
   );
 }
