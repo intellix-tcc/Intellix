@@ -13,7 +13,7 @@ import {
   YAxis,
 } from "recharts";
 import Rosca from "./Rosca";
-import { animar, criarRotuloDePonto } from "../utils/rotulos";
+import { animar, criarRotuloDePonto, escalaDe, numeroNaEscala } from "../utils/rotulos";
 import { coresDistintas } from "../utils/cores";
 import { formatarValor, indiceMetrica, rotuloIntervalo, serieDoResultado } from "../utils/resultado";
 
@@ -46,7 +46,7 @@ export default function GraficoResultado({ r, modo }) {
   const fmtCurto = (v) => formatarValor(coluna, v, { compacto: true });
   const serie = serieDoResultado(r);
 
-  if (modo === "linha") return <Linha serie={serie} fmt={fmt} fmtCurto={fmtCurto} />;
+  if (modo === "linha") return <Linha serie={serie} fmt={fmt} fmtCurto={fmtCurto} coluna={coluna} />;
   if (modo === "pizza") {
     const cores = coresDistintas(serie.map((s) => s.chave));
     return (
@@ -61,10 +61,18 @@ export default function GraficoResultado({ r, modo }) {
   return <Barras serie={serie} fmt={fmt} fmtCurto={fmtCurto} />;
 }
 
-function Linha({ serie, fmt, fmtCurto }) {
+function Linha({ serie, fmt, fmtCurto, coluna }) {
+  // Rótulo curto na escala do gráfico ("35,4" + "valores em R$ mil" uma vez)
+  // quando é dinheiro; contagem e percentual usam o formato curto normal.
+  const nome = String(coluna || "").toLowerCase();
+  const ehMoeda = !nome.includes("percentual") && !/^(quantidade|itens|unidades)/.test(nome);
+  const escala = escalaDe(serie.map((p) => p.valor));
+  const rotular = ehMoeda ? (v) => numeroNaEscala(v, escala) : fmtCurto;
   const media = serie.reduce((s, p) => s + p.valor, 0) / serie.length;
   const maior = serie.reduce((a, b) => (b.valor > a.valor ? b : a), serie[0]);
   return (
+    <>
+    {ehMoeda && <p className="grafico-unidade">Valores em {escala.unidade} · em destaque, o maior</p>}
     <div role="img" aria-label={`Gráfico de linha com ${serie.length} períodos. Maior valor em ${maior.rotulo}: ${fmt(maior.valor)}. Média de ${fmt(media)}.`}>
       <ResponsiveContainer width="100%" height={260}>
         <AreaChart data={serie} margin={{ top: 24, right: 28, left: 4, bottom: 18 }}>
@@ -98,11 +106,12 @@ function Linha({ serie, fmt, fmtCurto }) {
             activeDot={{ r: 5, fill: "var(--teal)", stroke: "var(--surface)", strokeWidth: 2 }}
             {...animar()}
           >
-            <LabelList dataKey="valor" content={criarRotuloDePonto(serie.map((p) => p.valor), fmtCurto)} />
+            <LabelList dataKey="valor" content={criarRotuloDePonto(serie.map((p) => p.valor), rotular)} />
           </Area>
         </AreaChart>
       </ResponsiveContainer>
     </div>
+    </>
   );
 }
 
