@@ -190,7 +190,8 @@ TEMPLATES: dict[str, dict] = {
         """,
         "obrigatorios": ["periodo_inicio", "periodo_fim"],
         "titulo": "Vendas por canal",
-        "visual": "barra",
+        # composição do todo: rosca, com cor fixa por fatia no frontend
+        "visual": "pizza",
     },
     "vendas_por_categoria": {
         "sql": """
@@ -206,7 +207,8 @@ TEMPLATES: dict[str, dict] = {
         """,
         "obrigatorios": ["periodo_inicio", "periodo_fim"],
         "titulo": "Vendas por categoria",
-        "visual": "barra",
+        # composição do todo: rosca, com cor fixa por fatia no frontend
+        "visual": "pizza",
     },
     "vendas_por_pagamento": {
         "sql": """
@@ -222,6 +224,7 @@ TEMPLATES: dict[str, dict] = {
         """,
         "obrigatorios": ["periodo_inicio", "periodo_fim"],
         "titulo": "Vendas por forma de pagamento",
-        "visual": "barra",
+        # composição do todo: rosca, com cor fixa por fatia no frontend
+        "visual": "pizza",
     },
 }
