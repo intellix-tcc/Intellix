@@ -1,16 +1,15 @@
 import { useState } from "react";
 import Icone from "../componentes/Icone";
 import { validarEmail, validarNome } from "../utils/validacao";
-import { ASSUNTOS_CONTATO, EMAIL_CONTATO, montarMailto } from "../utils/contato";
+import { ASSUNTOS_CONTATO, EMAIL_CONTATO } from "../utils/contato";
+import { enviarMensagemContato } from "../servicos/contato";
 
 const MENSAGEM_MIN = 10;
 const MENSAGEM_MAX = 2000;
 
-// Fale conosco. Não existe envio de e-mail no backend, então o formulário
-// monta a mensagem e abre o aplicativo de e-mail da pessoa já preenchido
-// (mailto:). Validar aqui antes evita abrir um rascunho incompleto; e o
-// e-mail fica visível e copiável para quem não tem cliente de e-mail
-// configurado no computador.
+// Fale conosco. A mensagem sai direto da tela (ver servicos/contato.js) e
+// chega no e-mail da equipe; a resposta vai para o e-mail informado aqui. O
+// endereço da equipe continua visível e copiável como caminho alternativo.
 export default function FaleConosco({ usuario }) {
   const [campos, setCampos] = useState(() => ({
     nome: usuario?.nome ?? "",
@@ -19,13 +18,19 @@ export default function FaleConosco({ usuario }) {
     mensagem: "",
   }));
   const [erros, setErros] = useState({});
-  const [enviado, setEnviado] = useState(false);
+  // ocioso | enviando | enviado
+  const [estado, setEstado] = useState("ocioso");
+  const [erroEnvio, setErroEnvio] = useState("");
   const [copiado, setCopiado] = useState(false);
+  // Honeypot: campo escondido que pessoa não vê e robô preenche.
+  const [armadilha, setArmadilha] = useState("");
+  const enviando = estado === "enviando";
 
   function mudar(campo, valor) {
     setCampos((c) => ({ ...c, [campo]: valor }));
     if (erros[campo]) setErros((e) => ({ ...e, [campo]: "" }));
-    setEnviado(false);
+    setErroEnvio("");
+    if (estado === "enviado") setEstado("ocioso");
   }
 
   function validar() {
@@ -43,11 +48,20 @@ export default function FaleConosco({ usuario }) {
     return Object.keys(limpos).length === 0;
   }
 
-  function enviar(e) {
+  async function enviar(e) {
     e.preventDefault();
-    if (!validar()) return;
-    window.location.href = montarMailto(campos);
-    setEnviado(true);
+    if (enviando || !validar()) return;
+    setErroEnvio("");
+    setEstado("enviando");
+    try {
+      await enviarMensagemContato({ ...campos, armadilha });
+      setEstado("enviado");
+      // Limpa só a mensagem: nome e e-mail servem para a próxima.
+      setCampos((c) => ({ ...c, mensagem: "" }));
+    } catch (err) {
+      setEstado("ocioso");
+      setErroEnvio(err?.mensagem || "Não conseguimos enviar agora. Tente de novo em instantes.");
+    }
   }
 
   async function copiarEmail() {
@@ -77,8 +91,8 @@ export default function FaleConosco({ usuario }) {
         <section className="painel anima-entrada" style={{ animationDelay: "60ms" }}>
           <h2 className="painel-titulo">Envie sua mensagem</h2>
           <p className="painel-texto">
-            Ao enviar, abrimos o seu aplicativo de e-mail com a mensagem pronta. É só
-            conferir e clicar em enviar.
+            A mensagem vai direto para a equipe do Intellix, e a resposta chega no
+            e-mail que você informar.
           </p>
 
           <form onSubmit={enviar} className="perfil-form contato-form" noValidate>
@@ -89,6 +103,7 @@ export default function FaleConosco({ usuario }) {
                 placeholder="Seu nome"
                 autoComplete="name"
                 maxLength={60}
+                disabled={enviando}
                 aria-invalid={Boolean(erros.nome)}
               />
             </Campo>
@@ -100,12 +115,17 @@ export default function FaleConosco({ usuario }) {
                 onChange={(e) => mudar("email", e.target.value)}
                 placeholder="voce@empresa.com"
                 autoComplete="email"
+                disabled={enviando}
                 aria-invalid={Boolean(erros.email)}
               />
             </Campo>
 
             <Campo rotulo="Assunto">
-              <select value={campos.assunto} onChange={(e) => mudar("assunto", e.target.value)}>
+              <select
+                value={campos.assunto}
+                onChange={(e) => mudar("assunto", e.target.value)}
+                disabled={enviando}
+              >
                 {ASSUNTOS_CONTATO.map((a) => (
                   <option key={a} value={a}>
                     {a}
@@ -125,20 +145,39 @@ export default function FaleConosco({ usuario }) {
                 placeholder="Conte o que aconteceu ou o que você gostaria de ver no Intellix."
                 rows={6}
                 maxLength={MENSAGEM_MAX}
+                disabled={enviando}
                 aria-invalid={Boolean(erros.mensagem)}
               />
             </Campo>
 
-            {enviado && (
+            <input
+              type="text"
+              name="_honey"
+              className="contato-armadilha"
+              value={armadilha}
+              onChange={(e) => setArmadilha(e.target.value)}
+              tabIndex={-1}
+              autoComplete="off"
+              aria-hidden="true"
+            />
+
+            {estado === "enviado" && (
               <p className="auth-sucesso" role="status">
-                Abrimos o seu aplicativo de e-mail com a mensagem pronta. Se nada abriu,
-                envie direto para <strong>{EMAIL_CONTATO}</strong>.
+                Mensagem enviada! A equipe vai responder no e-mail{" "}
+                <strong>{campos.email.trim()}</strong>.
+              </p>
+            )}
+
+            {erroEnvio && (
+              <p className="auth-erro" role="alert">
+                {erroEnvio} Se preferir, escreva direto para{" "}
+                <a href={`mailto:${EMAIL_CONTATO}`}>{EMAIL_CONTATO}</a>.
               </p>
             )}
 
             <div className="painel-acoes">
-              <button type="submit" className="botao-primario">
-                Enviar mensagem
+              <button type="submit" className="botao-primario" disabled={enviando}>
+                {enviando ? "Enviando…" : "Enviar mensagem"}
               </button>
             </div>
           </form>

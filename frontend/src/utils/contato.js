@@ -21,17 +21,6 @@ export const ASSUNTOS_CONTATO = [
   "Outro",
 ];
 
-/** Monta o link mailto: com assunto e corpo já preenchidos. */
-export function montarMailto({ nome, email, assunto, mensagem }) {
-  const corpo = [mensagem.trim(), "", "—", `Nome: ${nome.trim()}`, `E-mail para resposta: ${email.trim()}`].join(
-    "\n"
-  );
-  const params = new URLSearchParams({ subject: `[Intellix] ${assunto}`, body: corpo });
-  // URLSearchParams codifica espaço como "+", que alguns clientes de e-mail
-  // mostram literalmente; mailto: espera %20.
-  return `mailto:${EMAIL_CONTATO}?${params.toString().replace(/\+/g, "%20")}`;
-}
-
 // Páginas institucionais, abertas mesmo sem login (ver App.jsx). Usadas no
 // cabeçalho e no rodapé da vitrine e das páginas públicas.
 export const ROTAS_PUBLICAS = ["faq", "termos", "contato"];
