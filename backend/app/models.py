@@ -32,8 +32,18 @@ class ResultSet(BaseModel):
     intencao: str | None = None
     # Resposta de um mês só (faturamento, quantidade de vendas, ticket médio):
     # a mesma métrica nos 12 meses até ele, para o frontend mostrar a
-    # evolução com o mês em destaque. Ver app/sql/contexto.py.
-    contexto: dict[str, Any] | None = None
+    # evolução com o mês em destaque. Ver app/sql/evolucao.py. (Não confundir
+    # com Pergunta.contexto, que é o contexto conversacional da pergunta.)
+    evolucao: dict[str, Any] | None = None
+
+
+class Contexto(BaseModel):
+    """Resumo da resposta anterior, reenviado pelo frontend para dar
+    continuidade à conversa (ver app/contexto.py). `intencao` e `entidades`
+    saem do ResultSet anterior (campos `intencao` e `parametros`)."""
+
+    intencao: str | None = None
+    entidades: dict[str, Any] = {}
 
 
 class Pergunta(BaseModel):
@@ -43,3 +53,6 @@ class Pergunta(BaseModel):
     # as perguntas caírem sobre os dados importados, não sobre a base demo.
     # Ausente (None) = base de demonstração (EMPRESA_ID fixo).
     empresa_id: str | None = None
+    # Contexto da pergunta anterior, para resolver frases elípticas como
+    # "e em abril?". Ausente (None) = pergunta tratada isoladamente.
+    contexto: Contexto | None = None

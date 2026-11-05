@@ -1275,9 +1275,9 @@ h2.eyebrow::before {
 }
 
 /* ==========================================================================
-   Chat: contexto do número de um mês só (evolução com o mês em destaque)
+   Chat: evolução do número de um mês só (evolução com o mês em destaque)
    ========================================================================== */
-.contexto-mensal {
+.evolucao-mensal {
   margin: 4px 0 6px;
   padding: 16px 18px 12px;
   border: 1px solid var(--border);
@@ -1285,7 +1285,7 @@ h2.eyebrow::before {
   background: var(--surface);
   box-shadow: var(--cartao-sombra);
 }
-.contexto-comparacoes {
+.evolucao-comparacoes {
   list-style: none;
   margin: 0 0 14px;
   padding: 0;
@@ -1293,7 +1293,7 @@ h2.eyebrow::before {
   flex-wrap: wrap;
   gap: 8px;
 }
-.contexto-comparacoes li {
+.evolucao-comparacoes li {
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -1303,40 +1303,40 @@ h2.eyebrow::before {
   border: 1px solid var(--border);
   font-size: 13px;
 }
-.contexto-rotulo {
+.evolucao-rotulo {
   color: var(--text);
 }
-.contexto-delta,
-.contexto-posicao {
+.evolucao-delta,
+.evolucao-posicao {
   font-family: var(--mono);
   font-size: 12.5px;
 }
-.contexto-delta.positiva {
+.evolucao-delta.positiva {
   color: var(--ok-texto);
 }
-.contexto-delta.negativa {
+.evolucao-delta.negativa {
   color: var(--erro-texto);
 }
-.contexto-delta.neutra,
-.contexto-posicao {
+.evolucao-delta.neutra,
+.evolucao-posicao {
   color: var(--text-h);
 }
-.contexto-cabecalho {
+.evolucao-cabecalho {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
   gap: 12px;
 }
-.contexto-titulo {
+.evolucao-titulo {
   margin: 0;
   font-size: 13.5px;
   font-weight: 600;
   color: var(--text-h);
 }
-.contexto-cabecalho .grafico-unidade {
+.evolucao-cabecalho .grafico-unidade {
   margin: 0;
 }
-.contexto-legenda {
+.evolucao-legenda {
   margin: 6px 0 0;
   font-family: var(--mono);
   font-size: 11.5px;

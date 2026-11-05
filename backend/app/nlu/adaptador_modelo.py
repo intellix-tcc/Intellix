@@ -23,7 +23,10 @@ import re
 
 from app.models import Interpretacao
 from app.nlu import regras as R
-from app.nlu.modelo_nlu import ModeloIntellix
+# O import de ModeloIntellix (que puxa torch) é feito dentro de __init__, não
+# aqui no topo: assim outros módulos podem reaproveitar os helpers de slot
+# deste arquivo (ex.: app/contexto.py) sem pagar o custo do torch, e o modo
+# NLU_BACKEND=regras continua sem carregar a rede.
 
 # Intenções que exigem DOIS períodos, e os nomes de parâmetro de cada uma
 # (conferidos contra os "obrigatorios" em sql/templates.py).
@@ -62,6 +65,41 @@ def _nome_vendedor(entidades_modelo: dict) -> str | None:
     if isinstance(v, list):
         v = v[0] if v else None
     return v
+
+
+# Palavras que casam o padrão mas NÃO são nome de pessoa: substantivos do
+# domínio e, principalmente, os interrogativos/pronomes que iniciam a frase
+# ("Quem vendeu mais?" não pode virar o vendedor "Quem").
+_NAO_E_NOME = {
+    "time", "equipe", "vendas", "venda", "loja", "mês", "mes", "ano",
+    "período", "periodo", "trimestre", "semestre", "empresa", "setor",
+    "quem", "quanto", "quantos", "quanta", "quantas", "qual", "quais",
+    "como", "quando", "onde", "quem", "performance", "desempenho",
+    "ranking", "me", "quem", "todos", "cada",
+}
+
+# O modelo erra o nome do vendedor em ~metade dos casos (BIO F1 ~0,85): "da
+# Fernanda", "vendedor Carlos" escapavam e a pergunta virava 422. Como o nome
+# aqui é sempre um próprio capitalizado logo após um "cue" claro (vendedor(a),
+# da/do/de) ou antes de "vendeu/faturou", uma heurística determinística sobre
+# o TEXTO ORIGINAL (com maiúsculas) recupera esses casos sem tocar no modelo.
+_NOME_POS_CUE = re.compile(
+    r"\b(?:vendedor|vendedora|d[aeo])\s+([A-ZÀ-Ý][a-zà-ÿ]+)",
+)
+_NOME_ANTES_VERBO = re.compile(
+    r"\b([A-ZÀ-Ý][a-zà-ÿ]+)\s+(?:vendeu|vende|faturou|fatura)\b",
+)
+
+
+def _nome_por_heuristica(texto_original: str) -> str | None:
+    """Extrai um nome próprio de vendedor do texto como o usuário digitou.
+    Usada só quando o modelo não devolveu a entidade VENDEDOR."""
+    for padrao in (_NOME_POS_CUE, _NOME_ANTES_VERBO):
+        for m in padrao.finditer(texto_original):
+            candidato = m.group(1)
+            if candidato.lower() not in _NAO_E_NOME:
+                return candidato
+    return None
 
 
 # ---- item 4: resolução de DOIS períodos (relativos, anos, trimestres) -------
@@ -185,7 +223,8 @@ def _pede_todos_vendedores(texto: str) -> bool:
     return bool(_SINAIS_TODOS_VENDEDORES.search(texto))
 
 
-def _resolver_entidades(intencao: str, texto: str, entidades_modelo: dict) -> dict:
+def _resolver_entidades(intencao: str, texto: str, entidades_modelo: dict,
+                        texto_original: str) -> dict:
     # ---- intenções de DOIS períodos ----------------------------------
     if intencao in _DOIS_PERIODOS:
         par = _dois_periodos(texto)
@@ -201,7 +240,8 @@ def _resolver_entidades(intencao: str, texto: str, entidades_modelo: dict) -> di
         entidades["limite"] = R._extrai_limite(texto)
 
     if intencao == "desempenho_vendedor":
-        nome = _nome_vendedor(entidades_modelo)
+        # 1ª escolha: entidade do modelo; 2ª: heurística sobre o texto original.
+        nome = _nome_vendedor(entidades_modelo) or _nome_por_heuristica(texto_original)
         if nome:
             # templates.py espera o % do ILIKE já montado pela NLU
             entidades["vendedor_nome"] = f"%{nome}%"
@@ -217,9 +257,13 @@ class ModeloTreinadoNLU:
     """Implementa NLUService (base.py) usando o .pt treinado."""
 
     def __init__(self, caminho_pt: str | None = None):
+        from app.nlu.modelo_nlu import ModeloIntellix  # lazy: só aqui paga torch
+
         if caminho_pt is None:
             base = os.path.dirname(__file__)
-            caminho_pt = os.path.join(base, "intellix_nlu_v1.0.0.pt")
+            # v1.1.0: dataset aumentado (comparacao/variacao/canal/pagamento),
+            # 85,6% vs 80,0% do v1.0.0 nas 100 perguntas offline (tier 2).
+            caminho_pt = os.path.join(base, "intellix_nlu_v1.1.0.pt")
         self._modelo = ModeloIntellix(caminho_pt)
 
     def parse(self, texto: str) -> Interpretacao:
@@ -245,7 +289,7 @@ class ModeloTreinadoNLU:
                 texto_original=texto,
             )
 
-        entidades = _resolver_entidades(r["intencao"], texto.lower(), r["entidades"])
+        entidades = _resolver_entidades(r["intencao"], texto.lower(), r["entidades"], texto)
         return Interpretacao(
             intencao=r["intencao"],
             confianca=r["confianca"],

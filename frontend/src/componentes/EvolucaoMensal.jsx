@@ -2,18 +2,18 @@ import { Bar, BarChart, CartesianGrid, Cell, LabelList, ReferenceLine, Responsiv
 import { formatarValor, rotuloPeriodo } from "../utils/resultado";
 import { animar, escalaDe, numeroNaEscala } from "../utils/rotulos";
 
-// Contexto de uma resposta de um mês só ("quanto faturei em outubro?"): o
+// Evolução de uma resposta de um mês só ("quanto faturei em outubro?"): o
 // número sozinho não diz se o mês foi bom. Aqui vão os 12 meses até ele, com
 // o mês perguntado em destaque, e três comparações prontas: contra o mês
 // anterior, contra a média do período e a posição no ranking dos meses.
-export default function ContextoMensal({ contexto }) {
-  const coluna = contexto.colunas[1];
-  const serie = contexto.linhas.map(([periodo, valor]) => ({
+export default function EvolucaoMensal({ evolucao }) {
+  const coluna = evolucao.colunas[1];
+  const serie = evolucao.linhas.map(([periodo, valor]) => ({
     periodo,
     rotulo: rotuloPeriodo(periodo),
     valor: Number(valor) || 0,
   }));
-  const i = serie.findIndex((p) => p.periodo === contexto.destaque);
+  const i = serie.findIndex((p) => p.periodo === evolucao.destaque);
   if (i < 0 || serie.length < 2) return null;
 
   const atual = serie[i];
@@ -31,37 +31,37 @@ export default function ContextoMensal({ contexto }) {
   const vsMedia = variacao(atual.valor, media);
 
   return (
-    <div className="contexto-mensal">
-      <ul className="contexto-comparacoes">
+    <div className="evolucao-mensal">
+      <ul className="evolucao-comparacoes">
         {vsAnterior != null && (
           <li>
-            <span className="contexto-rotulo">vs {anterior.rotulo}</span>
+            <span className="evolucao-rotulo">vs {anterior.rotulo}</span>
             <Delta valor={vsAnterior} />
           </li>
         )}
         {vsMedia != null && comVenda.length > 1 && (
           <li>
-            <span className="contexto-rotulo">vs média de {comVenda.length} meses</span>
+            <span className="evolucao-rotulo">vs média de {comVenda.length} meses</span>
             <Delta valor={vsMedia} />
           </li>
         )}
         {posicao > 0 && comVenda.length > 1 && (
           <li>
-            <span className="contexto-rotulo">posição no período</span>
-            <strong className="contexto-posicao">
+            <span className="evolucao-rotulo">posição no período</span>
+            <strong className="evolucao-posicao">
               {posicao}º de {comVenda.length}
             </strong>
           </li>
         )}
       </ul>
 
-      <div className="contexto-cabecalho">
-        <p className="contexto-titulo">{contexto.titulo}</p>
+      <div className="evolucao-cabecalho">
+        <p className="evolucao-titulo">{evolucao.titulo}</p>
         {escala && <p className="grafico-unidade">Valores em {escala.unidade}</p>}
       </div>
       <div
         role="img"
-        aria-label={`${contexto.titulo}: ${serie.length} meses. ${atual.rotulo} em destaque, com ${fmt(atual.valor)}; média de ${fmt(media)}.`}
+        aria-label={`${evolucao.titulo}: ${serie.length} meses. ${atual.rotulo} em destaque, com ${fmt(atual.valor)}; média de ${fmt(media)}.`}
       >
         <ResponsiveContainer width="100%" height={220}>
           <BarChart data={serie} margin={{ top: 22, right: 8, left: 0, bottom: 0 }}>
@@ -70,7 +70,7 @@ export default function ContextoMensal({ contexto }) {
             <YAxis hide />
             <Tooltip
               cursor={{ fill: "var(--hover-bg)" }}
-              formatter={(v) => [fmt(v), contexto.titulo.replace(" mês a mês", "")]}
+              formatter={(v) => [fmt(v), evolucao.titulo.replace(" mês a mês", "")]}
               contentStyle={{
                 fontSize: 12.5,
                 background: "var(--surface)",
@@ -94,7 +94,7 @@ export default function ContextoMensal({ contexto }) {
           </BarChart>
         </ResponsiveContainer>
       </div>
-      <p className="contexto-legenda">
+      <p className="evolucao-legenda">
         <span className="legenda-cor" style={{ background: "var(--dado-2)" }} aria-hidden="true" />
         {atual.rotulo}, o mês perguntado
         <span className="legenda-tracejado" aria-hidden="true" />
@@ -134,7 +134,7 @@ function Delta({ valor }) {
   const sentido = valor > 0.05 ? "positiva" : valor < -0.05 ? "negativa" : "neutra";
   const seta = sentido === "positiva" ? "↑" : sentido === "negativa" ? "↓" : "→";
   return (
-    <strong className={`contexto-delta ${sentido}`}>
+    <strong className={`evolucao-delta ${sentido}`}>
       {seta} {Math.abs(valor).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%
     </strong>
   );

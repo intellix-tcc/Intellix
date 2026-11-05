@@ -77,10 +77,10 @@ def test_faturamento_de_um_ano_vira_serie_mensal_em_linha():
     assert [linha[0] for linha in dados["linhas"]][:2] == ["2024-01", "2024-02"]
 
 
-def test_faturamento_de_um_mes_traz_contexto_de_12_meses():
+def test_faturamento_de_um_mes_traz_evolucao_de_12_meses():
     r = client.post("/chat", json={"pergunta": "quanto faturei em março de 2024"})
     assert r.status_code == 200
-    ctx = r.json()["contexto"]
+    ctx = r.json()["evolucao"]
     assert ctx["destaque"] == "2024-03"
     assert len(ctx["linhas"]) == 12
     assert ctx["linhas"][-1][0] == "2024-03"
