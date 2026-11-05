@@ -68,6 +68,9 @@ def base_pequena():
         conn.commit()
     yield emp
     with psycopg.connect(dsn, prepare_threshold=None) as conn, conn.cursor() as cur:
+        # log_consulta primeiro: o /chat audita (F09) e a FK impede apagar a
+        # empresa enquanto houver registro de auditoria dela.
+        cur.execute("delete from log_consulta where empresa_id=%s", (emp,))
         cur.execute("delete from fato_item_venda where empresa_id=%s", (emp,))
         cur.execute("delete from dim_produto where empresa_id=%s", (emp,))
         cur.execute("delete from empresa where id=%s", (emp,))

@@ -1,4 +1,5 @@
 import os
+import time
 from typing import Annotated
 
 import psycopg
@@ -6,6 +7,7 @@ from fastapi import Depends, FastAPI, HTTPException, Query, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.acesso import resolver_empresa
+from app.auditoria import registrar_consulta
 from app.auth import Usuario, usuario_atual
 from app.contexto import aplicar_contexto
 from app.db import fechar_pool, get_connection
@@ -123,6 +125,7 @@ def capacidades() -> dict:
 
 @app.post("/chat", response_model=ResultSet)
 def chat(pergunta: Pergunta, usuario: UsuarioAtual) -> ResultSet:
+    inicio = time.perf_counter()
     interpretacao = nlu.parse(pergunta.pergunta)
     # Continuação da conversa: "e em abril?" depois de "faturamento em março?"
     # herda a intenção anterior quando o frontend reenvia o contexto.
@@ -145,7 +148,12 @@ def chat(pergunta: Pergunta, usuario: UsuarioAtual) -> ResultSet:
             # respondia "sem resultado" (ver app/periodo_dataset.py).
             if not tem_ano_explicito(pergunta.pergunta):
                 interpretacao = ajustar_periodo(interpretacao, ano_referencia(conn, empresa))
-            return executar_template(interpretacao, empresa, conn)
+            resultado = executar_template(interpretacao, empresa, conn)
+            # Auditoria (F09): registra a consulta que de fato executou. É
+            # best-effort e vai na mesma transação (commit ao sair do `with`).
+            registrar_consulta(conn, empresa, interpretacao,
+                               round((time.perf_counter() - inicio) * 1000))
+            return resultado
     except psycopg.OperationalError:
         raise HTTPException(
             status_code=503,
