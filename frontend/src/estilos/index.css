@@ -1,7 +1,7 @@
 :root {
   --text: #4c5d6b;
   --text-h: #16232f;
-  --text-3: #8796a2;
+  --text-3: #5f6e7a; /* 4,7:1 sobre o fundo creme (WCAG AA); era #8796a2, 2,7:1 */
   /* Fundo creme + cartões brancos: é como a folha de identidade monta as
      peças (dashboard, papelaria). Pra voltar ao branco puro, --bg: #ffffff. */
   --bg: #f5f2ea;
@@ -105,7 +105,7 @@
     /* fundo puxado para o azul-marinho da marca, não cinza neutro */
     --text: #9db0bf;
     --text-h: #e9f0f6;
-    --text-3: #647787;
+    --text-3: #8396a5; /* 5,4:1 sobre a superfície escura (WCAG AA); era #647787, 3,5:1 */
     --bg: #0b1622;
     --surface: #0f2131;
     --surface-2: #0d1c2a;
@@ -165,7 +165,7 @@
 :root[data-theme="light"] {
   --text: #4c5d6b;
   --text-h: #16232f;
-  --text-3: #8796a2;
+  --text-3: #5f6e7a; /* 4,7:1 sobre o fundo creme (WCAG AA); era #8796a2, 2,7:1 */
   --bg: #f5f2ea;
   --surface: #ffffff;
   --surface-2: #fbf9f3;
@@ -220,7 +220,7 @@
 :root[data-theme="dark"] {
   --text: #9db0bf;
   --text-h: #e9f0f6;
-  --text-3: #647787;
+  --text-3: #8396a5; /* 5,4:1 sobre a superfície escura (WCAG AA); era #647787, 3,5:1 */
   --bg: #0b1622;
   --surface: #0f2131;
   --surface-2: #0d1c2a;

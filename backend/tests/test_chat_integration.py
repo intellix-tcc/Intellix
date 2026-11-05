@@ -50,3 +50,28 @@ def test_valores_decimais_viram_float_serializavel():
     assert r.status_code == 200
     valor = r.json()["linhas"][0][0]
     assert isinstance(valor, float)
+
+
+def test_resumo_do_mes_com_dados():
+    r = client.get("/resumo", params={"ano": 2024, "mes": 3})
+    assert r.status_code == 200
+    dados = r.json()
+    assert dados["periodo"]["rotulo"] == "março de 2024"
+    assert dados["periodo"]["parcial"] is False
+    assert len(dados["serie_diaria"]) == 31
+    assert len(dados["serie_mensal"]) == 12
+    assert dados["kpis"][0]["chave"] == "faturamento"
+    assert isinstance(dados["kpis"][0]["valor"], float)
+
+
+def test_resumo_mes_invalido():
+    assert client.get("/resumo", params={"mes": 13}).status_code == 422
+
+
+def test_faturamento_de_um_ano_vira_serie_mensal_em_linha():
+    r = client.post("/chat", json={"pergunta": "quanto faturei em 2024"})
+    assert r.status_code == 200
+    dados = r.json()
+    assert dados["tipo_visualizacao"] == "linha"
+    assert len(dados["linhas"]) == 12
+    assert [linha[0] for linha in dados["linhas"]][:2] == ["2024-01", "2024-02"]
