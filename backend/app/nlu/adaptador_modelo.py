@@ -65,6 +65,10 @@ def _nome_vendedor(entidades_modelo: dict) -> str | None:
     v = entidades_modelo.get("VENDEDOR")
     if isinstance(v, list):
         v = v[0] if v else None
+    # o modelo às vezes marca a própria palavra "vendedor" como nome
+    # ("desempenho do vendedor"): sem nome de verdade, não há entidade.
+    if v and all(p in _NAO_E_NOME or p in ("o", "a", "do", "da") for p in v.lower().split()):
+        return None
     return v
 
 
@@ -76,7 +80,7 @@ _NAO_E_NOME = {
     "período", "periodo", "trimestre", "semestre", "empresa", "setor",
     "quem", "quanto", "quantos", "quanta", "quantas", "qual", "quais",
     "como", "quando", "onde", "performance", "desempenho",
-    "ranking", "me", "todos", "cada",
+    "ranking", "me", "todos", "cada", "vendedor", "vendedora", "vendedores",
 }
 
 # O modelo erra o nome do vendedor em ~metade dos casos (BIO F1 ~0,85): "da
@@ -153,7 +157,7 @@ def _dois_periodos(texto: str) -> tuple[str, str, str, str] | None:
     """Resolve (atual_inicio, atual_fim, anterior_inicio, anterior_fim) ou None
     quando a frase não dá para montar dois períodos (falha segura -> 422)."""
     ano_m = re.search(r"\b(20\d{2})\b", texto)
-    ano = int(ano_m.group(1)) if ano_m else R.ANO_PADRAO
+    ano = int(ano_m.group(1)) if ano_m else R.ano_atual()
 
     # 1) dois anos distintos: "2023 comparado com 2024"
     anos = _anos_distintos(texto)
@@ -176,11 +180,12 @@ def _dois_periodos(texto: str) -> tuple[str, str, str, str] | None:
 
     # 5) ano relativo: "em relação ao ano passado", "variação ... esse ano"
     if re.search(r"\bano\s+(passad|anterior)", texto) or re.search(r"\b(es[st]e|des[st]e)\s+ano\b", texto):
-        return _ordenar(R._ano_inteiro(R.ANO_PADRAO - 1), R._ano_inteiro(R.ANO_PADRAO))
+        return _ordenar(R._ano_inteiro(R.ano_atual() - 1), R._ano_inteiro(R.ano_atual()))
 
     # 6) trimestres genéricos: "variação de vendas entre os trimestres"
     if "trimestre" in texto:
-        return _ordenar(R._trimestre(3, R.ANO_PADRAO), R._trimestre(4, R.ANO_PADRAO))
+        t_ant, a_ant = R.trimestre_anterior()
+        return _ordenar(R._trimestre(t_ant, a_ant), R._trimestre(R.trimestre_atual(), R.ano_atual()))
 
     # 7) um único mês por extenso: "crescimento em março de 2024" -> mês vs anterior
     if len(meses) == 1:
@@ -195,8 +200,8 @@ def _dois_periodos(texto: str) -> tuple[str, str, str, str] | None:
 # ---- um período relativo: "mês passado", "último trimestre", "1º semestre" --
 # Antes só as intenções de DOIS períodos entendiam essas formas; nas de um
 # período, "quanto vendi no mês passado?" caía no ano inteiro (ou em 422).
-# Mesma âncora (R.DATA_REFERENCIA) e mesma regra de ano do _dois_periodos;
-# o /chat depois desloca para o ano do dataset (periodo_dataset.py).
+# Mesma âncora (R.referencia(): no /chat, a data de hoje limitada à última
+# venda do dataset) e mesma regra de ano do _dois_periodos.
 _ORDINAIS = {"primeiro": 1, "segundo": 2, "terceiro": 3, "quarto": 4, "1": 1, "2": 2, "3": 3, "4": 4}
 
 
@@ -204,14 +209,15 @@ def _periodo_relativo(texto: str) -> dict[str, str] | None:
     if _meses_em_ordem(texto):
         return None  # mês por extenso: R._extrai_periodo resolve
     ano_m = re.search(r"\b(20\d{2})\b", texto)
-    ano = int(ano_m.group(1)) if ano_m else R.ANO_PADRAO
+    ano = int(ano_m.group(1)) if ano_m else R.ano_atual()
     par = None
     m = re.search(r"\b(primeiro|segundo|terceiro|quarto|[1-4])[ºo°]?\s+trimestre", texto)
     s = re.search(r"\b(primeiro|segundo|[12])[ºo°]?\s+semestre", texto)
     if m:
         par = R._trimestre(_ORDINAIS[m.group(1)], ano)
     elif re.search(r"[úu]ltimo\s+trimestre|trimestre\s+passado", texto):
-        par = R._trimestre(4, ano) if ano_m else R._trimestre((R.DATA_REFERENCIA.month - 1) // 3 + 1, ano)
+        # o último trimestre COMPLETO (em novembro, julho a setembro)
+        par = R._trimestre(4, ano) if ano_m else R._trimestre(*R.trimestre_anterior())
     elif s:
         primeiro = _ORDINAIS[s.group(1)] == 1
         par = (f"{ano}-01-01", f"{ano}-06-30") if primeiro else (f"{ano}-07-01", f"{ano}-12-31")
@@ -222,7 +228,7 @@ def _periodo_relativo(texto: str) -> dict[str, str] | None:
     elif re.search(r"\b(es[st]e|nes[st]e|d?es[st]e)\s+m[eê]s\b|\bm[eê]s\s+atual\b", texto):
         par = R._mes_relativo(0)
     elif re.search(r"\bano\s+(passad|anterior)", texto):
-        par = R._ano_inteiro(R.ANO_PADRAO - 1)
+        par = R._ano_inteiro(R.ano_atual() - 1)
     if par is None:
         return None
     return {"periodo_inicio": par[0], "periodo_fim": par[1]}
@@ -296,11 +302,17 @@ class ModeloTreinadoNLU:
     def __init__(self, caminho_pt: str | None = None):
         from app.nlu.modelo_nlu import ModeloIntellix  # lazy: só aqui paga torch
 
+        # NLU_MODELO: outro .pt sem novo deploy de código (comparar versões,
+        # ou voltar à anterior se a nova se comportar mal em produção).
+        caminho_pt = caminho_pt or os.environ.get("NLU_MODELO") or None
         if caminho_pt is None:
             base = os.path.dirname(__file__)
-            # v1.1.0: dataset aumentado (comparacao/variacao/canal/pagamento),
-            # 85,6% vs 80,0% do v1.0.0 nas 100 perguntas offline (tier 2).
-            caminho_pt = os.path.join(base, "intellix_nlu_v1.1.0.pt")
+            # v1.2.0: moldes v3 (períodos relativos, detalhe de produto em
+            # vendedor/cliente/canal, contagem de peças e mês de maior venda,
+            # nas mesmas 12 intenções): 92,2% vs 85,6% do v1.1.0 nas 90
+            # perguntas offline.
+            # O v1.1.0 continua no repositório: NLU_MODELO aponta para ele.
+            caminho_pt = os.path.join(base, "intellix_nlu_v1.2.0.pt")
         self._modelo = ModeloIntellix(caminho_pt)
 
     def parse(self, texto: str) -> Interpretacao:
