@@ -267,7 +267,7 @@ def gerar_observacoes(
     """
     obs: list[dict[str, Any]] = []
     rotulo = rotulo_mes(ano, mes)
-    ano_ant, mes_ant = mes_anterior(ano, mes)
+    _, mes_ant = mes_anterior(ano, mes)
     nome_mes, nome_ant = MESES[mes - 1], MESES[mes_ant - 1]
 
     var_fat = variacao(kpi_atual["faturamento"], kpi_anterior["faturamento"])
@@ -276,9 +276,10 @@ def gerar_observacoes(
         obs.append({
             "tipo": "alta" if var_fat > 0 else "queda",
             "texto": f"Faturamento {pct(var_fat)}% {sentido} de {nome_ant}.",
-            "pergunta": (
-                f"Compare o faturamento de {nome_ant} de {ano_ant} com {nome_mes} de {ano}"
-            ),
+            # Pergunta de faturamento, não de comparação: na avaliação das
+            # 100 perguntas (docs/avaliacao-100-perguntas.md) o modelo acerta
+            # comparacao_periodos em 2/7; total_vendas_periodo é confiável.
+            "pergunta": f"Quanto faturei em {rotulo}?",
         })
 
     # Altas e quedas só entre os produtos que importam: o topo do mês anterior
