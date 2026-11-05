@@ -9,13 +9,15 @@ from app.acesso import resolver_empresa
 from app.auth import Usuario, usuario_atual
 from app.contexto import aplicar_contexto
 from app.db import fechar_pool, get_connection
-from app.fallbacks import verificar_confianca
+from app.fallbacks import CONFIANCA_MINIMA, verificar_confianca
+from app.filtros import aplicar_filtros, carregar_catalogo, sem_acento
 from app.importacao.etl import importar
 from app.importacao.leitor_excel import ErroImportacao
 from app.limite import LimiteDeRequisicoes
 from app.models import Pergunta, ResultSet
 from app.nlu.regras import RuleBasedNLU
 from app.periodo_dataset import ajustar_periodo, ano_referencia, tem_ano_explicito
+from app.refino import pede_refino, refinar
 from app.resumo import montar_resumo
 from app.sql.executor import executar_template
 
@@ -94,14 +96,19 @@ _EXEMPLOS_POR_INTENCAO: dict[str, list[str]] = {
     "vendas_por_canal": ["Quanto vendi por canal em 2024?", "Qual canal vendeu mais esse ano?"],
     "vendas_por_categoria": ["Quais categorias mais venderam em 2024?", "Faturamento por categoria em março de 2024?"],
     "vendas_por_pagamento": ["Vendas por forma de pagamento em 2024?", "Quanto foi pago no pix em março de 2024?"],
+    "unidades_vendidas": ["Quantas botas de couro vendemos em 2025?", "Quantos itens vendi em março de 2024?"],
+    "melhor_mes": ["Qual foi o melhor mês de 2025?", "Em que mês mais vendemos smartwatch em 2025?"],
 }
 
 _LIMITACOES = [
     "Só respondo sobre os dados de vendas carregados (base demo ou planilha importada).",
     "Não faço previsões nem recomendações — só o que já aconteceu nos dados.",
     "Não respondo perguntas fora de vendas (clima, geografia, conversas gerais).",
-    "Preciso de um período claro (mês, ano ou trimestre) na maioria das perguntas.",
-    "Busco vendedor, produto e cliente por nome; nomes que não existem na base retornam 'sem resultado'.",
+    "Sem período na pergunta, uso o da conversa (ou o ano mais recente dos dados).",
+    (
+        "Filtro por produto, categoria, vendedor, cliente, canal e pagamento pelo nome do "
+        "cadastro; nome que não existe na base é ignorado."
+    ),
 ]
 
 
@@ -130,11 +137,18 @@ def capacidades() -> dict:
 
 @app.post("/chat", response_model=ResultSet)
 def chat(pergunta: Pergunta, usuario: UsuarioAtual) -> ResultSet:
-    interpretacao = nlu.parse(pergunta.pergunta)
-    # Continuação da conversa: "e em abril?" depois de "faturamento em março?"
-    # herda a intenção anterior quando o frontend reenvia o contexto.
-    interpretacao = aplicar_contexto(interpretacao, pergunta.contexto, pergunta.pergunta)
-    verificar_confianca(interpretacao)
+    texto = pergunta.pergunta
+    # 1. O modelo (ou o baseline de regras) lê a frase: intenção, confiança e
+    #    os trechos que marcou (período, produto, vendedor...).
+    interpretacao = nlu.parse(texto)
+    # Sem confiança e sem conversa anterior não há o que completar: pede para
+    # reformular sem nem abrir conexão com o banco.
+    if (
+        pergunta.contexto is None
+        and (not interpretacao.intencao or interpretacao.confianca < CONFIANCA_MINIMA)
+        and not pede_refino(sem_acento(texto.lower()))
+    ):
+        verificar_confianca(interpretacao)
 
     # O executor.py trata OperationalError que acontece DURANTE a consulta, mas a
     # conexao e adquirida aqui: com o banco fora, get_connection() estoura
@@ -146,12 +160,22 @@ def chat(pergunta: Pergunta, usuario: UsuarioAtual) -> ResultSet:
             # Dataset do usuário (vindo de uma importação) ou a base demo.
             # Só o dono consulta um dataset importado (ver acesso.py).
             empresa = resolver_empresa(conn, pergunta.empresa_id, usuario)
-            # Período por dataset: quando a pergunta NÃO cita um ano ("esse ano",
-            # "mês passado", "em março"), usa o ano mais recente dos dados DESSE
-            # dataset em vez do ANO_PADRAO fixo -- senão uma planilha de 2026
-            # respondia "sem resultado" (ver app/periodo_dataset.py).
-            if not tem_ano_explicito(pergunta.pergunta):
-                interpretacao = ajustar_periodo(interpretacao, ano_referencia(conn, empresa))
+            ano_ref = ano_referencia(conn, empresa)
+            # 2. Detalhes: o trecho que o modelo marcou ("botas de couro") vira
+            #    o valor exato do catálogo desse dataset ("Bota couro").
+            interpretacao = aplicar_filtros(interpretacao, texto, carregar_catalogo(conn, empresa))
+            # 3. Período por dataset: quando a pergunta NÃO cita um ano ("esse ano",
+            #    "mês passado", "em março"), usa o ano mais recente dos dados DESSE
+            #    dataset em vez do ANO_PADRAO fixo -- senão uma planilha de 2026
+            #    respondia "sem resultado" (ver app/periodo_dataset.py).
+            if not tem_ano_explicito(texto):
+                interpretacao = ajustar_periodo(interpretacao, ano_ref)
+            # 4. Conversa: "e de calçados?", "e em 2025?", "e qual mês vendeu
+            #    mais?" completam a pergunta anterior (ver app/contexto.py).
+            interpretacao = aplicar_contexto(interpretacao, pergunta.contexto, texto, ano_ref)
+            # 5. Refino: mês de maior venda, unidades, total de um recorte.
+            interpretacao = refinar(interpretacao, texto, ano_ref)
+            verificar_confianca(interpretacao)
             return executar_template(interpretacao, empresa, conn)
     except psycopg.OperationalError:
         raise HTTPException(
