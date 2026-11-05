@@ -16,19 +16,30 @@ const ARQUIVOS = {
   completa: "/logo.png",
   simbolo: "/simbolo.png",
 };
+// Mesma imagem em WebP, no tamanho em que aparece (até ~2x): 105 kB -> 18 kB
+// na logo, 31 kB -> 7 kB no símbolo. O PNG fica de reserva para navegador
+// sem WebP; o <picture> baixa só um dos dois.
+const ARQUIVOS_WEBP = {
+  completa: "/logo.webp",
+  simbolo: "/simbolo.webp",
+};
 
 export default function Logo({ largura = 160, variante = "completa", className = "" }) {
   const [semArquivo, setSemArquivo] = useState(false);
 
   if (!semArquivo) {
     return (
-      <img
-        src={ARQUIVOS[variante] || ARQUIVOS.completa}
-        alt="Intellix"
-        className={`logo logo-${variante} ${className}`}
-        style={{ width: largura }}
-        onError={() => setSemArquivo(true)}
-      />
+      <picture style={{ display: "contents" }}>
+        <source srcSet={ARQUIVOS_WEBP[variante] || ARQUIVOS_WEBP.completa} type="image/webp" />
+        <img
+          src={ARQUIVOS[variante] || ARQUIVOS.completa}
+          alt="Intellix"
+          className={`logo logo-${variante} ${className}`}
+          style={{ width: largura }}
+          decoding="async"
+          onError={() => setSemArquivo(true)}
+        />
+      </picture>
     );
   }
 
