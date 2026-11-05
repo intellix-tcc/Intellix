@@ -12,6 +12,7 @@ from app.db import fechar_pool, get_connection
 from app.fallbacks import verificar_confianca
 from app.importacao.etl import importar
 from app.importacao.leitor_excel import ErroImportacao
+from app.limite import LimiteDeRequisicoes
 from app.models import Pergunta, ResultSet
 from app.nlu.regras import RuleBasedNLU
 from app.periodo_dataset import ajustar_periodo, ano_referencia, tem_ano_explicito
@@ -43,6 +44,12 @@ ORIGENS_EXTRA = [
     for origem in os.environ.get("CORS_ORIGINS", "").split(",")
     if origem.strip()
 ]
+
+# Limite de requisições por cliente (app/limite.py). Adicionado ANTES do CORS
+# de propósito: o último middleware adicionado é o mais externo, então o CORS
+# envolve este e a resposta 429 também sai com os cabeçalhos de CORS (sem
+# isso, o navegador mostraria "erro de rede" em vez da mensagem de limite).
+app.add_middleware(LimiteDeRequisicoes)
 
 app.add_middleware(
     CORSMiddleware,
