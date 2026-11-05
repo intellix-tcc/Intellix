@@ -11,10 +11,9 @@ from types import SimpleNamespace
 
 import psycopg
 import pytest
-from fastapi import HTTPException
-
 from app.acesso import resolver_empresa
 from app.db import get_empresa_id
+from fastapi import HTTPException
 
 DEMO = "00000000-0000-0000-0000-000000000001"
 
@@ -92,9 +91,8 @@ def test_id_malformado_bloqueia():
 # --------------------------------------------------------------------------- #
 @pytest.mark.skipif(not os.environ.get("DATABASE_URL"), reason="precisa de DATABASE_URL")
 def test_chat_grava_auditoria_em_log_consulta():
-    from fastapi.testclient import TestClient
-
     from app.main import app
+    from fastapi.testclient import TestClient
 
     dsn = os.environ["DATABASE_URL"]
     with psycopg.connect(dsn, prepare_threshold=None) as conn, conn.cursor() as cur:
