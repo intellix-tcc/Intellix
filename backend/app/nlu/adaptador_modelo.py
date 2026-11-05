@@ -23,6 +23,7 @@ import re
 
 from app.models import Interpretacao
 from app.nlu import regras as R
+
 # O import de ModeloIntellix (que puxa torch) é feito dentro de __init__, não
 # aqui no topo: assim outros módulos podem reaproveitar os helpers de slot
 # deste arquivo (ex.: app/contexto.py) sem pagar o custo do torch, e o modo
@@ -74,8 +75,8 @@ _NAO_E_NOME = {
     "time", "equipe", "vendas", "venda", "loja", "mês", "mes", "ano",
     "período", "periodo", "trimestre", "semestre", "empresa", "setor",
     "quem", "quanto", "quantos", "quanta", "quantas", "qual", "quais",
-    "como", "quando", "onde", "quem", "performance", "desempenho",
-    "ranking", "me", "quem", "todos", "cada",
+    "como", "quando", "onde", "performance", "desempenho",
+    "ranking", "me", "todos", "cada",
 }
 
 # O modelo erra o nome do vendedor em ~metade dos casos (BIO F1 ~0,85): "da
