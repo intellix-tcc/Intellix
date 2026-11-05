@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import GraficoResultado from "../componentes/GraficoResultado";
 import LimiteErro from "../componentes/LimiteErro";
+import EvolucaoMensal from "../componentes/EvolucaoMensal";
 import Icone from "../componentes/Icone";
 import Logo from "../componentes/Logo";
 import { baixarExcel, baixarPdf } from "../utils/exportar";
@@ -120,6 +121,15 @@ function formatarData(iso) {
     : d.toLocaleDateString("pt-BR", { timeZone: "UTC" });
 }
 
+const NOMES_RECORTE = {
+  produto: "produto",
+  categoria: "categoria",
+  vendedor: "vendedor(a)",
+  cliente: "cliente",
+  canal: "canal",
+  forma_pagamento: "pagamento",
+};
+
 // "Como cheguei nessa resposta": só usa o que o ResultSet já traz — o
 // período (quando o backend manda `parametros`, que o modo mock não
 // preenche), a métrica e o agrupamento (deduzidos das colunas). Nada de
@@ -131,6 +141,12 @@ function DetalhesResposta({ r }) {
       : null;
   const metrica = r.colunas?.[indiceMetrica(r)];
   const agrupamento = r.colunas?.length > 1 ? r.colunas[0] : null;
+  // Recorte que o backend aplicou (produto, categoria, canal...), já com o
+  // nome exato do cadastro: mostra o que foi entendido da pergunta.
+  const recorte = Object.entries(NOMES_RECORTE)
+    .filter(([chave]) => r.parametros?.[chave])
+    .map(([chave, nome]) => `${nome} ${rotuloItem(chave, r.parametros[chave])}`)
+    .join(" · ");
 
   if (!periodo && !agrupamento && !metrica) return null;
 
@@ -139,6 +155,7 @@ function DetalhesResposta({ r }) {
       <summary>Como cheguei nessa resposta</summary>
       <ul>
         {periodo && <li>Período analisado: {periodo}</li>}
+        {recorte && <li>Filtro: {recorte}</li>}
         {agrupamento && <li>Agrupado por: {humanizarColuna(agrupamento)}</li>}
         {metrica && <li>Métrica: {humanizarColuna(metrica)}</li>}
       </ul>
@@ -220,7 +237,11 @@ function TabelaResultado({ r }) {
           {r.linhas.map((linha, i) => (
             <tr key={i}>
               {linha.map((v, j) => (
-                <td key={j} className={typeof v === "number" ? "num" : undefined}>
+                <td
+                  key={j}
+                  className={typeof v === "number" ? "num" : undefined}
+                  data-rotulo={humanizarColuna(r.colunas[j])}
+                >
                   {typeof v === "number" ? formatarValor(r.colunas[j], v) : rotuloItem(r.colunas[j], v)}
                 </td>
               ))}
@@ -331,6 +352,12 @@ function Resultado({ r, onPerguntar }) {
             De {formatarValor("faturamento", linha[iAnterior])} para{" "}
             {formatarValor("faturamento", linha[iAtual])}.
           </p>
+        )}
+        {/* Um mês só: a evolução dos 12 meses até ele, com o mês em destaque. */}
+        {r.evolucao && (
+          <LimiteErro alternativo={null}>
+            <EvolucaoMensal evolucao={r.evolucao} />
+          </LimiteErro>
         )}
         <DetalhesResposta r={r} />
         <LinhaMeta r={r} />

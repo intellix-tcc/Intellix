@@ -21,8 +21,9 @@ import uuid
 
 import psycopg
 import pytest
-from app.main import app
 from fastapi.testclient import TestClient
+
+from app.main import app
 
 pytestmark = pytest.mark.skipif(
     not os.environ.get("DATABASE_URL"),
