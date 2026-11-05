@@ -106,6 +106,39 @@ def variacao(atual: float, anterior: float | None) -> float | None:
     return round((atual - anterior) / anterior * 100, 1)
 
 
+NOMES_PAGAMENTO = {
+    "pix": "Pix",
+    "cartao_credito": "Cartão de crédito",
+    "cartao_debito": "Cartão de débito",
+    "dinheiro": "Dinheiro",
+    "boleto": "Boleto",
+}
+
+
+def nome_pagamento(bruto: str | None) -> str:
+    if not bruto:
+        return "Não informado"
+    chave = bruto.strip().lower()
+    return NOMES_PAGAMENTO.get(chave, chave.replace("_", " ").capitalize())
+
+
+def media_por_dia_semana(ano: int, mes: int, por_dia: dict[int, float], dias: int) -> list[dict[str, Any]]:
+    """Faturamento médio de cada dia da semana nos `dias` primeiros dias do mês.
+
+    Dia sem venda conta como zero (mesma regra de `melhor_e_pior_dia_semana`).
+    """
+    soma = [0.0] * 7
+    quantos = [0] * 7
+    for dia in range(1, dias + 1):
+        ds = date(ano, mes, dia).weekday()
+        soma[ds] += por_dia.get(dia, 0.0)
+        quantos[ds] += 1
+    return [
+        {"dia": DIAS_SEMANA[i][:3], "valor": round(soma[i] / quantos[i], 2) if quantos[i] else 0.0}
+        for i in range(7)
+    ]
+
+
 def nome_canal(bruto: str | None) -> str:
     if not bruto:
         return "Não informado"
@@ -159,6 +192,16 @@ join dim_produto p on p.id = f.produto_id
 where f.empresa_id = %(empresa_id)s
   and d.data >= %(inicio)s and d.data < %(fim)s
 group by 1
+order by faturamento desc
+"""
+
+SQL_PAGAMENTOS = """
+select f.forma_pagamento, sum(f.valor_total) as faturamento
+from fato_item_venda f
+join dim_data d on d.id = f.data_id
+where f.empresa_id = %(empresa_id)s
+  and d.data >= %(inicio)s and d.data < %(fim)s
+group by f.forma_pagamento
 order by faturamento desc
 """
 
@@ -471,6 +514,7 @@ def montar_resumo(
 
     categorias = _fatias(conn.execute(SQL_CATEGORIAS, base).fetchall())
     canais = _fatias(conn.execute(SQL_CANAIS, base).fetchall(), nome_canal)
+    pagamentos = _fatias(conn.execute(SQL_PAGAMENTOS, base).fetchall(), nome_pagamento)
 
     produtos = [
         (nome, _num(a), _num(b))
@@ -544,6 +588,8 @@ def montar_resumo(
         "serie_mensal": serie_mensal,
         "categorias": categorias,
         "canais": canais,
+        "pagamentos": pagamentos,
+        "dias_semana": media_por_dia_semana(ano, mes, por_dia, dias_contados),
         "top_produtos": top_produtos,
         "observacoes": observacoes,
         "resumo_texto": resumo_texto,
