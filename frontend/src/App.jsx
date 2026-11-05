@@ -5,6 +5,8 @@ import Icone from "./componentes/Icone";
 import Login from "./paginas/Login";
 import CascaPublica from "./componentes/CascaPublica";
 import PaletaComandos from "./componentes/PaletaComandos";
+import LimiteErro from "./componentes/LimiteErro";
+import BannerConexao from "./componentes/BannerConexao";
 import {
   aplicarPreferencias,
   carregarPreferencias,
@@ -88,6 +90,7 @@ const TITULOS = {
   faq: "Perguntas frequentes",
   termos: "Termos de uso",
   contato: "Fale conosco",
+  "nao-encontrada": "Página não encontrada",
 };
 
 const MSG_EXPIRADA = "Sua sessão expirou por inatividade. Entre de novo para continuar.";
@@ -96,7 +99,10 @@ const MSG_EXPIRADA = "Sua sessão expirou por inatividade. Entre de novo para co
 // Vercel, e o botão voltar do navegador funciona de graça.
 function lerRota() {
   const hash = window.location.hash.replace(/^#\/?/, "");
-  return ROTAS.includes(hash) ? hash : "home";
+  // Vazio ou com "=" (tokens do link de e-mail do Supabase): Início.
+  if (!hash || hash.includes("=")) return "home";
+  // Endereço que não existe: avisa, em vez de cair na Início em silêncio.
+  return ROTAS.includes(hash) ? hash : "nao-encontrada";
 }
 
 // Três estados, não dois. "auto" é o padrão: a sidebar recolhe sozinha
@@ -126,6 +132,7 @@ export default function App() {
   const [paletaAberta, setPaletaAberta] = useState(false);
   const [rota, setRota] = useState(lerRota);
   const [menuAberto, setMenuAberto] = useState(false);
+  const botaoMenuRef = useRef(null);
   const [modoSidebar, setModoSidebar] = useState(sidebarInicial);
   const [rolouPagina, setRolouPagina] = useState(false);
   // No modo automático quem decide é a rolagem; nos outros, a escolha da pessoa.
@@ -171,6 +178,51 @@ export default function App() {
     if (rota === "chat") return; // o chat foca o campo de pergunta sozinho
     document.getElementById("conteudo")?.focus({ preventScroll: true });
   }, [rota]);
+
+  // Gaveta do menu (celular/tablet): Esc fecha; ao abrir, o foco vai para o
+  // primeiro link dela; ao fechar sem trocar de página, volta para o botão
+  // que abriu (trocando de página, quem recebe o foco é o conteúdo novo).
+  const rotaAoAbrirMenu = useRef(null);
+  useEffect(() => {
+    if (!menuAberto) {
+      if (rotaAoAbrirMenu.current !== null && rotaAoAbrirMenu.current === rota) {
+        botaoMenuRef.current?.focus({ preventScroll: true });
+      }
+      rotaAoAbrirMenu.current = null;
+      return;
+    }
+    rotaAoAbrirMenu.current = rota;
+    document.querySelector(".sidebar.aberta .sidebar-fechar, .sidebar.aberta a")?.focus({ preventScroll: true });
+    function aoTeclar(e) {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        setMenuAberto(false);
+        return;
+      }
+      // Foco preso na gaveta: Tab no último item volta ao primeiro, e
+      // Shift+Tab no primeiro vai ao último (padrão de diálogo modal).
+      if (e.key !== "Tab") return;
+      const gaveta = document.querySelector(".sidebar.aberta");
+      const focaveis = gaveta
+        ? [...gaveta.querySelectorAll("a[href], button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex='-1'])")]
+        : [];
+      if (!focaveis.length) return;
+      const primeiro = focaveis[0];
+      const ultimo = focaveis[focaveis.length - 1];
+      const dentro = gaveta.contains(document.activeElement);
+      if (e.shiftKey && (document.activeElement === primeiro || !dentro)) {
+        e.preventDefault();
+        ultimo.focus();
+      } else if (!e.shiftKey && (document.activeElement === ultimo || !dentro)) {
+        e.preventDefault();
+        primeiro.focus();
+      }
+    }
+    window.addEventListener("keydown", aoTeclar);
+    return () => window.removeEventListener("keydown", aoTeclar);
+    // rota fica de fora: o efeito é sobre abrir/fechar, não sobre navegar.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [menuAberto]);
 
   // Ctrl+K / ⌘K abre a paleta de comandos de qualquer tela.
   useEffect(() => {
@@ -377,15 +429,21 @@ export default function App() {
     // do cadastro). Qualquer outra rota cai na vitrine/login.
     if (ROTAS_PUBLICAS.includes(rota)) {
       return (
-        <CascaPublica rota={rota} tema={tema} onAlternarTema={alternarTema}>
-          <Suspense fallback={<CarregandoPagina />}>
-            <PaginaInstitucional rota={rota} usuario={null} />
-          </Suspense>
-        </CascaPublica>
+        <>
+          <BannerConexao />
+          <CascaPublica rota={rota} tema={tema} onAlternarTema={alternarTema}>
+            <Suspense fallback={<CarregandoPagina />}>
+              <PaginaInstitucional rota={rota} usuario={null} />
+            </Suspense>
+          </CascaPublica>
+        </>
       );
     }
     return (
-      <Login onEntrar={aoEntrar} aviso={avisoSessao} tema={tema} onAlternarTema={alternarTema} />
+      <>
+        <BannerConexao />
+        <Login onEntrar={aoEntrar} aviso={avisoSessao} tema={tema} onAlternarTema={alternarTema} />
+      </>
     );
   }
 
@@ -441,6 +499,8 @@ export default function App() {
     <div
       className={`layout rota-${rota}${recolhida ? " com-sidebar-recolhida" : ""}`}
     >
+      <BannerConexao />
+
       {/* Primeiro item do Tab: pula a navegação e vai direto ao conteúdo. */}
       <a
         className="pular-conteudo"
@@ -474,13 +534,16 @@ export default function App() {
         onPerguntar={(p) => perguntarTexto(p, { nova: true })}
       />
 
-      <div className="conteudo">
+      {/* Gaveta aberta (celular/tablet): o conteúdo atrás fica inerte — sem
+          foco, sem clique, fora do leitor de tela — até ela fechar. */}
+      <div className="conteudo" inert={menuAberto || undefined}>
         <header className="topo">
           {/* Mobile: abre a gaveta. Desktop: some, e quem manda é o botão
               de recolher abaixo. */}
           <button
             type="button"
             className="menu-toggle"
+            ref={botaoMenuRef}
             onClick={() => setMenuAberto((a) => !a)}
             aria-label="Abrir menu de navegação"
             aria-expanded={menuAberto}
@@ -524,7 +587,10 @@ export default function App() {
         </header>
 
         <main className="area" key={rota} id="conteudo" tabIndex={-1}>
+          {/* Erro inesperado numa página: mensagem com saída, nunca tela branca. */}
+          <LimiteErro chave={rota} alternativo={<PaginaComErro onInicio={() => irPara("home")} />}>
           <Suspense fallback={<CarregandoPagina />}>
+          {rota === "nao-encontrada" && <PaginaNaoEncontrada onInicio={() => irPara("home")} />}
           {rota === "home" && (
             <Home
               usuario={usuario}
@@ -562,6 +628,7 @@ export default function App() {
             />
           )}
           </Suspense>
+          </LimiteErro>
         </main>
       </div>
     </div>
@@ -576,6 +643,47 @@ function CarregandoPagina() {
       <span className="carregando-pagina-anel" aria-hidden="true" />
       <span className="sr-only">Carregando…</span>
     </div>
+  );
+}
+
+function PaginaComErro({ onInicio }) {
+  return (
+    <section className="pagina-aviso" role="alert">
+      <span className="pagina-aviso-icone" aria-hidden="true">
+        <Icone nome="alerta" size={28} />
+      </span>
+      <h1>Algo deu errado nesta tela</h1>
+      <p>Um erro inesperado impediu a página de abrir. Seus dados não foram afetados.</p>
+      <div className="pagina-aviso-acoes">
+        <button type="button" className="botao-primario" onClick={() => window.location.reload()}>
+          <Icone nome="recarregar" size={16} />
+          Recarregar
+        </button>
+        <button type="button" className="botao-secundario" onClick={onInicio}>
+          Voltar ao início
+        </button>
+      </div>
+    </section>
+  );
+}
+
+function PaginaNaoEncontrada({ onInicio }) {
+  return (
+    <section className="pagina-aviso">
+      <span className="pagina-aviso-icone" aria-hidden="true">
+        <Icone nome="lupa" size={28} />
+      </span>
+      <h1>Página não encontrada</h1>
+      <p>O endereço que você abriu não existe no Intellix. Pode ser um link antigo ou digitado com erro.</p>
+      <div className="pagina-aviso-acoes">
+        <button type="button" className="botao-primario" onClick={onInicio}>
+          Ir para o início
+        </button>
+        <a className="botao-secundario" href="#/faq">
+          Ver a ajuda
+        </a>
+      </div>
+    </section>
   );
 }
 
