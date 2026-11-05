@@ -13,8 +13,9 @@ import psycopg
 from fastapi import HTTPException
 
 from app.fallbacks import EXEMPLOS_PADRAO
+from app.filtros import FILTROS, descrever
 from app.models import Interpretacao, ResultSet
-from app.sql.evolucao import evolucao_mensal
+from app.sql.evolucao import evolucao_mensal, preencher
 from app.sql.templates import TEMPLATES
 
 # Pergunta de esclarecimento por parametro obrigatorio ausente. Em vez do
@@ -56,6 +57,49 @@ def _para_json(valor: Any) -> Any:
     return valor
 
 
+_MESES = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho",
+          "agosto", "setembro", "outubro", "novembro", "dezembro"]
+
+
+def _nome_mes(periodo: str) -> str:
+    ano, mes = periodo.split("-")
+    return f"{_MESES[int(mes) - 1]} de {ano}"
+
+
+def _meses_entre(primeiro: str, ultimo: str) -> list[str]:
+    a0, m0 = (int(x) for x in primeiro.split("-"))
+    a1, m1 = (int(x) for x in ultimo.split("-"))
+    return [f"{t // 12:04d}-{t % 12 + 1:02d}" for t in range(a0 * 12 + m0 - 1, a1 * 12 + m1)]
+
+
+def _melhor_mes(colunas: list[str], linhas: list[list[Any]], entidades: dict) -> tuple:
+    """Da série mês a mês, o mês de maior (ou menor) faturamento/unidades.
+    Responde com esse mês e devolve a série inteira como evolução, com ele em
+    destaque: a pessoa vê o mês e o quanto ele se destacou dos outros."""
+    metrica = entidades.get("metrica") if entidades.get("metrica") in colunas else "faturamento"
+    i = colunas.index(metrica)
+    com_valor = [linha for linha in linhas if linha[i]]
+    escolha = (min if entidades.get("sentido") == "menor" else max)(com_valor or linhas, key=lambda li: li[i])
+    serie = {str(linha[0]): float(linha[i] or 0) for linha in linhas}
+    rotulos = _meses_entre(str(linhas[0][0]), str(linhas[-1][0]))
+    evolucao = None
+    if len(rotulos) >= 2:
+        evolucao = {
+            "titulo": "Unidades vendidas mês a mês" if metrica == "unidades" else "Faturamento mês a mês",
+            "colunas": ["periodo", metrica],
+            "linhas": preencher(rotulos, serie),
+            "destaque": str(escolha[0]),
+        }
+    menor = entidades.get("sentido") == "menor"
+    if evolucao:
+        evolucao["legenda"] = f"o mês com {'menos' if menor else 'mais'} vendas"
+    if metrica == "unidades":
+        titulo = f"Mês com {'menos' if menor else 'mais'} unidades vendidas: {_nome_mes(str(escolha[0]))}"
+    else:
+        titulo = f"Mês de {'menor' if menor else 'maior'} faturamento: {_nome_mes(str(escolha[0]))}"
+    return ["periodo", metrica], [[escolha[0], escolha[i]]], titulo, evolucao
+
+
 def executar_template(interp: Interpretacao, empresa_id: str, conn: psycopg.Connection) -> ResultSet:
     template = TEMPLATES.get(interp.intencao)
     if template is None:
@@ -80,7 +124,8 @@ def executar_template(interp: Interpretacao, empresa_id: str, conn: psycopg.Conn
             },
         )
 
-    parametros = {**interp.entidades, "empresa_id": empresa_id}
+    # Filtros ausentes vão como NULL (= sem recorte; ver FILTROS_SQL em templates.py).
+    parametros = {**{k: None for k in FILTROS}, **interp.entidades, "empresa_id": empresa_id}
 
     try:
         with conn.cursor() as cur:
@@ -113,6 +158,10 @@ def executar_template(interp: Interpretacao, empresa_id: str, conn: psycopg.Conn
         )
 
     linhas = [[_para_json(valor) for valor in linha] for linha in linhas_brutas]
+    titulo = template["titulo"]
+    evolucao = None
+    if interp.intencao == "melhor_mes":
+        colunas, linhas, titulo, evolucao = _melhor_mes(colunas, linhas, interp.entidades)
 
     # Faturamento e quantidade de vendas já vêm um mês por linha. Com mais de
     # um mês (ex.: "quanto faturei em 2024?"), a resposta é uma evolução no
@@ -121,18 +170,27 @@ def executar_template(interp: Interpretacao, empresa_id: str, conn: psycopg.Conn
     visual = template["visual"]
     if visual == "numero" and len(linhas) > 1 and colunas and colunas[0] == "periodo":
         visual = "linha"
+        # Mês sem venda não volta do GROUP BY; com recorte (um produto) isso é
+        # comum, e a linha do gráfico pularia o mês. Completa com 0.
+        por_mes = {str(linha[0]): linha for linha in linhas}
+        zeros = [0] * (len(colunas) - 1)
+        linhas = [por_mes.get(m, [m, *zeros]) for m in _meses_entre(str(linhas[0][0]), str(linhas[-1][0]))]
 
     # Um mês só: junta a evolução dos 12 meses até ele. É complemento — se
     # falhar, a resposta principal sai do mesmo jeito.
-    evolucao = None
-    if len(linhas) == 1:
+    if evolucao is None and len(linhas) == 1:
         try:
             evolucao = evolucao_mensal(interp.intencao, interp.entidades, empresa_id, conn)
         except psycopg.Error:
             evolucao = None
 
+    # O recorte entra no título: "Unidades vendidas · Bota couro".
+    recorte = descrever(interp.entidades, interp.intencao)
+    if recorte:
+        titulo = f"{titulo} · {recorte}"
+
     return ResultSet(
-        titulo=template["titulo"],
+        titulo=titulo,
         colunas=colunas,
         linhas=linhas,
         tipo_visualizacao=visual,
