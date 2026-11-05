@@ -22,9 +22,9 @@ export const ASSUNTOS_CONTATO = [
 ];
 
 /**
- * Link que abre o Gmail no navegador com a mensagem já preenchida. É a saída
- * quando o envio direto falha: não depende de aplicativo de e-mail instalado
- * (o motivo de o mailto: não funcionar para quem usa e-mail só no navegador).
+ * Link que abre o Gmail no navegador com a mensagem já preenchida — é como o
+ * Fale conosco envia. Não depende de aplicativo de e-mail instalado (o motivo
+ * de o mailto: não funcionar para quem usa e-mail só no navegador).
  */
 export function linkGmail({ nome, email, assunto, mensagem }) {
   const corpo = [mensagem.trim(), "", "—", `Nome: ${nome.trim()}`, `E-mail para resposta: ${email.trim()}`].join(

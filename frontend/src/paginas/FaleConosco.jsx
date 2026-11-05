@@ -2,14 +2,17 @@ import { useState } from "react";
 import Icone from "../componentes/Icone";
 import { validarEmail, validarNome } from "../utils/validacao";
 import { ASSUNTOS_CONTATO, EMAIL_CONTATO, linkGmail } from "../utils/contato";
-import { enviarMensagemContato } from "../servicos/contato";
 
 const MENSAGEM_MIN = 10;
 const MENSAGEM_MAX = 2000;
 
-// Fale conosco. A mensagem sai direto da tela (ver servicos/contato.js) e
-// chega no e-mail da equipe; a resposta vai para o e-mail informado aqui. O
-// endereço da equipe continua visível e copiável como caminho alternativo.
+// Fale conosco. O backend não envia e-mail, e os dois caminhos automáticos
+// testados não serviram: o mailto: depende de aplicativo de e-mail instalado,
+// e o envio por serviço de formulário (FormSubmit) não chegava ao destino a
+// partir do navegador. Então a pessoa escreve aqui, e o botão abre o Gmail no
+// navegador com destinatário, assunto e mensagem já preenchidos — falta só
+// clicar em enviar lá. Para quem não usa Gmail, o endereço fica visível e
+// copiável.
 export default function FaleConosco({ usuario }) {
   const [campos, setCampos] = useState(() => ({
     nome: usuario?.nome ?? "",
@@ -18,19 +21,13 @@ export default function FaleConosco({ usuario }) {
     mensagem: "",
   }));
   const [erros, setErros] = useState({});
-  // ocioso | enviando | enviado
-  const [estado, setEstado] = useState("ocioso");
-  const [erroEnvio, setErroEnvio] = useState("");
+  const [aberto, setAberto] = useState(false);
   const [copiado, setCopiado] = useState(false);
-  // Honeypot: campo escondido que pessoa não vê e robô preenche.
-  const [armadilha, setArmadilha] = useState("");
-  const enviando = estado === "enviando";
 
   function mudar(campo, valor) {
     setCampos((c) => ({ ...c, [campo]: valor }));
     if (erros[campo]) setErros((e) => ({ ...e, [campo]: "" }));
-    setErroEnvio("");
-    if (estado === "enviado") setEstado("ocioso");
+    setAberto(false);
   }
 
   function validar() {
@@ -48,20 +45,13 @@ export default function FaleConosco({ usuario }) {
     return Object.keys(limpos).length === 0;
   }
 
-  async function enviar(e) {
+  function enviar(e) {
     e.preventDefault();
-    if (enviando || !validar()) return;
-    setErroEnvio("");
-    setEstado("enviando");
-    try {
-      await enviarMensagemContato({ ...campos, armadilha });
-      setEstado("enviado");
-      // Limpa só a mensagem: nome e e-mail servem para a próxima.
-      setCampos((c) => ({ ...c, mensagem: "" }));
-    } catch (err) {
-      setEstado("ocioso");
-      setErroEnvio(err?.mensagem || "Não conseguimos enviar agora. Tente de novo em instantes.");
-    }
+    if (!validar()) return;
+    // Nova aba, aberta no próprio clique (gesto do usuário), para o navegador
+    // não tratar como pop-up — e o formulário continua aqui, preenchido.
+    window.open(linkGmail(campos), "_blank", "noopener,noreferrer");
+    setAberto(true);
   }
 
   async function copiarEmail() {
@@ -91,8 +81,8 @@ export default function FaleConosco({ usuario }) {
         <section className="painel anima-entrada" style={{ animationDelay: "60ms" }}>
           <h2 className="painel-titulo">Envie sua mensagem</h2>
           <p className="painel-texto">
-            A mensagem vai direto para a equipe do Intellix, e a resposta chega no
-            e-mail que você informar.
+            Escreva aqui e clique em <strong>Enviar pelo Gmail</strong>: o Gmail abre em
+            outra aba com tudo preenchido, e é só clicar em enviar.
           </p>
 
           <form onSubmit={enviar} className="perfil-form contato-form" noValidate>
@@ -103,7 +93,6 @@ export default function FaleConosco({ usuario }) {
                 placeholder="Seu nome"
                 autoComplete="name"
                 maxLength={60}
-                disabled={enviando}
                 aria-invalid={Boolean(erros.nome)}
               />
             </Campo>
@@ -115,17 +104,12 @@ export default function FaleConosco({ usuario }) {
                 onChange={(e) => mudar("email", e.target.value)}
                 placeholder="voce@empresa.com"
                 autoComplete="email"
-                disabled={enviando}
                 aria-invalid={Boolean(erros.email)}
               />
             </Campo>
 
             <Campo rotulo="Assunto">
-              <select
-                value={campos.assunto}
-                onChange={(e) => mudar("assunto", e.target.value)}
-                disabled={enviando}
-              >
+              <select value={campos.assunto} onChange={(e) => mudar("assunto", e.target.value)}>
                 {ASSUNTOS_CONTATO.map((a) => (
                   <option key={a} value={a}>
                     {a}
@@ -145,58 +129,25 @@ export default function FaleConosco({ usuario }) {
                 placeholder="Conte o que aconteceu ou o que você gostaria de ver no Intellix."
                 rows={6}
                 maxLength={MENSAGEM_MAX}
-                disabled={enviando}
                 aria-invalid={Boolean(erros.mensagem)}
               />
             </Campo>
 
-            <input
-              type="text"
-              name="_honey"
-              className="contato-armadilha"
-              value={armadilha}
-              onChange={(e) => setArmadilha(e.target.value)}
-              tabIndex={-1}
-              autoComplete="off"
-              aria-hidden="true"
-            />
-
-            {estado === "enviado" && (
+            {aberto && (
               <p className="auth-sucesso" role="status">
-                Mensagem enviada! A equipe vai responder no e-mail{" "}
-                <strong>{campos.email.trim()}</strong>.
+                Abrimos o Gmail em outra aba com a mensagem pronta. Confira e clique em{" "}
+                <strong>Enviar</strong> por lá. Não abriu? Libere pop-ups para este site
+                ou escreva para <strong>{EMAIL_CONTATO}</strong>.
               </p>
             )}
 
-            {/* Falhou o envio direto: o texto já digitado não se perde —
-                vai pronto para o Gmail no navegador, ou é só copiar o
-                endereço. */}
-            {erroEnvio && (
-              <div className="auth-erro contato-falha" role="alert">
-                <p>
-                  {erroEnvio} Você pode enviar a mesma mensagem pelo Gmail, ou escrever
-                  para <strong>{EMAIL_CONTATO}</strong> pelo e-mail que preferir.
-                </p>
-                <div className="contato-falha-acoes">
-                  <a
-                    className="botao-secundario contato-falha-botao"
-                    href={linkGmail(campos)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    <Icone nome="envelope" size={16} />
-                    Enviar pelo Gmail
-                  </a>
-                  <button type="button" className="link" onClick={copiarEmail}>
-                    {copiado ? "E-mail copiado!" : "Copiar e-mail"}
-                  </button>
-                </div>
-              </div>
-            )}
-
             <div className="painel-acoes">
-              <button type="submit" className="botao-primario" disabled={enviando}>
-                {enviando ? "Enviando…" : "Enviar mensagem"}
+              <button type="submit" className="botao-primario contato-botao-gmail">
+                <Icone nome="envelope" size={18} />
+                Enviar pelo Gmail
+              </button>
+              <button type="button" className="link" onClick={copiarEmail}>
+                {copiado ? "E-mail copiado!" : "Usa outro e-mail? Copiar endereço"}
               </button>
             </div>
           </form>
@@ -209,9 +160,7 @@ export default function FaleConosco({ usuario }) {
             <Icone nome="envelope" size={22} className="contato-canal-icone" />
             <div>
               <h3>E-mail</h3>
-              <p>
-                <a href={`mailto:${EMAIL_CONTATO}`}>{EMAIL_CONTATO}</a>
-              </p>
+              <p>{EMAIL_CONTATO}</p>
               <button type="button" className="link contato-copiar" onClick={copiarEmail}>
                 {copiado ? "Copiado!" : "Copiar e-mail"}
               </button>

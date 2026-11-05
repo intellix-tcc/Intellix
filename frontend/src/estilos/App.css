@@ -4012,41 +4012,7 @@ h1.auth-sub {
   }
 }
 
-/* Honeypot do Fale conosco: fora da tela, não `display: none` (alguns robôs
-   pulam campo oculto assim). */
-.contato-armadilha {
-  position: absolute;
-  left: -9999px;
-  width: 1px;
-  height: 1px;
-  opacity: 0;
-}
-.auth-erro a {
-  color: inherit;
-  font-weight: 600;
-}
-.botao-primario:disabled {
-  opacity: 0.65;
-  cursor: not-allowed;
-  transform: none;
-  filter: none;
-}
-.contato-falha p {
-  margin: 0;
-}
-.contato-falha-acoes {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 10px;
-}
-.contato-falha-botao {
-  gap: 8px;
-  padding: 8px 14px;
-  font-size: 13.5px;
-  background: var(--surface);
-}
-.contato-falha .link {
-  color: var(--erro-texto);
+.contato-botao-gmail {
+  gap: 9px;
+  justify-content: center;
 }
