@@ -543,9 +543,8 @@ img.logo {
 
 /* ---- Início: painel de visão geral (design system v2) ----
    Deixou de ser tela de entrada de pergunta pra virar leitura: panorama,
-   gráfico, resumo em texto, ranking, observações — tudo isso é conteúdo
-   MOCK enquanto o contrato de dados não existe no backend (ver
-   utils/resumoExemplo.js e a proposta em docs/contratos.md). Por ser um
+   gráfico, resumo em texto, ranking, observações — com dado real do
+   GET /resumo (backend/app/resumo.py, contrato em docs/contratos.md). Por ser um
    painel com bastante conteúdo, a página rola normalmente — nada de
    "caber numa tela só" como na versão anterior. */
 .home,
