@@ -106,13 +106,7 @@ const SECOES = [
             O histórico de conversas fica salvo no seu navegador, não no servidor.
           </li>
           <li>
-            As mensagens enviadas pelo Fale conosco (nome, e-mail e texto) são
-            entregues à equipe pelo FormSubmit, um serviço de envio de formulários,
-            e usadas apenas para responder ao seu contato.
-          </li>
-          <li>
-            Não vendemos seus dados nem os compartilhamos com terceiros além dos
-            serviços que fazem o Intellix funcionar, citados acima. Para fins
+            Não vendemos nem compartilhamos seus dados com terceiros. Para fins
             acadêmicos, podemos usar apenas estatísticas agregadas e anônimas de uso
             (por exemplo, quantas perguntas foram respondidas), sem identificar
             pessoas ou empresas.
