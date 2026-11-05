@@ -329,7 +329,14 @@ export default function App() {
     timerAcordando.current = setTimeout(() => setAcordando(true), 5000);
 
     try {
-      const dados = await perguntar(pergunta);
+      // Contexto: a última resposta desta mesma conversa (intenção +
+      // parâmetros), para o backend entender continuações como "e em abril?".
+      // `base` já é [] quando a conversa é nova, então não vaza entre conversas.
+      const anterior = [...base].reverse().find((m) => m.tipo === "resultado" && m.dados?.intencao);
+      const contexto = anterior
+        ? { intencao: anterior.dados.intencao, entidades: anterior.dados.parametros || {} }
+        : undefined;
+      const dados = await perguntar(pergunta, contexto);
       const comResultado = [...comUsuario, { tipo: "resultado", dados }];
       setMensagens(comResultado);
       sincronizarHistorico(idConversa, comResultado);
