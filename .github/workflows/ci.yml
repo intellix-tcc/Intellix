@@ -22,3 +22,20 @@ jobs:
       # (pytest.mark.skipif em test_chat_integration.py). Rodam os demais.
       - run: pytest
         working-directory: backend
+  # Frontend: o mesmo cuidado que o backend já tinha. Sem isto, um erro de
+  # lint ou de build só aparecia no deploy da Vercel.
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run build

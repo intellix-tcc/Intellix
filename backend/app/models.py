@@ -1,6 +1,6 @@
 from typing import Any
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class Interpretacao(BaseModel):
@@ -47,7 +47,9 @@ class Contexto(BaseModel):
 
 
 class Pergunta(BaseModel):
-    pergunta: str
+    # Mesmo limite do campo da tela (500 caracteres): uma pergunta de vendas
+    # não precisa de mais, e texto gigante só serviria para gastar CPU do NLU.
+    pergunta: str = Field(min_length=1, max_length=500)
     # Dataset a consultar. Quando o usuário importa uma planilha, o /import
     # cria uma empresa própria e devolve o id; o frontend o reenvia aqui para
     # as perguntas caírem sobre os dados importados, não sobre a base demo.
