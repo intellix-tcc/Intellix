@@ -96,7 +96,7 @@ export default function EvolucaoMensal({ evolucao }) {
       </div>
       <p className="evolucao-legenda">
         <span className="legenda-cor" style={{ background: "var(--dado-2)" }} aria-hidden="true" />
-        {atual.rotulo}, o mês perguntado
+        {atual.rotulo}, {evolucao.legenda || "o mês perguntado"}
         <span className="legenda-tracejado" aria-hidden="true" />
         média do período ({fmt(media)})
       </p>

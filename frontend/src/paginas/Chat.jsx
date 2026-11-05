@@ -121,6 +121,15 @@ function formatarData(iso) {
     : d.toLocaleDateString("pt-BR", { timeZone: "UTC" });
 }
 
+const NOMES_RECORTE = {
+  produto: "produto",
+  categoria: "categoria",
+  vendedor: "vendedor(a)",
+  cliente: "cliente",
+  canal: "canal",
+  forma_pagamento: "pagamento",
+};
+
 // "Como cheguei nessa resposta": só usa o que o ResultSet já traz — o
 // período (quando o backend manda `parametros`, que o modo mock não
 // preenche), a métrica e o agrupamento (deduzidos das colunas). Nada de
@@ -132,6 +141,12 @@ function DetalhesResposta({ r }) {
       : null;
   const metrica = r.colunas?.[indiceMetrica(r)];
   const agrupamento = r.colunas?.length > 1 ? r.colunas[0] : null;
+  // Recorte que o backend aplicou (produto, categoria, canal...), já com o
+  // nome exato do cadastro: mostra o que foi entendido da pergunta.
+  const recorte = Object.entries(NOMES_RECORTE)
+    .filter(([chave]) => r.parametros?.[chave])
+    .map(([chave, nome]) => `${nome} ${rotuloItem(chave, r.parametros[chave])}`)
+    .join(" · ");
 
   if (!periodo && !agrupamento && !metrica) return null;
 
@@ -140,6 +155,7 @@ function DetalhesResposta({ r }) {
       <summary>Como cheguei nessa resposta</summary>
       <ul>
         {periodo && <li>Período analisado: {periodo}</li>}
+        {recorte && <li>Filtro: {recorte}</li>}
         {agrupamento && <li>Agrupado por: {humanizarColuna(agrupamento)}</li>}
         {metrica && <li>Métrica: {humanizarColuna(metrica)}</li>}
       </ul>
