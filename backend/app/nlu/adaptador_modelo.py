@@ -23,7 +23,10 @@ import re
 
 from app.models import Interpretacao
 from app.nlu import regras as R
-from app.nlu.modelo_nlu import ModeloIntellix
+# O import de ModeloIntellix (que puxa torch) é feito dentro de __init__, não
+# aqui no topo: assim outros módulos podem reaproveitar os helpers de slot
+# deste arquivo (ex.: app/contexto.py) sem pagar o custo do torch, e o modo
+# NLU_BACKEND=regras continua sem carregar a rede.
 
 # Intenções que exigem DOIS períodos, e os nomes de parâmetro de cada uma
 # (conferidos contra os "obrigatorios" em sql/templates.py).
@@ -254,6 +257,8 @@ class ModeloTreinadoNLU:
     """Implementa NLUService (base.py) usando o .pt treinado."""
 
     def __init__(self, caminho_pt: str | None = None):
+        from app.nlu.modelo_nlu import ModeloIntellix  # lazy: só aqui paga torch
+
         if caminho_pt is None:
             base = os.path.dirname(__file__)
             caminho_pt = os.path.join(base, "intellix_nlu_v1.0.0.pt")
