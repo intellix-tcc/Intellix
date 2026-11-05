@@ -801,3 +801,21 @@ h2.eyebrow::before {
 .painel-secao .rosca-centro span {
   font-size: 9.5px;
 }
+
+.aviso-grafico {
+  margin: 0 0 8px;
+  padding: 8px 12px;
+  border-radius: 9px;
+  font-size: 13px;
+  color: var(--accent-2-text);
+  background: var(--accent-2-bg);
+}
+
+/* Unidade dos rótulos, uma vez por gráfico ("Valores em R$ mil"). */
+.grafico-unidade {
+  margin: -6px 0 2px;
+  text-align: right;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-3);
+}
