@@ -2,7 +2,7 @@ import os
 from typing import Annotated
 
 import psycopg
-from fastapi import Depends, FastAPI, HTTPException, UploadFile
+from fastapi import Depends, FastAPI, HTTPException, Query, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.acesso import resolver_empresa
@@ -13,6 +13,7 @@ from app.importacao.etl import importar
 from app.importacao.leitor_excel import ErroImportacao
 from app.models import Pergunta, ResultSet
 from app.nlu.regras import RuleBasedNLU
+from app.resumo import montar_resumo
 from app.sql.executor import executar_template
 
 # Usuário logado (ou None, com AUTH_OBRIGATORIA=false). Annotated é a forma
@@ -84,6 +85,29 @@ def chat(pergunta: Pergunta, usuario: UsuarioAtual) -> ResultSet:
             # Só o dono consulta um dataset importado (ver acesso.py).
             empresa = resolver_empresa(conn, pergunta.empresa_id, usuario)
             return executar_template(interpretacao, empresa, conn)
+    except psycopg.OperationalError:
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "tipo": "banco_indisponivel",
+                "mensagem": "Serviço temporariamente indisponível. Tente novamente em instantes.",
+            },
+        )
+
+
+@app.get("/resumo")
+def resumo(
+    usuario: UsuarioAtual,
+    empresa_id: str | None = None,
+    ano: Annotated[int | None, Query(ge=2000, le=2100)] = None,
+    mes: Annotated[int | None, Query(ge=1, le=12)] = None,
+) -> dict:
+    """Panorama do mês para a tela Início (ver app/resumo.py). Sem ano/mês,
+    usa o mês mais recente com dados. Mesmas regras de acesso do /chat."""
+    try:
+        with get_connection() as conn:
+            empresa = resolver_empresa(conn, empresa_id, usuario)
+            return montar_resumo(conn, empresa, ano, mes)
     except psycopg.OperationalError:
         raise HTTPException(
             status_code=503,

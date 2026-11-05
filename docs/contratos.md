@@ -179,53 +179,55 @@ Colunas obrigatórias: `data_venda`, `produto`, `quantidade` e pelo menos uma de
 em [`leitor_excel.py`](../backend/app/importacao/leitor_excel.py) — a mesma
 lista do frontend ([`importacao.js`](../frontend/src/servicos/importacao.js)).
 
-### `GET /resumo` — proposta, não implementado
+### `GET /resumo` — panorama do mês (implementado)
 
-Sugestão para viabilizar o painel de panorama + destaques proativos da
-Início (ver `intellix-home-screen.md`). **Nada disto existe ainda** — nem
-rota, nem geração de destaque — e o frontend não vai simular com número
-inventado só para preencher a tela; a seção fica de fora até este contrato
-ser avaliado e implementado pelo Dev B (destaques dependem também do Dev A,
-já que "identificar o que mudou" é trabalho de modelo/regra, não só SQL).
+Alimenta a tela Início. Implementação em
+[`backend/app/resumo.py`](../backend/app/resumo.py); mesmas regras de
+acesso do `/chat` (`empresa_id` opcional, só o dono consulta um dataset
+importado).
 
-Requisição — período opcional, mês corrente por padrão:
 ```
-GET /resumo?periodo_inicio=2026-03-01&periodo_fim=2026-03-31
+GET /resumo?empresa_id=<uuid>&ano=2024&mes=3
 ```
 
-Resposta proposta:
+`ano` e `mes` são opcionais: sem eles, vale o mês mais recente com dados que
+já começou (fuso de São Paulo). `mes` fora de 1–12 → `422`; dataset sem
+nenhuma venda → `404 sem_resultado`.
+
+Resposta (resumida):
 ```json
 {
-  "periodo": { "inicio": "2026-03-01", "fim": "2026-03-31" },
-  "kpis": [
-    { "chave": "faturamento", "rotulo": "Faturamento", "valor": 128430.50, "variacao_pct": 12.0 },
-    { "chave": "ticket_medio", "rotulo": "Ticket médio", "valor": 375.52, "variacao_pct": null },
-    { "chave": "vendas", "rotulo": "Vendas", "valor": 342, "variacao_pct": 8.0 },
-    { "chave": "produtos_ativos", "rotulo": "Produtos ativos", "valor": 38, "variacao_pct": null }
-  ],
-  "destaques": [
-    {
-      "texto": "Smartwatch puxou o faturamento — +18% na semana, 28% do topo.",
-      "pergunta_semente": "Mostre a evolução do Smartwatch nas últimas semanas",
-      "confianca": 0.88
-    }
-  ],
-  "atualizado_em": "2026-08-19T14:32:00Z",
-  "total_registros": 1248
+  "periodo": { "ano": 2024, "mes": 3, "rotulo": "março de 2024", "inicio": "2024-03-01", "fim": "2024-03-31" },
+  "periodo_anterior": { "ano": 2024, "mes": 2, "rotulo": "fevereiro de 2024" },
+  "meses_disponiveis": [{ "ano": 2024, "mes": 3, "rotulo": "março de 2024" }],
+  "kpis": [{ "chave": "faturamento", "rotulo": "Faturamento", "valor": 39275.59, "formato": "moeda", "variacao_pct": 10.5 }],
+  "serie_diaria": [{ "dia": 1, "valor": 1520.4 }],
+  "serie_mensal": [{ "ano": 2023, "mes": 4, "rotulo": "abr/23", "valor": 52310.0 }],
+  "categorias": [{ "nome": "Vestuário", "valor": 9800.0, "pct": 24.9 }],
+  "canais": [{ "nome": "Loja", "valor": 17000.0, "pct": 43.3 }],
+  "top_produtos": [{ "nome": "Smartwatch", "valor": 4398.9, "pct": 11.2, "variacao_pct": 22.2 }],
+  "observacoes": [{ "tipo": "alta", "texto": "Faturamento 10,5% acima de fevereiro.", "pergunta": "Compare o faturamento de fevereiro de 2024 com março de 2024" }],
+  "resumo_texto": ["Em março de 2024, a loja faturou R$ 39.275,59 em ..."],
+  "total_registros": 218,
+  "atualizado_em": "2026-11-05T14:32:00+00:00"
 }
 ```
 
-Regras que valem pra este endpoint tanto quanto pro `/chat`:
-- `valor` sempre número cru, nunca string formatada (mesma regra do
-  `ResultSet` acima) — formatação de moeda é responsabilidade do frontend.
-- `variacao_pct` é `null` quando não há período anterior pra comparar —
-  o frontend não desenha seta de variação nesse caso, não estima.
-- **Sem destaque de baixa confiança**: se o Dev A/B não tiverem certeza
-  de um padrão, o item simplesmente não entra no array — mesma regra do
-  fallback de baixa confiança do `/chat`, "não adivinhar" vale aqui também.
-- `recentes` (conversas recentes pra "continue de onde parou") **não faz
-  parte deste contrato** — o histórico é só local (`localStorage`, ver
-  `frontend/src/utils/historico.js`), o backend não guarda conversa hoje.
+Regras:
+- `valor` sempre número cru; `variacao_pct` é `null` sem mês anterior para
+  comparar (o frontend não desenha seta nesse caso).
+- `observacoes` saem de regras fixas com limiar (variação ≥ 3% no
+  faturamento, ≥ 15% num produto que tinha ao menos 2% do faturamento
+  anterior, produtos sem saída, melhor dia da semana, canal com ≥ 40%).
+  Nenhuma regra disparou → lista vazia; nada é estimado.
+- `pergunta` é uma pergunta pronta para o `/chat` (ou `null`): o frontend a
+  usa para levar da observação à análise detalhada.
+- `resumo_texto` é montado só com os números calculados, por modelo de
+  frase -- não há geração de linguagem livre.
+
+O `ResultSet` do `/chat` também passou a trazer `intencao` (opcional), a
+chave do template que respondeu — o frontend usa para sugerir a próxima
+pergunta.
 
 ## Regra de ouro: a pergunta nunca vira SQL diretamente
 
