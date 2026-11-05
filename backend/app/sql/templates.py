@@ -47,7 +47,12 @@ TEMPLATES: dict[str, dict] = {
     },
     "ticket_medio": {
         "sql": """
-            select avg(f.valor_total) as ticket_medio
+            -- Ticket médio = faturamento / número de VENDAS distintas. O grão da
+            -- fato é o item; avg(valor_total) daria a média por ITEM, não por
+            -- venda (feedback TC2, F08). nullif evita divisão por zero quando o
+            -- período não tem vendas (devolve NULL -> executor responde 404).
+            select sum(f.valor_total)
+                   / nullif(count(distinct f.venda_id), 0) as ticket_medio
             from fato_item_venda f
             join dim_data d on d.id = f.data_id
             where f.empresa_id = %(empresa_id)s
