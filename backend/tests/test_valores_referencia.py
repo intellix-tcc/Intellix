@@ -95,6 +95,11 @@ def test_ticket_medio_e_por_venda_nao_por_item(base_pequena):
     assert r.json()["linhas"][0][0] == pytest.approx(90.0)
 
 
+@pytest.mark.skipif(
+    os.environ.get("NLU_BACKEND", "regras").strip().lower() != "modelo",
+    reason="'quantas vendas' só é entendida pelo modelo treinado (NLU_BACKEND=modelo); "
+    "o baseline de regras não cobre quantidade_vendas",
+)
 def test_quantidade_de_vendas_distintas(base_pequena):
     r = _chat(base_pequena, "quantas vendas tiveram em março de 2024")
     assert r.status_code == 200
