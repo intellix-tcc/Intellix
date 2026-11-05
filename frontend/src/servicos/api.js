@@ -54,16 +54,85 @@ function erroDeRede(causa) {
 export async function perguntar(pergunta) {
   if (MOCK) {
     await new Promise((r) => setTimeout(r, 600)); // simula a espera real
-    if (/produto|vendidos/i.test(pergunta)) return FALSAS.barra;
-    if (/ticket/i.test(pergunta)) return FALSAS.ticket;
+    if (/produto|vendidos/i.test(pergunta)) return { ...FALSAS.barra, intencao: "top_produtos" };
+    if (/ticket/i.test(pergunta)) return { ...FALSAS.ticket, intencao: "ticket_medio" };
     if (/capital|tempo/i.test(pergunta))
       throw {
         mensagem: "Não entendi. Tente reformular.",
         exemplos: ["Quanto faturei em março?", "Quais os 5 produtos mais vendidos?"],
       };
-    return FALSAS.numero;
+    return { ...FALSAS.numero, intencao: "total_vendas_periodo" };
   }
 
+  // Se há um dataset importado ativo, pergunta sobre ele; senão, base demo.
+  const dataset = datasetAtivo();
+  const corpo = dataset?.empresaId
+    ? { pergunta, empresa_id: dataset.empresaId }
+    : { pergunta };
+  return chamar("/chat", { metodo: "POST", corpo });
+}
+
+// Panorama da Início (GET /resumo). Cache em memória por dataset + mês: voltar
+// para a Início ou alternar entre dois meses já vistos é instantâneo, sem
+// repetir a ida ao servidor (que pode estar hibernando no Render).
+const cacheResumo = new Map();
+const VALIDADE_CACHE_MS = 5 * 60 * 1000;
+
+export function resumoEmCache({ ano, mes } = {}) {
+  const chave = chaveResumo(ano, mes);
+  const item = cacheResumo.get(chave);
+  return item && Date.now() - item.em < VALIDADE_CACHE_MS ? item.dados : null;
+}
+
+function chaveResumo(ano, mes) {
+  return `${datasetAtivo()?.empresaId || "demo"}:${ano || ""}-${mes || ""}`;
+}
+
+export async function buscarResumo({ ano, mes } = {}) {
+  const emCache = resumoEmCache({ ano, mes });
+  if (emCache) return emCache;
+
+  let dados;
+  if (MOCK) {
+    await new Promise((r) => setTimeout(r, 500));
+    const { resumoDeExemplo } = await import("../utils/resumoExemplo");
+    dados = resumoDeExemplo({ ano, mes });
+  } else {
+    const dataset = datasetAtivo();
+    const query = new URLSearchParams();
+    if (dataset?.empresaId) query.set("empresa_id", dataset.empresaId);
+    if (ano && mes) {
+      query.set("ano", ano);
+      query.set("mes", mes);
+    }
+    const qs = query.toString();
+    dados = await chamar(`/resumo${qs ? `?${qs}` : ""}`);
+  }
+
+  cacheResumo.set(chaveResumo(ano, mes), { dados, em: Date.now() });
+  // A primeira busca (sem mês) também responde pelo mês que o servidor
+  // escolheu — quem pedir esse mês explicitamente depois acerta o cache.
+  if (!ano || !mes) {
+    cacheResumo.set(chaveResumo(dados.periodo.ano, dados.periodo.mes), { dados, em: Date.now() });
+  }
+  return dados;
+}
+
+/**
+ * Acorda o servidor do Render assim que o app abre. O plano gratuito hiberna
+ * depois de um tempo parado e a primeira requisição leva vários segundos;
+ * disparando /health enquanto a pessoa ainda está lendo a tela (ou digitando
+ * a senha), a pergunta de verdade já encontra o servidor acordado.
+ * Silencioso de propósito: falhar aqui não é erro para o usuário.
+ */
+export function aquecerServidor() {
+  if (MOCK || !API) return;
+  fetch(`${API}/health`, { method: "GET", cache: "no-store" }).catch(() => {});
+}
+
+// Ida ao backend com o tratamento de erro que toda tela precisa: token do
+// login, falha de rede e resposta que não é JSON viram { mensagem } legível.
+async function chamar(caminho, { metodo = "GET", corpo } = {}) {
   if (!API) {
     throw {
       mensagem:
@@ -71,14 +140,6 @@ export async function perguntar(pergunta) {
         "VITE_API_URL no ambiente.",
     };
   }
-
-  // Servidor fora do ar, DNS, CORS: fetch rejeita com TypeError, não com uma
-  // resposta. Sem este try o erro cru subia e a UI só dizia "Algo deu errado".
-  // Se há um dataset importado ativo, pergunta sobre ele; senão, base demo.
-  const dataset = datasetAtivo();
-  const corpo = dataset?.empresaId
-    ? { pergunta, empresa_id: dataset.empresaId }
-    : { pergunta };
 
   // Token do login (Supabase Auth): o backend só deixa consultar um dataset
   // importado por quem é dono dele. Sem sessão, segue sem o cabeçalho.
@@ -89,15 +150,17 @@ export async function perguntar(pergunta) {
     throw erroDeRede(err?.mensagem);
   }
 
+  // Servidor fora do ar, DNS, CORS: fetch rejeita com TypeError, não com uma
+  // resposta. Sem este try o erro cru subia e a UI só dizia "Algo deu errado".
   let r;
   try {
-    r = await fetch(`${API}/chat`, {
-      method: "POST",
+    r = await fetch(`${API}${caminho}`, {
+      method: metodo,
       headers: {
-        "Content-Type": "application/json",
+        ...(corpo ? { "Content-Type": "application/json" } : {}),
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
-      body: JSON.stringify(corpo),
+      body: corpo ? JSON.stringify(corpo) : undefined,
     });
   } catch (err) {
     throw erroDeRede(err?.message);
@@ -117,6 +180,13 @@ export async function perguntar(pergunta) {
     };
   }
 
+  // Sessão recusada pelo servidor (token vencido ou revogado): não adianta
+  // "tentar de novo" na tela — o App escuta este evento e volta ao login.
+  if (r.status === 401) {
+    window.dispatchEvent(new CustomEvent(EVENTO_SESSAO_RECUSADA, { detail: dados?.detail }));
+  }
   if (!r.ok) throw dados.detail || dados || { mensagem: "Algo deu errado." };
   return dados;
 }
+
+export const EVENTO_SESSAO_RECUSADA = "intellix:sessao-recusada";

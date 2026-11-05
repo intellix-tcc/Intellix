@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { perguntar } from "./servicos/api";
+import { perguntar, EVENTO_SESSAO_RECUSADA } from "./servicos/api";
 import Sidebar from "./componentes/Sidebar";
 import Icone from "./componentes/Icone";
 import Login from "./paginas/Login";
@@ -114,6 +114,17 @@ export default function App() {
     return () => window.removeEventListener("hashchange", aoTrocar);
   }, []);
 
+  // Servidor recusou o token (vencido/revogado): volta ao login com aviso.
+  useEffect(() => {
+    function aoRecusar(e) {
+      encerrarSessao();
+      setUsuario(null);
+      setAvisoSessao(e.detail?.mensagem || MSG_EXPIRADA);
+    }
+    window.addEventListener(EVENTO_SESSAO_RECUSADA, aoRecusar);
+    return () => window.removeEventListener(EVENTO_SESSAO_RECUSADA, aoRecusar);
+  }, []);
+
   // Sessão que vence com a aba aberta: derruba na hora, sem esperar o F5.
   useEffect(() => {
     if (!usuario) return;
@@ -179,23 +190,27 @@ export default function App() {
     });
   }
 
-  async function perguntarTexto(pergunta) {
+  // `nova`: começa uma conversa em vez de continuar a aberta — é o caso das
+  // perguntas disparadas pela Início, que não têm nada a ver com a última
+  // conversa do chat.
+  async function perguntarTexto(pergunta, { nova = false } = {}) {
     if (!pergunta?.trim() || carregando) return;
 
     // Pergunta disparada da Home leva o usuário junto para o chat.
     if (rota !== "chat") irPara("chat");
 
-    const idConversa = atualId ?? novoId();
-    const primeiraPergunta = mensagens.length === 0;
+    const base = nova ? [] : mensagens;
+    const idConversa = nova ? novoId() : atualId ?? novoId();
+    const primeiraPergunta = base.length === 0;
 
-    const comUsuario = [...mensagens, { tipo: "usuario", texto: pergunta }];
+    const comUsuario = [...base, { tipo: "usuario", texto: pergunta }];
     setMensagens(comUsuario);
     sincronizarHistorico(
       idConversa,
       comUsuario,
       primeiraPergunta ? tituloFromPergunta(pergunta) : undefined
     );
-    if (!atualId) setAtualId(idConversa);
+    if (nova || !atualId) setAtualId(idConversa);
 
     setTexto("");
     setCarregando(true);
@@ -311,7 +326,18 @@ export default function App() {
         </header>
 
         <main className="area" key={rota}>
-          {rota === "home" && <Home usuario={usuario} />}
+          {rota === "home" && (
+            <Home
+              usuario={usuario}
+              conversas={conversas}
+              onPerguntar={(p) => perguntarTexto(p, { nova: true })}
+              onAbrirConversa={(id) => {
+                selecionarConversa(id);
+                irPara("chat");
+              }}
+              onIrPara={irPara}
+            />
+          )}
           {rota === "sobre" && <Sobre onIrParaImportar={() => irPara("importar")} />}
           {rota === "importar" && <Importar onIrParaChat={() => irPara("chat")} />}
           {rota === "perfil" && (
