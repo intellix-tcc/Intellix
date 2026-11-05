@@ -2142,7 +2142,7 @@ img.logo {
   --surface: #0f2131;
   --text: #9db0bf;
   --text-h: #e9f0f6;
-  --text-3: #647787;
+  --text-3: #8396a5; /* 5,4:1 sobre a superfície escura (WCAG AA); era #647787, 3,5:1 */
   --border: #1c2e3f;
   --accent: #4c86c6;
   --accent-2: #e7b24e;
