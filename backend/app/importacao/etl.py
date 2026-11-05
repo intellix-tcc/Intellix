@@ -17,11 +17,13 @@ from __future__ import annotations
 import hashlib
 import re
 import unicodedata
+import uuid
 from datetime import date, datetime
 from typing import Any
 
 import psycopg
 
+from app.db import declarar_empresa
 from app.importacao.leitor_excel import ler_planilha
 
 
@@ -112,12 +114,17 @@ def importar(
     with conn.cursor() as cur:
         # Dataset próprio deste upload: isola os dados da planilha dos demais.
         nome_empresa = f"Importação: {nome_arquivo or 'planilha.xlsx'}"
+        # O id é gerado aqui, e não pelo banco, para poder ser declarado ANTES
+        # do insert: com RLS (migration 006), o usuário da aplicação só grava
+        # e lê linhas da empresa declarada na transação, e um "returning id"
+        # da empresa ainda não declarada seria recusado.
+        empresa_id = str(uuid.uuid4())
+        declarar_empresa(conn, empresa_id)
         # dono_id: usuário logado que importou (None = sem login; ver acesso.py)
         cur.execute(
-            "insert into empresa (nome, dono_id) values (%s, %s) returning id",
-            (nome_empresa, dono_id),
+            "insert into empresa (id, nome, dono_id) values (%s, %s, %s)",
+            (empresa_id, nome_empresa, dono_id),
         )
-        empresa_id = str(cur.fetchone()[0])
 
         cur.execute(
             "insert into importacao (empresa_id, nome_arquivo, hash_arquivo, status) "
@@ -272,8 +279,10 @@ def importar(
             (leitura["total_linhas"], linhas_validas, linhas_rejeitadas, importacao_id),
         )
 
-        # view materializada de totais mensais (ajuda a meta de < 3s no /chat)
-        cur.execute("refresh materialized view mv_faturamento_mensal;")
+        # views materializadas (ajudam a meta de < 3s). Só o dono da view pode
+        # dar refresh; a função refresh_views() (migration 006) faz isso com
+        # os direitos do dono, para o usuário da aplicação não precisar ser.
+        cur.execute("select refresh_views()")
 
     conn.commit()
 
