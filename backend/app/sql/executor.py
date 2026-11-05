@@ -14,6 +14,7 @@ from fastapi import HTTPException
 
 from app.fallbacks import EXEMPLOS_PADRAO
 from app.models import Interpretacao, ResultSet
+from app.sql.contexto import contexto_mensal
 from app.sql.templates import TEMPLATES
 
 
@@ -83,6 +84,15 @@ def executar_template(interp: Interpretacao, empresa_id: str, conn: psycopg.Conn
     if visual == "numero" and len(linhas) > 1 and colunas and colunas[0] == "periodo":
         visual = "linha"
 
+    # Um mês só: junta a evolução dos 12 meses até ele. É complemento — se
+    # falhar, a resposta principal sai do mesmo jeito.
+    contexto = None
+    if len(linhas) == 1:
+        try:
+            contexto = contexto_mensal(interp.intencao, interp.entidades, empresa_id, conn)
+        except psycopg.Error:
+            contexto = None
+
     return ResultSet(
         titulo=template["titulo"],
         colunas=colunas,
@@ -92,4 +102,5 @@ def executar_template(interp: Interpretacao, empresa_id: str, conn: psycopg.Conn
         confianca=interp.confianca,
         gerado_em=datetime.now(timezone.utc).isoformat(),
         intencao=interp.intencao,
+        contexto=contexto,
     )
