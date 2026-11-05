@@ -16,15 +16,44 @@ import {
 // tudo (gráficos, leitor de planilha, páginas institucionais) vinha num
 // pacote único de ~700 kB antes de a primeira tela aparecer. A tela de login
 // continua no pacote principal: é a primeira coisa que quem chega vê.
+// Depois de um deploy novo, quem está com o app aberto pede os arquivos da
+// versão antiga, que já não existem ("Failed to fetch dynamically imported
+// module"). Nesse caso recarrega a página uma vez, para pegar a versão nova,
+// em vez de deixar a tela quebrada.
+const CHAVE_RECARGA = "intellix_recarregou_versao";
+function comRecarga(importar) {
+  return () =>
+    importar()
+      .then((m) => {
+        try {
+          sessionStorage.removeItem(CHAVE_RECARGA);
+        } catch {
+          // sem sessionStorage: segue
+        }
+        return m;
+      })
+      .catch((erro) => {
+        let jaTentou;
+        try {
+          jaTentou = sessionStorage.getItem(CHAVE_RECARGA) === "1";
+          sessionStorage.setItem(CHAVE_RECARGA, "1");
+        } catch {
+          jaTentou = true; // sem sessionStorage, não arrisca recarregar em laço
+        }
+        if (!jaTentou) window.location.reload();
+        throw erro;
+      });
+}
+
 const carregar = {
-  home: () => import("./paginas/Home"),
-  chat: () => import("./paginas/Chat"),
-  importar: () => import("./paginas/Importar"),
-  sobre: () => import("./paginas/Sobre"),
-  perfil: () => import("./paginas/Perfil"),
-  faq: () => import("./paginas/Faq"),
-  termos: () => import("./paginas/Termos"),
-  contato: () => import("./paginas/FaleConosco"),
+  home: comRecarga(() => import("./paginas/Home")),
+  chat: comRecarga(() => import("./paginas/Chat")),
+  importar: comRecarga(() => import("./paginas/Importar")),
+  sobre: comRecarga(() => import("./paginas/Sobre")),
+  perfil: comRecarga(() => import("./paginas/Perfil")),
+  faq: comRecarga(() => import("./paginas/Faq")),
+  termos: comRecarga(() => import("./paginas/Termos")),
+  contato: comRecarga(() => import("./paginas/FaleConosco")),
 };
 const Home = lazy(carregar.home);
 const Chat = lazy(carregar.chat);

@@ -13,6 +13,7 @@ import {
   YAxis,
 } from "recharts";
 import Rosca from "./Rosca";
+import { animar, criarRotuloDePonto } from "../utils/rotulos";
 import { coresDistintas } from "../utils/cores";
 import { formatarValor, indiceMetrica, rotuloIntervalo, serieDoResultado } from "../utils/resultado";
 
@@ -33,16 +34,6 @@ const TOOLTIP = {
   itemStyle: { color: "var(--text)" },
 };
 const EIXO = { fontSize: 11, fill: "var(--text-3)" };
-
-// Animação de entrada curta, e nenhuma para quem pediu menos movimento (no
-// sistema ou nas preferências do Intellix).
-function animar() {
-  if (typeof window === "undefined") return { isAnimationActive: false };
-  const reduzir =
-    window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ||
-    document.documentElement.dataset.movimento === "reduzido";
-  return reduzir ? { isAnimationActive: false } : { animationDuration: 650 };
-}
 
 function truncar(texto, max) {
   const s = String(texto ?? "");
@@ -76,7 +67,7 @@ function Linha({ serie, fmt, fmtCurto }) {
   return (
     <div role="img" aria-label={`Gráfico de linha com ${serie.length} períodos. Maior valor em ${maior.rotulo}: ${fmt(maior.valor)}. Média de ${fmt(media)}.`}>
       <ResponsiveContainer width="100%" height={260}>
-        <AreaChart data={serie} margin={{ top: 12, right: 16, left: 4, bottom: 4 }}>
+        <AreaChart data={serie} margin={{ top: 24, right: 28, left: 4, bottom: 18 }}>
           <defs>
             <linearGradient id="grad-chat-area" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor="var(--teal)" stopOpacity={0.35} />
@@ -106,7 +97,9 @@ function Linha({ serie, fmt, fmtCurto }) {
             dot={{ r: 3, fill: "var(--surface)", stroke: "var(--teal)", strokeWidth: 2 }}
             activeDot={{ r: 5, fill: "var(--teal)", stroke: "var(--surface)", strokeWidth: 2 }}
             {...animar()}
-          />
+          >
+            <LabelList dataKey="valor" content={criarRotuloDePonto(serie.map((p) => p.valor), fmtCurto)} />
+          </Area>
         </AreaChart>
       </ResponsiveContainer>
     </div>
@@ -138,8 +131,8 @@ function Barras({ serie, fmt, fmtCurto }) {
             />
             <Tooltip {...TOOLTIP} cursor={{ fill: "var(--hover-bg)" }} formatter={(v) => [fmt(v), "Valor"]} />
             <Bar dataKey="valor" radius={[0, 6, 6, 0]} barSize={22} {...animar()}>
-              {dados.map((d) => (
-                <Cell key={d.rotulo} fill={d.cor} />
+              {dados.map((d, i) => (
+                <Cell key={`${i}-${d.rotulo}`} fill={d.cor} />
               ))}
               <LabelList dataKey="valor" position="right" formatter={fmtCurto} style={{ fontSize: 12, fill: "var(--text)" }} />
             </Bar>
@@ -158,8 +151,8 @@ function Barras({ serie, fmt, fmtCurto }) {
           <YAxis tick={EIXO} tickFormatter={fmtCurto} axisLine={false} tickLine={false} width={64} />
           <Tooltip {...TOOLTIP} cursor={{ fill: "var(--hover-bg)" }} formatter={(v) => [fmt(v), "Valor"]} />
           <Bar dataKey="valor" radius={[6, 6, 0, 0]} maxBarSize={64} {...animar()}>
-            {dados.map((d) => (
-              <Cell key={d.rotulo} fill={d.cor} />
+            {dados.map((d, i) => (
+              <Cell key={`${i}-${d.rotulo}`} fill={d.cor} />
             ))}
             <LabelList dataKey="valor" position="top" formatter={fmtCurto} style={{ fontSize: 11.5, fill: "var(--text)" }} />
           </Bar>
@@ -204,8 +197,8 @@ function Comparacao({ r, serie, fmt, fmtCurto }) {
             <YAxis tick={EIXO} tickFormatter={fmtCurto} axisLine={false} tickLine={false} width={64} />
             <Tooltip {...TOOLTIP} cursor={{ fill: "var(--hover-bg)" }} formatter={(v) => [fmt(v), "Faturamento"]} />
             <Bar dataKey="valor" radius={[8, 8, 0, 0]} maxBarSize={110} {...animar()}>
-              {dados.map((d) => (
-                <Cell key={d.rotulo} fill={d.cor} />
+              {dados.map((d, i) => (
+                <Cell key={`${i}-${d.rotulo}`} fill={d.cor} />
               ))}
               <LabelList dataKey="valor" position="top" formatter={fmtCurto} style={{ fontSize: 12.5, fill: "var(--text-h)", fontWeight: 600 }} />
             </Bar>

@@ -105,12 +105,23 @@ export function modosDisponiveis(r) {
 /** Linhas como objetos { rotulo, valor, original } para os gráficos. */
 export function serieDoResultado(r) {
   const m = indiceMetrica(r);
-  return r.linhas.map((linha) => ({
-    chave: linha[0] == null ? "" : String(linha[0]), // valor cru: decide a cor
-    rotulo: rotuloItem(r.colunas[0], linha[0]),
-    valor: Number(linha[m]) || 0,
-    original: linha,
-  }));
+  const vistos = new Map();
+  return r.linhas.map((linha) => {
+    // Rótulo repetido (duas categorias vazias viram "Não informado", ou
+    // "Casa" e "casa" no cadastro): o eixo de categorias do gráfico juntaria
+    // as duas barras numa só. Numera a repetição.
+    let rotulo = rotuloItem(r.colunas[0], linha[0]);
+    const n = (vistos.get(rotulo) || 0) + 1;
+    vistos.set(rotulo, n);
+    if (n > 1) rotulo = `${rotulo} (${n})`;
+    const valor = Number(linha[m]);
+    return {
+      chave: linha[0] == null ? "" : String(linha[0]), // valor cru: decide a cor
+      rotulo,
+      valor: Number.isFinite(valor) ? valor : 0,
+      original: linha,
+    };
+  });
 }
 
 const NOMES_PAGAMENTO = {
