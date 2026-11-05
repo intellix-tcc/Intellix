@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import GraficoResultado from "../componentes/GraficoResultado";
 import LimiteErro from "../componentes/LimiteErro";
+import ContextoMensal from "../componentes/ContextoMensal";
 import Icone from "../componentes/Icone";
 import Logo from "../componentes/Logo";
 import { baixarExcel, baixarPdf } from "../utils/exportar";
@@ -331,6 +332,12 @@ function Resultado({ r, onPerguntar }) {
             De {formatarValor("faturamento", linha[iAnterior])} para{" "}
             {formatarValor("faturamento", linha[iAtual])}.
           </p>
+        )}
+        {/* Um mês só: a evolução dos 12 meses até ele, com o mês em destaque. */}
+        {r.contexto && (
+          <LimiteErro alternativo={null}>
+            <ContextoMensal contexto={r.contexto} />
+          </LimiteErro>
         )}
         <DetalhesResposta r={r} />
         <LinhaMeta r={r} />
