@@ -30,6 +30,11 @@ class ResultSet(BaseModel):
     # usa para sugerir a próxima pergunta; opcional para não quebrar quem
     # já consome o contrato.
     intencao: str | None = None
+    # Resposta de um mês só (faturamento, quantidade de vendas, ticket médio):
+    # a mesma métrica nos 12 meses até ele, para o frontend mostrar a
+    # evolução com o mês em destaque. Ver app/sql/evolucao.py. (Não confundir
+    # com Pergunta.contexto, que é o contexto conversacional da pergunta.)
+    evolucao: dict[str, Any] | None = None
 
 
 class Contexto(BaseModel):
