@@ -35,3 +35,97 @@ export async function baixarPdf(r) {
   });
   doc.save(`${nomeArquivo(r)}.pdf`);
 }
+
+const MOEDA = (v) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+const PCT = (v) => (v == null ? "—" : `${v > 0 ? "+" : ""}${v.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%`);
+
+/**
+ * Relatório do panorama da Início em PDF: indicadores, resumo, ranking,
+ * categorias, canais e observações — o mesmo GET /resumo que está na tela.
+ */
+export async function baixarResumoPdf(r, origem) {
+  const { jsPDF } = await import("jspdf");
+  const { default: autoTable } = await import("jspdf-autotable");
+  const doc = new jsPDF();
+  const marinho = [25, 62, 96]; // #193E60, o marinho da marca
+  const largura = doc.internal.pageSize.getWidth();
+
+  doc.setFillColor(...marinho);
+  doc.rect(0, 0, largura, 26, "F");
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(16);
+  doc.text("Intellix · Panorama de vendas", 14, 12);
+  doc.setFontSize(10.5);
+  const periodo = r.periodo.rotulo.charAt(0).toUpperCase() + r.periodo.rotulo.slice(1);
+  doc.text(`${periodo} · ${origem || "Base de demonstração"}`, 14, 20);
+
+  doc.setTextColor(22, 35, 47);
+  let y = 36;
+
+  const tabela = (titulo, head, body) => {
+    if (!body.length) return;
+    doc.setFontSize(12);
+    doc.text(titulo, 14, y);
+    autoTable(doc, {
+      startY: y + 3,
+      head: [head],
+      body,
+      styles: { fontSize: 9.5 },
+      headStyles: { fillColor: marinho },
+      margin: { left: 14, right: 14 },
+    });
+    y = doc.lastAutoTable.finalY + 10;
+  };
+
+  tabela(
+    "Indicadores",
+    ["Indicador", "Valor", `vs ${r.periodo_anterior.rotulo}`],
+    r.kpis.map((k) => [
+      k.rotulo,
+      k.formato === "moeda" ? MOEDA(k.valor) : k.valor.toLocaleString("pt-BR"),
+      PCT(k.variacao_pct),
+    ])
+  );
+
+  doc.setFontSize(12);
+  doc.text("Resumo do mês", 14, y);
+  doc.setFontSize(10);
+  y += 6;
+  for (const paragrafo of r.resumo_texto) {
+    const linhas = doc.splitTextToSize(paragrafo, largura - 28);
+    doc.text(linhas, 14, y);
+    y += linhas.length * 5 + 3;
+  }
+  y += 4;
+
+  tabela(
+    "Produtos que mais faturaram",
+    ["#", "Produto", "Faturamento", "% do mês", "Variação"],
+    r.top_produtos.map((p, i) => [i + 1, p.nome, MOEDA(p.valor), `${p.pct.toLocaleString("pt-BR")}%`, PCT(p.variacao_pct)])
+  );
+  tabela(
+    "Por categoria",
+    ["Categoria", "Faturamento", "%"],
+    r.categorias.map((c) => [c.nome, MOEDA(c.valor), `${c.pct.toLocaleString("pt-BR")}%`])
+  );
+  tabela(
+    "Por canal",
+    ["Canal", "Faturamento", "%"],
+    r.canais.map((c) => [c.nome, MOEDA(c.valor), `${c.pct.toLocaleString("pt-BR")}%`])
+  );
+  tabela("Observações", ["Observação"], r.observacoes.map((o) => [o.texto]));
+
+  const paginas = doc.getNumberOfPages();
+  for (let i = 1; i <= paginas; i++) {
+    doc.setPage(i);
+    doc.setFontSize(8.5);
+    doc.setTextColor(135, 150, 162);
+    doc.text(
+      `Gerado em ${new Date().toLocaleString("pt-BR")} · página ${i} de ${paginas}`,
+      14,
+      doc.internal.pageSize.getHeight() - 8
+    );
+  }
+
+  doc.save(`Panorama_${r.periodo.ano}-${String(r.periodo.mes).padStart(2, "0")}.pdf`);
+}

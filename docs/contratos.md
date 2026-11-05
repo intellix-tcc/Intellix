@@ -206,7 +206,7 @@ Resposta (resumida):
   "categorias": [{ "nome": "Vestuário", "valor": 9800.0, "pct": 24.9 }],
   "canais": [{ "nome": "Loja", "valor": 17000.0, "pct": 43.3 }],
   "top_produtos": [{ "nome": "Smartwatch", "valor": 4398.9, "pct": 11.2, "variacao_pct": 22.2 }],
-  "observacoes": [{ "tipo": "alta", "texto": "Faturamento 10,5% acima de fevereiro.", "pergunta": "Compare o faturamento de fevereiro de 2024 com março de 2024" }],
+  "observacoes": [{ "tipo": "alta", "texto": "Faturamento 10,5% acima de fevereiro.", "pergunta": "Quanto faturei em março de 2024?" }],
   "resumo_texto": ["Em março de 2024, a loja faturou R$ 39.275,59 em ..."],
   "total_registros": 218,
   "atualizado_em": "2026-11-05T14:32:00+00:00"

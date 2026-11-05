@@ -69,7 +69,7 @@ def test_observacao_de_faturamento_so_acima_do_limiar():
     obs = gerar_observacoes(kpi_atual=kpi(110, 10), kpi_anterior=kpi(100, 10), **base)
     assert obs[0]["tipo"] == "alta"
     assert "10% acima de fevereiro" in obs[0]["texto"]
-    assert "fevereiro de 2024" in obs[0]["pergunta"]
+    assert obs[0]["pergunta"] == "Quanto faturei em março de 2024?"
 
     obs = gerar_observacoes(kpi_atual=kpi(101, 10), kpi_anterior=kpi(100, 10), **base)
     assert obs == []
