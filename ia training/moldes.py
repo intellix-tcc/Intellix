@@ -126,6 +126,13 @@ MOLDES = {
         "total de vendas do dia {data}",
         "quanto entrou no dia {data}",
         "vendas do dia {data}",
+        # item 8 (tier 2): reforça o "total puro" -- "quanto vendi em {periodo}"
+        # estava sendo confundido com vendas_por_canal/categoria na validação.
+        "no total quanto vendi em {periodo}",
+        "faturamento total de {periodo}",
+        "quanto faturei no total em {periodo}",
+        "qual o faturamento total em {periodo}",
+        "quanto a loja vendeu no total em {periodo}",
     ],
     "top_produtos": [
         "quais os {numero} produtos mais vendidos",
@@ -222,6 +229,13 @@ MOLDES = {
         "vendas de {periodo} versus {periodo2}",
         "faturamento {periodo} versus {periodo2}",
         "como ficou {periodo} ante {periodo2}",
+        # item 8 (tier 2): "comparado com/ao" e "se comparam com" caíam em
+        # total_vendas_periodo na validação.
+        "{periodo} comparado com {periodo2}",
+        "faturamento de {periodo} comparado com {periodo2}",
+        "o faturamento de {periodo} comparado ao de {periodo2}",
+        "como as vendas de {periodo} se comparam com {periodo2}",
+        "como as vendas de {periodo} se comparam às de {periodo2}",
     ],
     "vendas_por_categoria": [
         "quanto vendi em cada categoria",
@@ -376,6 +390,12 @@ MOLDES = {
         "o {canal} deu quanto em {periodo}",
         "as vendas do {canal} tão boas?",
         "quanto entrou pelo {canal} em {periodo}",
+        # item 8 (tier 2): "quais canais mais venderam" caía em top_produtos
+        # (o "mais venderam" puxava para produto).
+        "quais canais mais venderam em {periodo}",
+        "que canais venderam mais em {periodo}",
+        "quais os canais que mais venderam em {periodo}",
+        "quais canais tiveram mais vendas em {periodo}",
     ],
     "vendas_por_pagamento": [
         "quanto vendi no {pagamento}",
@@ -417,6 +437,11 @@ MOLDES = {
         "qual o método de pagamento mais usado",
         "qual método de pagamento os clientes mais usam",
         "como se distribuem as formas de pagamento em {periodo}",
+        # item 8 (tier 2): "quantas vendas no {pagamento}" caía em
+        # quantidade_vendas (o "quantas vendas" puxava para contagem).
+        "quantas vendas no {pagamento} em {periodo}",
+        "quantas vendas foram no {pagamento} em {periodo}",
+        "quantas compras no {pagamento} em {periodo}",
     ],
     "produtos_sem_saida": [
         "quais produtos não venderam {periodo}",
@@ -482,6 +507,13 @@ MOLDES = {
         "quanto que aumentou de {periodo} pra {periodo2}",
         "minhas vendas tão subindo?",
         "melhorei em relação a {periodo}?",
+        # item 8 (tier 2): "cresceu/caiu/variou de X para Y" caía em
+        # total_vendas_periodo na validação.
+        "quanto cresceu o faturamento de {periodo} para {periodo2}",
+        "quanto caiu o faturamento de {periodo} para {periodo2}",
+        "de {periodo} para {periodo2} as vendas subiram quanto",
+        "quanto variou de {periodo} para {periodo2}",
+        "qual a variação do faturamento de {periodo} para {periodo2}",
     ],
     "quantidade_vendas": [
         "quantas vendas fiz {periodo}",
