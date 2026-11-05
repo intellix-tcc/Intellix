@@ -24,11 +24,12 @@ from app.fallbacks import CONFIANCA_MINIMA
 from app.filtros import FILTROS, sem_acento
 from app.models import Interpretacao
 from app.nlu import regras as R
-from app.periodo_dataset import _trocar_ano, tem_ano_explicito
+from app.nlu.adaptador_modelo import _periodo_relativo
 
 _MES_EXTREMO = re.compile(
     r"\b(?:qual|que|em\s+que|em\s+qual)\s+(?:foi\s+|e\s+|era\s+)?(?:o\s+)?mes\b"
     r"|\b(?:melhor|pior)\s+mes\b"
+    r"|\bquando\b(?!.*\bmes\s+(?:passado|anterior)\b)"
     r"|\bmes\s+(?:que|com|de|em\s+que)\s+(?:a\s+gente\s+|eu\s+|nos\s+|mais\s+|menos\s+)?"
     r"(?:mais|menos|maior|menor|vend|fatur)",
 )
@@ -36,7 +37,10 @@ _EXTREMO = re.compile(r"\b(?:mais|menos|maior|menor|melhor|pior|campe|recorde|pi
 _MENOR = re.compile(r"\b(?:menos|menor|pior|fraco|baixo)\b")
 _UNIDADES = re.compile(r"\bunidades?\b|\bpecas?\b|\bitens\b|\bquantidade\s+de\s+(?!vendas|pedidos)")
 _QUANTAS_COISAS = re.compile(r"\bquant[oa]s\b(?!\s+(?:vendas?|pedidos?|transac|compras?|notas?|clientes?))")
-_QUANTAS_PEDIDOS = re.compile(r"\bquant[oa]s\s+(?:vendas?|pedidos?|transac|compras?)|\bnumero\s+de\s+(?:vendas|pedidos)")
+_QUANTAS_PEDIDOS = re.compile(
+    r"\bquant[oa]s\s+(?:vendas?|pedidos?|transac|compras?)"
+    r"|\b(?:numero|quantidade)\s+de\s+(?:vendas|pedidos|transac)"
+)
 _DINHEIRO = re.compile(r"fatur|receita|r\$|\bvalor|dinheiro|\breais\b|quanto\s+(?:eu\s+|a\s+gente\s+)?vend")
 
 # Intenção que é a "quebra" por uma dimensão -> filtros que a tornam trivial
@@ -70,15 +74,13 @@ def _um_periodo(ent: dict) -> bool:
     return all(k in ent for k in _UM_PERIODO)
 
 
-def _periodo_da_frase(t: str, ano_ref: int | None) -> dict:
-    """Um período só, tirado da frase (o ano inteiro quando ela não diz)."""
-    periodo = R._extrai_periodo(t, ano_completo_se_ausente=True)
-    if ano_ref and not tem_ano_explicito(t):
-        periodo = {k: _trocar_ano(v, ano_ref) for k, v in periodo.items()}
-    return periodo
+def _periodo_da_frase(t: str) -> dict:
+    """Um período só, tirado da frase ("mês passado", "em 2025", "em março"),
+    a partir de hoje (R.referencia()); o ano inteiro quando ela não diz."""
+    return _periodo_relativo(t) or R._extrai_periodo(t, ano_completo_se_ausente=True)
 
 
-def refinar(interp: Interpretacao, texto: str, ano_ref: int | None = None) -> Interpretacao:
+def refinar(interp: Interpretacao, texto: str) -> Interpretacao:
     t = sem_acento(texto.lower())
     mes_extremo = _pede_mes_extremo(t)
     if not interp.intencao and not mes_extremo:
@@ -102,7 +104,7 @@ def refinar(interp: Interpretacao, texto: str, ano_ref: int | None = None) -> In
     if mes_extremo:
         if not _um_periodo(ent):
             ent = {k: v for k, v in ent.items() if not k.startswith("periodo_")}
-            ent.update(_periodo_da_frase(t, ano_ref))
+            ent.update(_periodo_da_frase(t))
         ent.pop("vendedor_nome", None)
         por_unidades = (_tem_item(ent) or _UNIDADES.search(t)) and not re.search(r"fatur|receita", t)
         ent["metrica"] = "unidades" if por_unidades else "faturamento"
