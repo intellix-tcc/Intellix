@@ -1,53 +1,68 @@
-"""Ano de referência por dataset (app/periodo_dataset.py): perguntas sem ano
-explícito deslocam o período do ANO_PADRAO para o ano do dataset. Sem banco."""
+"""Data de referência ("hoje") do /chat: períodos relativos partem da data
+atual, limitada à última venda do dataset. Sem banco."""
 
-from app.models import Interpretacao
-from app.nlu.regras import ANO_PADRAO
-from app.periodo_dataset import ajustar_periodo, tem_ano_explicito
+from datetime import date
 
+from app.nlu import regras as R
+from app.nlu.adaptador_modelo import _dois_periodos, _periodo_relativo
+from app.periodo_dataset import referencia_do_dataset, tem_ano_explicito
 
-def _interp(entidades: dict) -> Interpretacao:
-    return Interpretacao(
-        intencao="total_vendas_periodo", confianca=0.9,
-        entidades=entidades, texto_original="x",
-    )
+HOJE = date(2026, 11, 5)
 
 
-def test_desloca_o_ano_para_o_do_dataset():
-    i = _interp({"periodo_inicio": "2024-03-01", "periodo_fim": "2024-03-31"})
-    out = ajustar_periodo(i, 2026)
-    assert out.entidades["periodo_inicio"] == "2026-03-01"
-    assert out.entidades["periodo_fim"] == "2026-03-31"
+def test_referencia_e_hoje_quando_os_dados_vao_ate_depois():
+    assert referencia_do_dataset(date(2026, 12, 31), HOJE) == HOJE
 
 
-def test_desloca_os_dois_periodos_de_uma_comparacao():
-    i = _interp({
-        "periodo_a_inicio": "2024-03-01", "periodo_a_fim": "2024-03-31",
-        "periodo_b_inicio": "2024-04-01", "periodo_b_fim": "2024-04-30",
-    })
-    out = ajustar_periodo(i, 2025)
-    assert out.entidades["periodo_a_inicio"] == "2025-03-01"
-    assert out.entidades["periodo_b_fim"] == "2025-04-30"
+def test_referencia_e_a_ultima_venda_numa_planilha_antiga():
+    assert referencia_do_dataset(date(2025, 6, 30), HOJE) == date(2025, 6, 30)
 
 
-def test_nao_desloca_quando_ano_ref_e_o_padrao():
-    i = _interp({"periodo_inicio": "2024-03-01", "periodo_fim": "2024-03-31"})
-    out = ajustar_periodo(i, ANO_PADRAO)
-    assert out.entidades["periodo_inicio"] == "2024-03-01"
+def test_dataset_vazio_usa_a_referencia_fixa():
+    assert referencia_do_dataset(None, HOJE) == R.DATA_REFERENCIA
 
 
-def test_clampa_29_de_fevereiro_em_ano_nao_bissexto():
-    # 2024 é bissexto (29/02); 2025 não é -> 28/02
-    i = _interp({"periodo_inicio": "2024-02-01", "periodo_fim": "2024-02-29"})
-    out = ajustar_periodo(i, 2025)
-    assert out.entidades["periodo_fim"] == "2025-02-28"
+def test_ano_passado_e_mes_passado_partem_de_hoje():
+    with R.usar_referencia(HOJE):
+        assert _periodo_relativo("quanto vendi no ano passado") == {
+            "periodo_inicio": "2025-01-01", "periodo_fim": "2025-12-31"}
+        assert _periodo_relativo("quanto vendi no mês passado") == {
+            "periodo_inicio": "2026-10-01", "periodo_fim": "2026-10-31"}
+        assert _periodo_relativo("e esse mês?") == {
+            "periodo_inicio": "2026-11-01", "periodo_fim": "2026-11-30"}
 
 
-def test_nao_mexe_em_periodo_de_outro_ano():
-    # período que não é do ANO_PADRAO (usuário citou 2023) fica como está
-    i = _interp({"periodo_inicio": "2023-03-01", "periodo_fim": "2023-03-31"})
-    out = ajustar_periodo(i, 2026)
-    assert out.entidades["periodo_inicio"] == "2023-03-01"
+def test_ultimo_trimestre_e_o_ultimo_completo():
+    with R.usar_referencia(HOJE):  # novembro: o 4º trimestre está em andamento
+        assert _periodo_relativo("no último trimestre") == {
+            "periodo_inicio": "2026-07-01", "periodo_fim": "2026-09-30"}
+    with R.usar_referencia(date(2026, 2, 10)):  # vira o ano
+        assert _periodo_relativo("no último trimestre")["periodo_inicio"] == "2025-10-01"
+
+
+def test_mes_e_esse_ano_sem_ano_citado_ficam_no_ano_de_hoje():
+    with R.usar_referencia(HOJE):
+        assert R._extrai_periodo("quanto faturei em março")["periodo_inicio"] == "2026-03-01"
+        assert R._extrai_periodo("quanto faturei", ano_completo_se_ausente=True)["periodo_inicio"] == "2026-01-01"
+
+
+def test_comparacao_com_o_ano_passado_parte_de_hoje():
+    with R.usar_referencia(HOJE):
+        atual_ini, _, anterior_ini, _ = _dois_periodos("quanto cresci em relação ao ano passado")
+        assert (atual_ini, anterior_ini) == ("2026-01-01", "2025-01-01")
+        atual_ini, _, anterior_ini, _ = _dois_periodos("compare esse mês com o mês passado")
+        assert (atual_ini, anterior_ini) == ("2026-11-01", "2026-10-01")
+
+
+def test_ano_citado_vale_sempre():
+    with R.usar_referencia(HOJE):
+        assert R._extrai_periodo("quanto faturei em março de 2024")["periodo_inicio"] == "2024-03-01"
+
+
+def test_referencia_volta_ao_padrao_fora_do_bloco():
+    with R.usar_referencia(HOJE):
+        pass
+    assert R.referencia() == R.DATA_REFERENCIA
 
 
 def test_tem_ano_explicito():

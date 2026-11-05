@@ -72,24 +72,30 @@ def _ano_do_contexto(ent: dict) -> int | None:
     return None
 
 
+# "mês passado", "último trimestre", "esse ano": relativos a hoje, não à conversa.
+_RELATIVO = re.compile(r"passad|anterior|[úu]ltim|\b(?:n|d)?es[st][ea]\b|\batual\b", re.IGNORECASE)
+
+
 def _periodo_novo(intencao: str, texto: str, ctx_ent: dict, ano_ref: int | None) -> dict:
-    """Período que a frase cita, resolvido para a intenção; o ano, quando a
-    frase não diz, é o da conversa ("e em abril?" depois de 2025 = abril de 2025)."""
-    novas = _resolver_entidades(intencao, texto.lower(), {}, texto)
-    novas = _chaves_de_periodo(novas)
-    if novas and not tem_ano_explicito(texto):
-        ano = _ano_do_contexto(ctx_ent) or ano_ref
+    """Período que a frase cita, resolvido para a intenção. Sem ano na frase,
+    um mês ou trimestre por nome fica no ano da conversa ("e em abril?" depois
+    de 2025 = abril de 2025); um período relativo ("e no mês passado?") parte
+    de hoje (R.referencia())."""
+    novas = _chaves_de_periodo(_resolver_entidades(intencao, texto.lower(), {}, texto))
+    if novas and not tem_ano_explicito(texto) and not _RELATIVO.search(texto):
+        ano = _ano_do_contexto(ctx_ent)
+        atual = str(R.ano_atual())
         if ano:
             novas = {
-                k: _trocar_ano(v, ano) if isinstance(v, str) and v[:4] == str(R.ANO_PADRAO) else v
+                k: _trocar_ano(v, ano) if isinstance(v, str) and v[:4] == atual else v
                 for k, v in novas.items()
             }
     return novas
 
 
 def _ano_inteiro(ctx_ent: dict, ano_ref: int | None) -> dict:
-    ano = _ano_do_contexto(ctx_ent) or ano_ref
-    return {"periodo_inicio": f"{ano}-01-01", "periodo_fim": f"{ano}-12-31"} if ano else {}
+    ano = _ano_do_contexto(ctx_ent) or ano_ref or R.ano_atual()
+    return {"periodo_inicio": f"{ano}-01-01", "periodo_fim": f"{ano}-12-31"}
 
 
 def _filtros_herdados(ctx_ent: dict, novos: dict) -> dict:

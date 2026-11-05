@@ -15,8 +15,8 @@ from app.importacao.etl import importar
 from app.importacao.leitor_excel import ErroImportacao
 from app.limite import LimiteDeRequisicoes
 from app.models import Pergunta, ResultSet
-from app.nlu.regras import RuleBasedNLU
-from app.periodo_dataset import ajustar_periodo, ano_referencia, tem_ano_explicito
+from app.nlu.regras import RuleBasedNLU, usar_referencia
+from app.periodo_dataset import data_referencia, tem_ano_explicito
 from app.refino import pede_refino, refinar
 from app.resumo import montar_resumo
 from app.sql.executor import executar_template
@@ -160,21 +160,23 @@ def chat(pergunta: Pergunta, usuario: UsuarioAtual) -> ResultSet:
             # Dataset do usuário (vindo de uma importação) ou a base demo.
             # Só o dono consulta um dataset importado (ver acesso.py).
             empresa = resolver_empresa(conn, pergunta.empresa_id, usuario)
-            ano_ref = ano_referencia(conn, empresa)
-            # 2. Detalhes: o trecho que o modelo marcou ("botas de couro") vira
-            #    o valor exato do catálogo desse dataset ("Bota couro").
-            interpretacao = aplicar_filtros(interpretacao, texto, carregar_catalogo(conn, empresa))
-            # 3. Período por dataset: quando a pergunta NÃO cita um ano ("esse ano",
-            #    "mês passado", "em março"), usa o ano mais recente dos dados DESSE
-            #    dataset em vez do ANO_PADRAO fixo -- senão uma planilha de 2026
-            #    respondia "sem resultado" (ver app/periodo_dataset.py).
-            if not tem_ano_explicito(texto):
-                interpretacao = ajustar_periodo(interpretacao, ano_ref)
-            # 4. Conversa: "e de calçados?", "e em 2025?", "e qual mês vendeu
-            #    mais?" completam a pergunta anterior (ver app/contexto.py).
-            interpretacao = aplicar_contexto(interpretacao, pergunta.contexto, texto, ano_ref)
-            # 5. Refino: mês de maior venda, unidades, total de um recorte.
-            interpretacao = refinar(interpretacao, texto, ano_ref)
+            # "Hoje" desse dataset: a data atual, limitada à última venda (ver
+            # app/periodo_dataset.py). "Ano passado", "mês passado", "esse ano" e
+            # um mês sem ano ("em março") saem dela.
+            ref = data_referencia(conn, empresa)
+            with usar_referencia(ref):
+                # A leitura de antes do banco serviu só de triagem; sem ano na
+                # frase, o período depende de "hoje", então a frase é lida de novo.
+                if not tem_ano_explicito(texto):
+                    interpretacao = nlu.parse(texto)
+                # 2. Detalhes: o trecho que o modelo marcou ("botas de couro") vira
+                #    o valor exato do catálogo desse dataset ("Bota couro").
+                interpretacao = aplicar_filtros(interpretacao, texto, carregar_catalogo(conn, empresa))
+                # 3. Conversa: "e de calçados?", "e em 2025?", "e qual mês vendeu
+                #    mais?" completam a pergunta anterior (ver app/contexto.py).
+                interpretacao = aplicar_contexto(interpretacao, pergunta.contexto, texto, ref.year)
+                # 4. Refino: mês de maior venda, unidades, total de um recorte.
+                interpretacao = refinar(interpretacao, texto)
             verificar_confianca(interpretacao)
             return executar_template(interpretacao, empresa, conn)
     except psycopg.OperationalError:

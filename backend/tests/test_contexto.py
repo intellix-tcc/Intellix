@@ -152,3 +152,18 @@ def test_elipse_que_pede_o_melhor_mes_herda_o_recorte():
     out = aplicar_contexto(_elidida("e qual mês vendeu mais?"), ctx, "e qual mês vendeu mais?")
     assert out.intencao == "unidades_vendidas"  # o refino troca para melhor_mes depois
     assert out.entidades["produto"] == "Bota couro"
+
+
+def test_periodo_relativo_na_conversa_parte_de_hoje_e_nao_do_ano_da_conversa():
+    # Conversa sobre 2025; "e no mês passado?" em novembro de 2026 = outubro de 2026.
+    from datetime import date
+
+    from app.nlu import regras as R
+    ctx = Contexto(intencao="total_vendas_periodo",
+                   entidades={"periodo_inicio": "2025-01-01", "periodo_fim": "2025-12-31"})
+    with R.usar_referencia(date(2026, 11, 5)):
+        out = aplicar_contexto(_elidida("e no mês passado?"), ctx, "e no mês passado?")
+        assert out.entidades["periodo_inicio"] == "2026-10-01"
+        # já um mês por nome, sem ano, fica no ano da conversa
+        out = aplicar_contexto(_elidida("e em abril?"), ctx, "e em abril?")
+        assert out.entidades["periodo_inicio"] == "2025-04-01"
