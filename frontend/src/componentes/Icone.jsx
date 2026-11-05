@@ -193,6 +193,96 @@ const DESENHOS = {
       <path d="M8.4 13.4h7.2M8.4 16.6h7.2" />
     </>
   ),
+  // "?" no círculo — perguntas frequentes (par do "i" de Sobre)
+  ajuda: (
+    <>
+      <circle cx="12" cy="12" r="8.2" />
+      <path d="M9.7 9.6a2.4 2.4 0 0 1 4.6.9c0 1.6-2.3 2.1-2.3 3.6" />
+      <path d="M12 16.6h.01" />
+    </>
+  ),
+  // envelope — fale conosco
+  envelope: (
+    <>
+      <rect x="3.6" y="5.6" width="16.8" height="12.8" rx="2" />
+      <path d="m4.4 7 7.6 6 7.6-6" />
+    </>
+  ),
+  // folha com linhas de texto — termos de uso
+  documento: (
+    <>
+      <path d="M6.4 3.8h8.2l4 4v11.2a1.2 1.2 0 0 1-1.2 1.2H6.4a1.2 1.2 0 0 1-1.2-1.2V5a1.2 1.2 0 0 1 1.2-1.2Z" />
+      <path d="M14.6 3.8V7a1 1 0 0 0 1 1h3.2" />
+      <path d="M8.4 11.4h7.2M8.4 14.4h7.2M8.4 17.4h4.4" />
+    </>
+  ),
+  // calendário — seletor de mês do panorama
+  calendario: (
+    <>
+      <rect x="4" y="5.4" width="16" height="14.6" rx="2" />
+      <path d="M4 10h16M8.4 3.6v3.4M15.6 3.6v3.4" />
+    </>
+  ),
+  // duas pessoas — clientes
+  usuarios: (
+    <>
+      <circle cx="9" cy="8.6" r="3.2" />
+      <path d="M3.6 19.4c0-3 2.4-5.2 5.4-5.2s5.4 2.2 5.4 5.2" />
+      <path d="M15.4 5.6a3.1 3.1 0 0 1 0 6M16.6 14.4c2.2.5 3.8 2.4 3.8 5" />
+    </>
+  ),
+  // cartão — formas de pagamento
+  cartao: (
+    <>
+      <rect x="3.4" y="5.6" width="17.2" height="12.8" rx="2" />
+      <path d="M3.4 10h17.2M7 14.8h3.4" />
+    </>
+  ),
+  // duas folhas sobrepostas — copiar
+  copiar: (
+    <>
+      <rect x="8.4" y="8.4" width="11.2" height="11.2" rx="2" />
+      <path d="M15.6 8.4V6a1.6 1.6 0 0 0-1.6-1.6H6A1.6 1.6 0 0 0 4.4 6v8a1.6 1.6 0 0 0 1.6 1.6h2.4" />
+    </>
+  ),
+  // seta circular — tentar de novo
+  recarregar: (
+    <>
+      <path d="M19.4 12a7.4 7.4 0 1 1-2.2-5.2" />
+      <path d="M19.6 4.6v4.2h-4.2" />
+    </>
+  ),
+  // controles deslizantes — preferências
+  ajustes: (
+    <>
+      <path d="M4.4 7h9.2M17.6 7h2M4.4 17h2M10.4 17h9.2" />
+      <circle cx="15.6" cy="7" r="2" />
+      <circle cx="8.4" cy="17" r="2" />
+    </>
+  ),
+  // tecla ⌘/atalho — paleta de comandos
+  comando: (
+    <>
+      <rect x="3.6" y="5.6" width="16.8" height="12.8" rx="2.2" />
+      <path d="M7.4 10h.01M10.4 10h.01M13.4 10h.01M16.4 10h.01M8.6 14.2h6.8" />
+    </>
+  ),
+  // linha que sobe — evolução no tempo
+  linha: (
+    <>
+      <path d="M4 19.4h16" />
+      <path d="m4.6 15.4 4.4-4.6 3.4 3 6.8-7.4" />
+      <path d="M15.6 6.4h3.6V10" />
+    </>
+  ),
+  // rosca — composição do todo
+  pizza: (
+    <>
+      <circle cx="12" cy="12" r="8.2" />
+      <circle cx="12" cy="12" r="3.6" />
+      <path d="M12 3.8v4.6M15.4 13.4l4.2 1.8" />
+    </>
+  ),
   // capelo — trabalho acadêmico
   capelo: (
     <>

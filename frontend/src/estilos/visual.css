@@ -1,0 +1,821 @@
+/* ==========================================================================
+   Camada visual "Intellix Tech"
+   --------------------------------------------------------------------------
+   Leva para dentro do app a linguagem que a vitrine e o login já usam:
+   marinho profundo, grade de dados com nós turquesa, e as cores do próprio
+   símbolo (roxo, turquesa, âmbar) como cores de dado. Fica num arquivo
+   próprio, carregado depois de App.css: o layout e o comportamento
+   continuam lá; aqui é só acabamento.
+
+   Regras:
+   - Superfícies marinho (barra lateral, cabeçalho da Início) são fixas nos
+     dois temas, como o painel de marca do login — por isso redefinem os
+     tokens de cor dentro do próprio escopo.
+   - Cor de dado (roxo/turquesa/âmbar) é para dado e destaque; ação segue
+     sendo o azul da marca, agora em gradiente azul -> turquesa.
+   - Fonte monoespaçada só em rótulos técnicos, variações e atalhos.
+   ========================================================================== */
+
+:root {
+  --mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+
+  --navy-950: #081726;
+  --navy-900: #0b1f33;
+  --navy-800: #0f2a44;
+  --navy-700: #163757;
+  --teal-vivo: #26c9c5;
+  --roxo-vivo: #9b5fb8;
+
+  /* ação: azul da marca puxando para o turquesa do símbolo */
+  --grad-acao: linear-gradient(135deg, #1f5c93 0%, #1d77a8 55%, #1a9fa3 100%);
+  /* dado: roxo -> turquesa, as duas cores fortes do símbolo */
+  --grad-dado: linear-gradient(90deg, #7b3e93 0%, #26c9c5 100%);
+  --brilho-acao: 0 10px 28px -8px rgba(31, 92, 147, 0.55);
+  --brilho-teal: 0 0 0 1px rgba(38, 201, 197, 0.35), 0 10px 30px -10px rgba(38, 201, 197, 0.45);
+
+  /* cartões: borda + leve elevação, mais presença que antes */
+  --cartao-sombra: 0 1px 2px rgba(19, 36, 51, 0.04), 0 12px 32px -18px rgba(19, 36, 51, 0.22);
+  --cartao-raio: 18px;
+
+  /* grade de dados (mesma da vitrine) */
+  --grade-no: radial-gradient(circle, rgba(38, 201, 197, 0.45) 1.4px, transparent 1.6px);
+  --grade-linha-h: linear-gradient(rgba(255, 255, 255, 0.055) 1px, transparent 1px);
+  --grade-linha-v: linear-gradient(90deg, rgba(255, 255, 255, 0.055) 1px, transparent 1px);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --cartao-sombra: 0 1px 2px rgba(0, 0, 0, 0.3), 0 16px 36px -20px rgba(0, 0, 0, 0.6);
+  }
+}
+:root[data-theme="dark"] {
+  --cartao-sombra: 0 1px 2px rgba(0, 0, 0, 0.3), 0 16px 36px -20px rgba(0, 0, 0, 0.6);
+}
+
+/* Tokens de superfície marinho, reaproveitados por todo escopo escuro fixo. */
+.sidebar,
+.painel-hero {
+  --bg: var(--navy-900);
+  --surface: rgba(255, 255, 255, 0.05);
+  --surface-2: rgba(255, 255, 255, 0.07);
+  --code-bg: rgba(255, 255, 255, 0.08);
+  --text: #b3c6dc;
+  --text-h: #ffffff;
+  --text-3: #8fa7c2;
+  --border: rgba(255, 255, 255, 0.1);
+  --border-2: rgba(255, 255, 255, 0.16);
+  --hover-bg: rgba(255, 255, 255, 0.07);
+  --accent: #5aa7e8;
+  --accent-bg: rgba(90, 167, 232, 0.14);
+  --accent-border: rgba(90, 167, 232, 0.45);
+  --accent-3: #c58bda;
+  --accent-3-bg: rgba(197, 139, 218, 0.14);
+  --accent-3-border: rgba(197, 139, 218, 0.45);
+  --ok-texto: #4fd8c4;
+  --erro-texto: #ff8f7f;
+  --shadow-2: 0 10px 30px rgba(0, 0, 0, 0.35);
+  /* a logo é um PNG marinho: sobre o marinho, clareia bem mais que no
+     tema escuro comum, senão o nome some no fundo */
+  --filtro-logo: brightness(2.15) saturate(0.95);
+  color: var(--text);
+}
+
+/* ==========================================================================
+   Barra lateral: marinho com grade de dados e brilho turquesa
+   ========================================================================== */
+.sidebar {
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
+  background-color: var(--navy-900);
+  background-image:
+    radial-gradient(420px 260px at 0% 0%, rgba(38, 201, 197, 0.16), transparent 70%),
+    radial-gradient(380px 300px at 100% 100%, rgba(123, 62, 147, 0.22), transparent 70%),
+    var(--grade-no), var(--grade-linha-h), var(--grade-linha-v);
+  background-size: auto, auto, 96px 96px, 24px 24px, 24px 24px;
+}
+.nav-item {
+  border-radius: 10px;
+  color: var(--text);
+}
+.nav-item.ativo {
+  color: #ffffff;
+  background: linear-gradient(90deg, rgba(38, 201, 197, 0.2), rgba(90, 167, 232, 0.08) 70%, transparent);
+  box-shadow: inset 0 0 0 1px rgba(38, 201, 197, 0.18);
+}
+.nav-item.ativo::before {
+  width: 3px;
+  background: linear-gradient(180deg, var(--teal-vivo), var(--roxo-vivo));
+  box-shadow: 0 0 12px rgba(38, 201, 197, 0.7);
+}
+.nav-item.ativo .nav-icone {
+  color: var(--teal-vivo);
+}
+.sidebar .hist-novo {
+  border-color: rgba(38, 201, 197, 0.4);
+  color: #dff8f7;
+  background: rgba(38, 201, 197, 0.1);
+}
+.sidebar .hist-novo:hover {
+  background: rgba(38, 201, 197, 0.18);
+  box-shadow: var(--brilho-teal);
+}
+.sidebar-perfil {
+  border-top-color: rgba(255, 255, 255, 0.08);
+}
+
+/* ==========================================================================
+   Topo: vidro (translúcido com desfoque) sobre o conteúdo
+   ========================================================================== */
+.topo {
+  background: color-mix(in srgb, var(--surface) 76%, transparent);
+  backdrop-filter: blur(16px) saturate(1.5);
+  -webkit-backdrop-filter: blur(16px) saturate(1.5);
+}
+.topo-busca {
+  background: color-mix(in srgb, var(--surface-2) 70%, transparent);
+}
+.topo-busca:hover {
+  box-shadow: var(--brilho-teal);
+  border-color: transparent;
+}
+kbd {
+  font-family: var(--mono);
+  font-weight: 500;
+  letter-spacing: 0;
+}
+
+/* ==========================================================================
+   Botões de ação: gradiente azul -> turquesa com brilho
+   ========================================================================== */
+.botao-primario,
+.auth-botao,
+.form-pergunta button {
+  background: var(--grad-acao);
+  border: none;
+  color: #ffffff;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.18) inset, 0 6px 18px -10px rgba(31, 92, 147, 0.7);
+}
+.botao-primario:hover,
+.auth-botao:hover:not(:disabled),
+.form-pergunta button:hover:not(:disabled) {
+  filter: brightness(1.08) saturate(1.1);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.18) inset, var(--brilho-acao);
+}
+
+/* Rótulos de seção em monoespaçada, com marcador de dado */
+.eyebrow,
+.continuar-titulo,
+.sugestao-tema,
+.paleta-grupo {
+  font-family: var(--mono);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+}
+h2.eyebrow,
+.painel-conteudo .eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+h2.eyebrow::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  background: var(--grad-dado);
+  box-shadow: 0 0 10px rgba(38, 201, 197, 0.5);
+  flex-shrink: 0;
+}
+
+/* ==========================================================================
+   Início: cabeçalho "centro de comando"
+   ========================================================================== */
+.painel-inicio {
+  gap: 28px;
+  padding-top: 28px;
+}
+.painel-hero {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 26px;
+  padding: 30px 30px 28px;
+  border-radius: 24px;
+  background-color: var(--navy-800);
+  background-image:
+    radial-gradient(520px 320px at 92% -10%, rgba(38, 201, 197, 0.28), transparent 70%),
+    radial-gradient(520px 340px at -6% 120%, rgba(123, 62, 147, 0.38), transparent 70%),
+    var(--grade-no), var(--grade-linha-h), var(--grade-linha-v);
+  background-size: auto, auto, 128px 128px, 32px 32px, 32px 32px;
+  box-shadow: 0 24px 60px -30px rgba(11, 31, 51, 0.75);
+}
+/* linha de luz no topo do cartão */
+.painel-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(38, 201, 197, 0.7), rgba(197, 139, 218, 0.6), transparent);
+}
+.painel-hero .painel-saudacao {
+  font-size: 30px;
+  letter-spacing: -0.6px;
+}
+.painel-hero .painel-subtitulo {
+  color: var(--text);
+  max-width: 62ch;
+}
+.painel-hero .painel-status {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text-3);
+}
+.painel-hero .painel-status-ponto {
+  background: var(--teal-vivo);
+  box-shadow: 0 0 0 4px rgba(38, 201, 197, 0.18), 0 0 12px rgba(38, 201, 197, 0.8);
+  animation: pulsar 2.4s ease-in-out infinite;
+}
+@keyframes pulsar {
+  50% {
+    box-shadow: 0 0 0 6px rgba(38, 201, 197, 0.06), 0 0 16px rgba(38, 201, 197, 0.9);
+  }
+}
+.painel-hero .painel-seletor-mes,
+.painel-hero .painel-botao-secundario {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(255, 255, 255, 0.16);
+  color: #ffffff;
+  backdrop-filter: blur(8px);
+}
+.painel-hero .painel-seletor-mes select {
+  color: #ffffff;
+}
+.painel-hero .painel-seletor-mes select option {
+  color: #16232f;
+  background: #ffffff;
+}
+.painel-hero .painel-botao-secundario:hover:not(:disabled) {
+  border-color: rgba(38, 201, 197, 0.6);
+  color: #ffffff;
+  box-shadow: var(--brilho-teal);
+}
+
+/* Indicadores em cartões de vidro, cada um com sua cor de dado */
+.painel-hero .painel-kpis {
+  gap: 14px;
+  transition: opacity 0.2s ease;
+}
+.painel-hero .painel-kpis.atualizando {
+  opacity: 0.55;
+}
+.painel-hero .painel-kpi {
+  --cor-kpi: #5aa7e8;
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-top: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 16px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.03));
+  backdrop-filter: blur(10px);
+  box-shadow: none;
+}
+.painel-hero .painel-kpi::after {
+  content: "";
+  position: absolute;
+  inset: auto -30% -60% auto;
+  width: 160px;
+  height: 160px;
+  border-radius: 50%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--cor-kpi) 30%, transparent), transparent 70%);
+  pointer-events: none;
+}
+.painel-hero .painel-kpi:hover {
+  transform: translateY(-3px);
+  border-color: color-mix(in srgb, var(--cor-kpi) 55%, transparent);
+  box-shadow: 0 14px 32px -16px color-mix(in srgb, var(--cor-kpi) 70%, transparent);
+}
+.painel-kpi-cor-0 { --cor-kpi: #5aa7e8; }
+.painel-kpi-cor-1 { --cor-kpi: #c58bda; }
+.painel-kpi-cor-2 { --cor-kpi: #3fdbd7; }
+.painel-kpi-cor-3 { --cor-kpi: #f0bd5a; }
+.painel-kpi-cor-4 { --cor-kpi: #8fb6ff; }
+.painel-kpi-topo {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 4px;
+}
+.painel-kpi-icone {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  color: var(--cor-kpi);
+  background: color-mix(in srgb, var(--cor-kpi) 16%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--cor-kpi) 30%, transparent);
+  flex-shrink: 0;
+}
+.painel-hero .painel-kpi .painel-kpi-rotulo {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--text-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+/* Cabe "R$ 128.430,50" numa linha em cinco colunas; encolhe com a tela em
+   vez de quebrar o número no meio. */
+.painel-hero .painel-kpi .painel-kpi-valor {
+  color: #ffffff;
+  font-size: clamp(18px, 1.55vw, 24px);
+  white-space: nowrap;
+  overflow-wrap: normal;
+}
+.painel-hero .painel-kpis {
+  grid-template-columns: repeat(auto-fit, minmax(176px, 1fr));
+}
+.painel-variacao,
+.painel-ranking-valor,
+.painel-categoria-valor,
+.painel-legenda,
+.painel-atividade-tempo,
+.meta-registros {
+  font-family: var(--mono);
+}
+.painel-variacao {
+  font-size: 12px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: color-mix(in srgb, currentColor 12%, transparent);
+}
+.painel-variacao.neutra {
+  background: none;
+}
+.painel-variacao-ref {
+  font-weight: 500;
+}
+.painel-hero .esqueleto {
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.12) 50%, rgba(255, 255, 255, 0.05) 100%);
+  background-size: 200% 100%;
+}
+
+/* ==========================================================================
+   Seções do panorama em cartões
+   ========================================================================== */
+.painel-conteudo {
+  gap: 22px;
+}
+.painel-duas-colunas {
+  gap: 22px;
+}
+.painel-conteudo .painel-secao,
+.painel-inicio > .painel-secao {
+  min-width: 0;
+  padding: 22px 24px 24px;
+  border: 1px solid var(--border);
+  border-top: 1px solid var(--border);
+  border-radius: var(--cartao-raio);
+  background: var(--surface);
+  box-shadow: var(--cartao-sombra);
+}
+.painel-conteudo .painel-secao h2.eyebrow,
+.painel-inicio > .painel-secao h2.eyebrow {
+  margin-bottom: 14px;
+}
+
+/* Fatias e ranking: barras com brilho e gradiente */
+.painel-categoria-barra {
+  height: 8px;
+}
+.painel-categoria-preenchimento {
+  background-image: linear-gradient(90deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.35)) !important;
+}
+.painel-ranking-barra {
+  height: 5px;
+}
+.painel-ranking-barra span {
+  background: var(--grad-dado);
+  opacity: 1;
+}
+.painel-ranking-pos {
+  font-family: var(--mono);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 8px;
+  background: var(--accent-bg);
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 600;
+}
+.painel-ranking li:first-child .painel-ranking-pos {
+  background: var(--grad-dado);
+  color: #ffffff;
+}
+
+/* Atalhos "Aprofunde": cada um com uma cor de dado */
+.painel-atalho {
+  border-radius: 14px;
+  background: var(--surface);
+}
+.painel-atalho .icone {
+  width: 32px;
+  height: 32px;
+  padding: 8px;
+  box-sizing: border-box;
+  border-radius: 10px;
+  color: var(--cor-atalho, var(--accent));
+  background: color-mix(in srgb, var(--cor-atalho, var(--accent)) 14%, transparent);
+}
+.painel-atalho:nth-child(5n + 1) { --cor-atalho: var(--accent); }
+.painel-atalho:nth-child(5n + 2) { --cor-atalho: var(--accent-3); }
+.painel-atalho:nth-child(5n + 3) { --cor-atalho: #1a9fa3; }
+.painel-atalho:nth-child(5n + 4) { --cor-atalho: var(--accent-2-text); }
+.painel-atalho:nth-child(5n + 5) { --cor-atalho: var(--marinho); }
+.painel-atalho:hover {
+  border-color: color-mix(in srgb, var(--cor-atalho, var(--accent)) 50%, transparent);
+  box-shadow: 0 12px 28px -16px color-mix(in srgb, var(--cor-atalho, var(--accent)) 80%, transparent);
+}
+
+/* Cartões das outras páginas (Perfil, Importar, institucionais) */
+.painel {
+  border-radius: var(--cartao-raio);
+  box-shadow: var(--cartao-sombra);
+}
+
+/* ==========================================================================
+   Chat
+   ========================================================================== */
+.mensagem-usuario {
+  background: linear-gradient(135deg, #193e60 0%, #1f5c93 100%);
+  color: #ffffff;
+  border-radius: 16px;
+  border-bottom-right-radius: 5px;
+  box-shadow: 0 10px 24px -14px rgba(25, 62, 96, 0.8);
+}
+/* avatar com anel no gradiente de dado */
+.avatar-marca {
+  width: 32px;
+  height: 32px;
+  border: 1.5px solid transparent;
+  background:
+    linear-gradient(var(--surface), var(--surface)) padding-box,
+    var(--grad-dado) border-box;
+  box-shadow: 0 0 14px -4px rgba(38, 201, 197, 0.6);
+}
+.resultado-valor {
+  background: linear-gradient(90deg, var(--accent) 0%, #1a9fa3 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.meta-confianca-alta .meta-ponto {
+  box-shadow: 0 0 0 3px rgba(31, 158, 147, 0.18), 0 0 10px rgba(31, 158, 147, 0.7);
+}
+.continuar-opcao,
+.perguntas-clicaveis button {
+  border-color: var(--border);
+  background: var(--surface);
+}
+.continuar-opcao:hover:not(:disabled),
+.perguntas-clicaveis button:hover:not(:disabled) {
+  box-shadow: var(--brilho-teal);
+}
+
+/* Campo de pergunta: vidro com halo ao focar */
+.form-pergunta textarea {
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  box-shadow: var(--cartao-sombra);
+}
+.form-pergunta textarea:focus {
+  border-color: rgba(38, 201, 197, 0.6);
+  box-shadow: 0 0 0 4px rgba(38, 201, 197, 0.14), 0 14px 34px -18px rgba(31, 92, 147, 0.6);
+}
+.form-pergunta button {
+  border-radius: 14px;
+}
+
+/* Chat vazio: a marca em destaque sobre um halo, sugestões coloridas */
+.tela-inicial-marca {
+  position: relative;
+  border: 1.5px solid transparent;
+  background:
+    linear-gradient(var(--surface), var(--surface)) padding-box,
+    var(--grad-dado) border-box;
+  box-shadow: 0 0 0 8px color-mix(in srgb, var(--teal-vivo) 8%, transparent), 0 18px 40px -16px rgba(38, 201, 197, 0.55);
+}
+.tela-inicial-titulo {
+  font-size: 26px;
+}
+.sugestao-grupo {
+  --cor-tema: var(--accent);
+  border-radius: 16px;
+  box-shadow: var(--cartao-sombra);
+  border-top: 3px solid var(--cor-tema);
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+.sugestao-grupo:hover {
+  transform: translateY(-2px);
+}
+.sugestao-grupo:nth-child(1) { --cor-tema: var(--accent); }
+.sugestao-grupo:nth-child(2) { --cor-tema: var(--accent-3); }
+.sugestao-grupo:nth-child(3) { --cor-tema: #1a9fa3; }
+.sugestao-grupo:nth-child(4) { --cor-tema: var(--accent-2); }
+.sugestao-tema {
+  color: var(--cor-tema);
+}
+.sugestao-grupo .exemplo:hover {
+  border-color: var(--cor-tema);
+  color: var(--text-h);
+  background: color-mix(in srgb, var(--cor-tema) 10%, transparent);
+}
+
+/* ==========================================================================
+   Paleta de comandos: vidro escuro com borda de luz
+   ========================================================================== */
+.paleta {
+  border: 1px solid transparent;
+  background:
+    linear-gradient(var(--surface), var(--surface)) padding-box,
+    linear-gradient(135deg, rgba(38, 201, 197, 0.6), rgba(123, 62, 147, 0.5)) border-box;
+  box-shadow: 0 30px 80px -20px rgba(8, 23, 38, 0.6);
+}
+.paleta-item.ativo {
+  background: linear-gradient(90deg, var(--accent-bg), transparent);
+  box-shadow: inset 2px 0 0 var(--teal-vivo);
+}
+
+/* ==========================================================================
+   Celular e movimento reduzido
+   ========================================================================== */
+@media (max-width: 860px) {
+  .painel-hero {
+    padding: 22px 18px 20px;
+    border-radius: 20px;
+  }
+  .painel-hero .painel-saudacao {
+    font-size: 24px;
+  }
+  .painel-conteudo .painel-secao {
+    padding: 18px 16px 20px;
+  }
+}
+@media (max-width: 560px) {
+  .painel-hero .painel-kpis {
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .painel-hero .painel-kpi:first-child {
+    grid-column: 1 / -1;
+  }
+  .painel-hero .painel-kpi {
+    padding: 14px 12px 12px;
+  }
+  .painel-hero .painel-kpi .painel-kpi-valor {
+    font-size: 19px;
+  }
+  .painel-kpi-icone {
+    width: 26px;
+    height: 26px;
+  }
+}
+
+/* Logo do painel de marca do login: mesmo clareamento da barra lateral. */
+.auth-painel-logo {
+  filter: brightness(2.15) saturate(0.95);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .painel-hero .painel-status-ponto {
+    animation: none;
+  }
+}
+
+/* ==========================================================================
+   Cores de dado: uma por categoria/canal/forma de pagamento (utils/cores.js)
+   --------------------------------------------------------------------------
+   Dez tons tirados da marca (roxo, turquesa, âmbar, azul, marinho) mais
+   quatro de apoio. No escuro clareiam para manter contraste com o marinho.
+   ========================================================================== */
+:root {
+  --dado-1: #7b3e93; /* roxo */
+  --dado-2: #17948f; /* turquesa */
+  --dado-3: #d39a2f; /* âmbar */
+  --dado-4: #1f5c93; /* azul */
+  --dado-5: #d0644f; /* coral */
+  --dado-6: #3a9a5b; /* verde */
+  --dado-7: #9d71c4; /* lilás */
+  --dado-8: #4c86c6; /* azul-claro */
+  --dado-9: #c2507f; /* rosa */
+  --dado-10: #5d7387; /* ardósia */
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --dado-1: #b77fd1;
+    --dado-2: #3fd0c9;
+    --dado-3: #f0bd5a;
+    --dado-4: #5aa7e8;
+    --dado-5: #f08a72;
+    --dado-6: #5cc983;
+    --dado-7: #c3a1ec;
+    --dado-8: #8fb6ff;
+    --dado-9: #ec82ad;
+    --dado-10: #9fb3c6;
+  }
+}
+:root[data-theme="dark"] {
+  --dado-1: #b77fd1;
+  --dado-2: #3fd0c9;
+  --dado-3: #f0bd5a;
+  --dado-4: #5aa7e8;
+  --dado-5: #f08a72;
+  --dado-6: #5cc983;
+  --dado-7: #c3a1ec;
+  --dado-8: #8fb6ff;
+  --dado-9: #ec82ad;
+  --dado-10: #9fb3c6;
+}
+
+/* Rosca + legenda */
+.rosca {
+  display: grid;
+  gap: 14px;
+}
+.rosca-grafico {
+  position: relative;
+}
+.rosca-centro {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  text-align: center;
+}
+.rosca-centro span {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+.rosca-centro strong {
+  font-family: var(--heading);
+  font-size: 18px;
+  color: var(--text-h);
+  font-variant-numeric: tabular-nums;
+}
+.rosca-legenda {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 7px;
+}
+.rosca-legenda li {
+  display: grid;
+  grid-template-columns: 10px minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 8px;
+  font-size: 13.5px;
+  color: var(--text-h);
+}
+.rosca-cor {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+}
+.rosca-nome {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rosca-pct {
+  font-family: var(--mono);
+  font-weight: 600;
+  font-size: 12.5px;
+}
+.rosca-valor {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text-3);
+  min-width: 9ch;
+  text-align: right;
+}
+/* No chat há espaço: rosca e legenda lado a lado. */
+.resultado-grafico .rosca {
+  grid-template-columns: minmax(200px, 260px) minmax(0, 1fr);
+  align-items: center;
+  gap: 24px;
+}
+@media (max-width: 560px) {
+  .resultado-grafico .rosca {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Cabeçalho da resposta: título + "Ver como" */
+.resultado-cabecalho {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.resultado-cabecalho .resultado-titulo {
+  margin: 0;
+}
+.ver-como {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-2);
+}
+.ver-como button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border: none;
+  border-radius: 7px;
+  background: none;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.ver-como button:hover {
+  color: var(--text-h);
+}
+.ver-como button.ativo {
+  background: var(--surface);
+  color: var(--accent);
+  box-shadow: var(--shadow-2);
+}
+.ver-como button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+@media (max-width: 560px) {
+  .ver-como button span {
+    display: none;
+  }
+}
+
+/* Comparação de períodos */
+.comparacao-delta {
+  margin: 0 0 6px;
+  font-size: 14.5px;
+  color: var(--text-h);
+}
+.comparacao-delta strong {
+  font-family: var(--mono);
+  padding: 1px 7px;
+  border-radius: 999px;
+}
+.comparacao-delta.positiva strong {
+  color: var(--ok-texto);
+  background: var(--ok-bg);
+}
+.comparacao-delta.negativa strong {
+  color: var(--erro-texto);
+  background: var(--erro-bg);
+}
+/* Na Início a rosca fica numa coluna estreita: total menor no centro. */
+.painel-secao .rosca-centro strong {
+  font-size: 14px;
+}
+.painel-secao .rosca-centro span {
+  font-size: 9.5px;
+}
+
+.aviso-grafico {
+  margin: 0 0 8px;
+  padding: 8px 12px;
+  border-radius: 9px;
+  font-size: 13px;
+  color: var(--accent-2-text);
+  background: var(--accent-2-bg);
+}
+
+/* Unidade dos rótulos, uma vez por gráfico ("Valores em R$ mil"). */
+.grafico-unidade {
+  margin: -6px 0 2px;
+  text-align: right;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-3);
+}

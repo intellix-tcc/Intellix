@@ -6,7 +6,11 @@
          sem o wordmark — a palavra "Intellix" viraria borrão a 16px e o nome
          já aparece no <title>. É só recorte, não uma versão redesenhada. -->
     <link rel="icon" type="image/png" href="/favicon.png" />
-    <link rel="apple-touch-icon" href="/favicon.png" />
+    <link rel="apple-touch-icon" href="/icone-192.png" />
+    <!-- Instalável como aplicativo (atalho na tela inicial / área de
+         trabalho), com a cor da marca na barra do sistema. -->
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="theme-color" content="#193e60" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
@@ -15,6 +19,7 @@
     <title>Intellix</title>
   </head>
   <body>
+    <noscript>O Intellix precisa de JavaScript ativado para funcionar.</noscript>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
