@@ -14,6 +14,7 @@ from app.importacao.etl import importar
 from app.importacao.leitor_excel import ErroImportacao
 from app.models import Pergunta, ResultSet
 from app.nlu.regras import RuleBasedNLU
+from app.periodo_dataset import ajustar_periodo, ano_referencia, tem_ano_explicito
 from app.resumo import montar_resumo
 from app.sql.executor import executar_template
 
@@ -138,6 +139,12 @@ def chat(pergunta: Pergunta, usuario: UsuarioAtual) -> ResultSet:
             # Dataset do usuário (vindo de uma importação) ou a base demo.
             # Só o dono consulta um dataset importado (ver acesso.py).
             empresa = resolver_empresa(conn, pergunta.empresa_id, usuario)
+            # Período por dataset: quando a pergunta NÃO cita um ano ("esse ano",
+            # "mês passado", "em março"), usa o ano mais recente dos dados DESSE
+            # dataset em vez do ANO_PADRAO fixo -- senão uma planilha de 2026
+            # respondia "sem resultado" (ver app/periodo_dataset.py).
+            if not tem_ano_explicito(pergunta.pergunta):
+                interpretacao = ajustar_periodo(interpretacao, ano_referencia(conn, empresa))
             return executar_template(interpretacao, empresa, conn)
     except psycopg.OperationalError:
         raise HTTPException(
