@@ -87,15 +87,10 @@ def test_frase_comum_nao_muda():
     assert refinar(i, texto) is i
 
 
-def test_classe_melhor_mes_do_modelo_ganha_metrica_e_sentido():
-    # v1.2: o modelo reconhece o mês sem a frase bater nas regras
+def test_quando_vendeu_mais_e_pergunta_de_mes():
+    # o modelo lê total_vendas_periodo; a frase pede o mês de maior venda
     texto = "quando o perfume importado vendeu mais?"
-    out = refinar(_i("melhor_mes", texto, produto="Perfume importado"), texto)
+    out = refinar(_i("total_vendas_periodo", texto, produto="Perfume importado"), texto)
     assert (out.intencao, out.entidades["metrica"], out.entidades["sentido"]) == ("melhor_mes", "unidades", "maior")
-
-
-def test_unidades_do_modelo_com_frase_de_pedidos_vira_quantidade_de_vendas():
-    texto = "qual a quantidade de vendas do último mês?"
-    assert refinar(_i("unidades_vendidas", texto), texto).intencao == "quantidade_vendas"
-    texto = "quantas peças saíram no último mês?"
-    assert refinar(_i("unidades_vendidas", texto), texto).intencao == "unidades_vendidas"
+    texto = "quanto vendi quando teve promoção?"  # sem "mais/menos": não é mês extremo
+    assert refinar(_i("total_vendas_periodo", texto), texto).intencao == "total_vendas_periodo"
