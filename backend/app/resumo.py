@@ -21,7 +21,7 @@ testada sem DATABASE_URL -- ver tests/test_resumo.py.
 from __future__ import annotations
 
 import calendar
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from typing import Any
 from zoneinfo import ZoneInfo
 
@@ -69,13 +69,18 @@ def limites_mes(ano: int, mes: int) -> tuple[date, date]:
 
 
 def escolher_mes(meses: list[tuple[int, int]], hoje: date) -> tuple[int, int]:
-    """Mês padrão do painel: o mais recente com dados que já começou.
+    """Mês padrão do painel: o mais recente com dados que já TERMINOU.
 
-    `meses` vem do mais recente para o mais antigo. Uma planilha (ou a base
-    de demonstração) pode ter datas futuras; abrir o painel num mês que ainda
-    não aconteceu confundiria mais do que ajudaria.
+    `meses` vem do mais recente para o mais antigo. Abrir no mês corrente
+    comparava 4 dias de novembro com outubro inteiro ("-90%"), o que assusta
+    sem motivo; o mês em andamento continua disponível no seletor, com
+    comparação justa (ver `montar_resumo`). Datas futuras (planilha ou base
+    de demonstração) também ficam de fora do padrão.
     """
     for ano, mes in meses:
+        if limites_mes(ano, mes)[1] <= hoje:
+            return ano, mes
+    for ano, mes in meses:  # só há o mês corrente (ou futuros)
         if date(ano, mes, 1) <= hoje:
             return ano, mes
     return meses[-1]  # tudo no futuro: o mais próximo de hoje
@@ -170,8 +175,8 @@ order by faturamento desc
 # Faturamento por produto no mês e no anterior, numa passada só.
 SQL_PRODUTOS = """
 select p.nome,
-       coalesce(sum(f.valor_total) filter (where d.data >= %(inicio)s), 0) as atual,
-       coalesce(sum(f.valor_total) filter (where d.data <  %(inicio)s), 0) as anterior
+       coalesce(sum(f.valor_total) filter (where d.data >= %(inicio)s and d.data < %(fim)s), 0) as atual,
+       coalesce(sum(f.valor_total) filter (where d.data >= %(ant_inicio)s and d.data < %(ant_fim)s), 0) as anterior
 from fato_item_venda f
 join dim_data d on d.id = f.data_id
 join dim_produto p on p.id = f.produto_id
@@ -260,6 +265,7 @@ def gerar_observacoes(
     sem_giro: int,
     canais: list[dict[str, Any]],
     dias_semana: tuple[int, int] | None,
+    parcial: bool = False,
 ) -> list[dict[str, Any]]:
     """Observações do mês, cada uma ligada a uma pergunta que o chat entende.
 
@@ -273,9 +279,10 @@ def gerar_observacoes(
     var_fat = variacao(kpi_atual["faturamento"], kpi_anterior["faturamento"])
     if var_fat is not None and abs(var_fat) >= VARIACAO_RELEVANTE_PCT:
         sentido = "acima" if var_fat > 0 else "abaixo"
+        referencia = f"do mesmo período de {nome_ant}" if parcial else f"de {nome_ant}"
         obs.append({
             "tipo": "alta" if var_fat > 0 else "queda",
-            "texto": f"Faturamento {pct(var_fat)}% {sentido} de {nome_ant}.",
+            "texto": f"Faturamento {pct(var_fat)}% {sentido} {referencia}.",
             # Pergunta de faturamento, não de comparação: na avaliação das
             # 100 perguntas (docs/avaliacao-100-perguntas.md) o modelo acerta
             # comparacao_periodos em 2/7; total_vendas_periodo é confiável.
@@ -295,7 +302,7 @@ def gerar_observacoes(
         nome, v = max(altas, key=lambda x: x[1])
         obs.append({
             "tipo": "alta",
-            "texto": f"{nome} cresceu {pct(v)}% sobre {nome_ant}.",
+            "texto": f"{nome} cresceu {pct(v)}% sobre {'o mesmo período de ' if parcial else ''}{nome_ant}.",
             "pergunta": f"Quais os 5 produtos mais vendidos em {rotulo}?",
         })
 
@@ -305,7 +312,7 @@ def gerar_observacoes(
         nome, v = min(quedas, key=lambda x: x[1])
         obs.append({
             "tipo": "queda",
-            "texto": f"{nome} caiu {pct(v)}% em relação a {nome_ant}.",
+            "texto": f"{nome} caiu {pct(v)}% em relação {'ao mesmo período de' if parcial else 'a'} {nome_ant}.",
             "pergunta": f"Quais os 10 produtos mais vendidos em {rotulo}?",
         })
 
@@ -349,12 +356,15 @@ def gerar_resumo_texto(
     kpi_anterior: dict[str, float],
     categorias: list[dict[str, Any]],
     top_produtos: list[dict[str, Any]],
+    ate_dia: int | None = None,
 ) -> list[str]:
-    """Dois parágrafos curtos montados só com os números calculados."""
+    """Dois parágrafos curtos montados só com os números calculados.
+    `ate_dia`: mês em andamento, contado até esse dia."""
     fat = kpi_atual["faturamento"]
     vendas = kpi_atual["vendas"]
+    quando = rotulo_mes(ano, mes) + (f" (até o dia {ate_dia})" if ate_dia else "")
     if not vendas:
-        return [f"Não houve vendas registradas em {rotulo_mes(ano, mes)}."]
+        return [f"Não houve vendas registradas em {quando}."]
 
     ticket = fat / vendas
     _, mes_ant = mes_anterior(ano, mes)
@@ -362,17 +372,18 @@ def gerar_resumo_texto(
 
     qtd = f"{vendas:,}".replace(",", ".")
     primeiro = (
-        f"Em {rotulo_mes(ano, mes)}, a loja faturou {moeda(fat)} em {qtd} "
+        f"Em {quando}, a loja faturou {moeda(fat)} em {qtd} "
         f"{'venda' if vendas == 1 else 'vendas'}, com ticket médio de {moeda(ticket)}"
     )
     var_fat = variacao(fat, kpi_anterior["faturamento"])
+    referencia = f"do mesmo período de {nome_ant}" if ate_dia else f"de {nome_ant}"
     if var_fat is None:
         primeiro += "."
     elif abs(var_fat) < 0.5:
-        primeiro += f", praticamente o mesmo de {nome_ant}."
+        primeiro += f", praticamente o mesmo {referencia}."
     else:
         sentido = "acima" if var_fat > 0 else "abaixo"
-        primeiro += f": {pct(var_fat)}% {sentido} de {nome_ant}."
+        primeiro += f": {pct(var_fat)}% {sentido} {referencia}."
 
     paragrafos = [primeiro]
 
@@ -429,16 +440,26 @@ def montar_resumo(
 
     inicio, fim = limites_mes(ano, mes)
     ano_ant, mes_ant = mes_anterior(ano, mes)
-    ant_inicio, _ = limites_mes(ano_ant, mes_ant)
+    ant_inicio, ant_fim = limites_mes(ano_ant, mes_ant)
     tri_inicio, _ = limites_mes(*mes_anterior(ano, mes, 3))
+
+    # Mês em andamento: conta só até hoje e compara com os mesmos dias do mês
+    # anterior. Sem isso, 4 dias de novembro contra outubro inteiro viravam
+    # "faturamento 90% abaixo".
+    parcial = inicio <= hoje < fim
+    dias_contados = calendar.monthrange(ano, mes)[1]
+    if parcial:
+        dias_contados = hoje.day
+        fim = hoje + timedelta(days=1)
+        ant_fim = min(ant_inicio + timedelta(days=dias_contados), ant_fim)
+
     base = {"empresa_id": empresa_id, "inicio": inicio, "fim": fim}
 
     kpi_atual = _kpis(conn, empresa_id, inicio, fim)
-    kpi_anterior = _kpis(conn, empresa_id, ant_inicio, inicio)
+    kpi_anterior = _kpis(conn, empresa_id, ant_inicio, ant_fim)
 
     por_dia = {int(d): _num(v) for d, v in conn.execute(SQL_DIARIO, base).fetchall()}
-    dias_no_mes = calendar.monthrange(ano, mes)[1]
-    serie_diaria = [{"dia": d, "valor": round(por_dia.get(d, 0.0), 2)} for d in range(1, dias_no_mes + 1)]
+    serie_diaria = [{"dia": d, "valor": round(por_dia.get(d, 0.0), 2)} for d in range(1, dias_contados + 1)]
 
     serie_mensal = []
     for passos in range(11, -1, -1):
@@ -453,7 +474,9 @@ def montar_resumo(
 
     produtos = [
         (nome, _num(a), _num(b))
-        for nome, a, b in conn.execute(SQL_PRODUTOS, {**base, "ant_inicio": ant_inicio}).fetchall()
+        for nome, a, b in conn.execute(
+            SQL_PRODUTOS, {**base, "ant_inicio": ant_inicio, "ant_fim": ant_fim}
+        ).fetchall()
     ]
     total_fat = kpi_atual["faturamento"]
     top_produtos = [
@@ -467,7 +490,11 @@ def montar_resumo(
         if a > 0
     ]
 
-    sem_giro = int(conn.execute(SQL_SEM_GIRO, {**base, "tri_inicio": tri_inicio}).fetchone()[0])
+    # "Sem saída no mês" e "melhor dia da semana" só fazem sentido com o mês
+    # fechado: no dia 4, quase todo produto ainda "não vendeu".
+    sem_giro = 0 if parcial else int(
+        conn.execute(SQL_SEM_GIRO, {**base, "tri_inicio": tri_inicio}).fetchone()[0]
+    )
 
     ticket = kpi_atual["faturamento"] / kpi_atual["vendas"] if kpi_atual["vendas"] else 0.0
     ticket_ant = kpi_anterior["faturamento"] / kpi_anterior["vendas"] if kpi_anterior["vendas"] else None
@@ -489,21 +516,28 @@ def montar_resumo(
         ano=ano, mes=mes,
         kpi_atual=kpi_atual, kpi_anterior=kpi_anterior,
         produtos=produtos, sem_giro=sem_giro, canais=canais,
-        dias_semana=melhor_e_pior_dia_semana(ano, mes, por_dia),
+        dias_semana=None if parcial else melhor_e_pior_dia_semana(ano, mes, por_dia),
+        parcial=parcial,
     )
     resumo_texto = gerar_resumo_texto(
         ano=ano, mes=mes, kpi_atual=kpi_atual, kpi_anterior=kpi_anterior,
         categorias=categorias, top_produtos=top_produtos,
+        ate_dia=dias_contados if parcial else None,
     )
 
     return {
         "periodo": {
             "ano": ano, "mes": mes, "rotulo": rotulo_mes(ano, mes),
             "inicio": inicio.isoformat(), "fim": date.fromordinal(fim.toordinal() - 1).isoformat(),
+            # mês em andamento: dados até `fim` (hoje), comparação com os
+            # mesmos dias do mês anterior
+            "parcial": parcial,
         },
         "periodo_anterior": {"ano": ano_ant, "mes": mes_ant, "rotulo": rotulo_mes(ano_ant, mes_ant)},
         "meses_disponiveis": [
-            {"ano": a, "mes": m, "rotulo": rotulo_mes(a, m)} for a, m in meses[:36]
+            {"ano": a, "mes": m, "rotulo": rotulo_mes(a, m),
+             "parcial": limites_mes(a, m)[0] <= hoje < limites_mes(a, m)[1]}
+            for a, m in meses[:36]
         ],
         "kpis": kpis,
         "serie_diaria": serie_diaria,
