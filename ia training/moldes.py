@@ -557,11 +557,13 @@ MOLDES = {
 #   - detalhe de produto em perguntas de vendedor/cliente/canal
 #     ("qual vendedor mais vendeu {produto}");
 #   - "quantas peças/unidades de {produto}" (contagem de itens, não de pedidos);
-#   - "qual mês vendeu mais/menos" (não havia classe para isso).
-# Duas intenções novas, que já existiam no backend como refino por regra
-# (app/refino.py) e agora o modelo reconhece sozinho:
-#   - unidades_vendidas -> template de soma de quantidade
-#   - melhor_mes        -> mês de maior/menor venda no período
+#   - "qual mês vendeu mais/menos".
+# As 12 intenções continuam as mesmas. Cada frase nova entra na intenção que
+# já a responde, e o backend (app/refino.py) faz o detalhe da resposta:
+#   - "quantas peças/unidades de {produto}" -> quantidade_vendas
+#     (o refino troca a contagem de pedidos pela soma de peças)
+#   - "qual mês vendeu mais/menos"          -> total_vendas_periodo
+#     (o refino devolve o mês campeão, com a série mensal em destaque)
 # As 100 perguntas de validação continuam fora do treino (filtro do gerador).
 
 VALORES["produto"] += [
@@ -572,15 +574,8 @@ VALORES["produto"] += [
 ]
 VALORES["categoria"] += ["alimentos", "casa", "acessorios", "calcados"]
 
-# "quantas unidades de {produto}" era quantidade_vendas; passa à classe nova.
-MOLDES["quantidade_vendas"] = [
-    m for m in MOLDES["quantidade_vendas"]
-    if m not in ("quantas unidades de {produto} vendi em {periodo}", "quantos {produto} vendi em {periodo}")
-]
-
-MOLDES["unidades_vendidas"] = [
-    "quantas unidades de {produto} vendi em {periodo}",
-    "quantos {produto} vendi em {periodo}",
+# Contagem de peças: mesma intenção da contagem de vendas (quantidade_vendas).
+MOLDES["quantidade_vendas"] += [
     "quantas unidades vendemos em {periodo}",
     "quantas unidades vendi no {periodo}",
     "quantos itens saíram em {periodo}",
@@ -613,7 +608,9 @@ MOLDES["unidades_vendidas"] = [
     "a gente vendeu quantas peças de {categoria} {periodo}",
 ]
 
-MOLDES["melhor_mes"] = [
+# Mês de maior/menor venda: é uma pergunta sobre o faturamento mês a mês
+# (total_vendas_periodo).
+MOLDES["total_vendas_periodo"] += [
     "qual mês vendeu mais em {periodo}",
     "qual foi o melhor mês de {periodo}",
     "qual mês foi o pior em {periodo}",
@@ -774,5 +771,5 @@ TIPOS_ENTIDADE = ["PERIODO", "DATA", "PRODUTO", "CATEGORIA", "CLIENTE",
                   "VENDEDOR", "CANAL", "PAGAMENTO", "NUMERO"]
 TAGS = ["O"] + [f"{bi}-{ent}" for ent in TIPOS_ENTIDADE for bi in ("B", "I")]
 
-assert len(INTENCOES) == 14, f"Esperado 14 intenções, achei {len(INTENCOES)}"
+assert len(INTENCOES) == 12, f"Esperado 12 intenções, achei {len(INTENCOES)}"
 assert len(TAGS) == 19, f"Esperado 19 tags, achei {len(TAGS)}"

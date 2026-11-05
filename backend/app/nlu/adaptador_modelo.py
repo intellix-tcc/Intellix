@@ -2,7 +2,7 @@
 
 Divisão de trabalho:
   - o MODELO (ModeloIntellix.prever) decide a INTENÇÃO — é o forte dele,
-    cobre as 14 intenções (o RuleBasedNLU só cobre 3);
+    cobre as 12 intenções (o RuleBasedNLU só cobre 3);
   - as REGRAS determinísticas (reaproveitadas de regras.py) RESOLVEM os
     slots que os templates exigem (mês -> datas ISO, limite, vendedor_nome).
 
@@ -235,7 +235,7 @@ def _periodo_relativo(texto: str) -> dict[str, str] | None:
 
 
 # ---- item 6: filtro de domínio antes de aceitar a classificação -------------
-# Um classificador fechado em 14 classes sempre escolhe uma delas, e às vezes
+# Um classificador fechado em 12 classes sempre escolhe uma delas, e às vezes
 # com confiança alta ("capital da França" saiu como variacao_periodo a 0,92).
 # Exigimos ao menos um termo do domínio (venda, faturamento, produto...) antes
 # de aceitar — o mesmo efeito que já protege o baseline de regras.
@@ -308,8 +308,9 @@ class ModeloTreinadoNLU:
         if caminho_pt is None:
             base = os.path.dirname(__file__)
             # v1.2.0: moldes v3 (períodos relativos, detalhe de produto em
-            # vendedor/cliente/canal, e as classes unidades_vendidas e
-            # melhor_mes): 93,3% vs 85,6% do v1.1.0 nas 90 perguntas offline.
+            # vendedor/cliente/canal, contagem de peças e mês de maior venda,
+            # nas mesmas 12 intenções): 92,2% vs 85,6% do v1.1.0 nas 90
+            # perguntas offline.
             # O v1.1.0 continua no repositório: NLU_MODELO aponta para ele.
             caminho_pt = os.path.join(base, "intellix_nlu_v1.2.0.pt")
         self._modelo = ModeloIntellix(caminho_pt)

@@ -29,6 +29,7 @@ from app.nlu.adaptador_modelo import _periodo_relativo
 _MES_EXTREMO = re.compile(
     r"\b(?:qual|que|em\s+que|em\s+qual)\s+(?:foi\s+|e\s+|era\s+)?(?:o\s+)?mes\b"
     r"|\b(?:melhor|pior)\s+mes\b"
+    r"|\bquando\b(?!.*\bmes\s+(?:passado|anterior)\b)"
     r"|\bmes\s+(?:que|com|de|em\s+que)\s+(?:a\s+gente\s+|eu\s+|nos\s+|mais\s+|menos\s+)?"
     r"(?:mais|menos|maior|menor|vend|fatur)",
 )
@@ -98,10 +99,9 @@ def refinar(interp: Interpretacao, texto: str) -> Interpretacao:
     ent = dict(interp.entidades)
     intencao = interp.intencao
 
-    # 1) "qual mês mais/menos vendeu ..." — a classe melhor_mes do modelo (v1.2+)
-    #    ou a frase explícita, qualquer que seja a classe que o modelo escolheu;
-    #    o período vira um só (o modelo pode ter lido dois).
-    if mes_extremo or intencao == "melhor_mes":
+    # 1) "qual mês mais/menos vendeu ..." — vale qualquer que seja a classe que o
+    #    modelo escolheu; o período vira um só (o modelo pode ter lido dois).
+    if mes_extremo:
         if not _um_periodo(ent):
             ent = {k: v for k, v in ent.items() if not k.startswith("periodo_")}
             ent.update(_periodo_da_frase(t))
@@ -127,11 +127,6 @@ def refinar(interp: Interpretacao, texto: str) -> Interpretacao:
             intencao = "unidades_vendidas"  # "quantas botas pelo site?"
         else:
             intencao = "total_vendas_periodo"
-
-    # 3a) o modelo leu "unidades", mas a frase conta pedidos: "quantidade de
-    #     vendas", "quantos pedidos" -> quantidade_vendas
-    elif intencao == "unidades_vendidas" and _QUANTAS_PEDIDOS.search(t):
-        intencao = "quantidade_vendas"
 
     # 3) "quantas botas", "quantas unidades", "quantos itens"
     elif intencao in ("quantidade_vendas", "total_vendas_periodo", "top_produtos") and (

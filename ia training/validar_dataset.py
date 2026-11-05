@@ -111,7 +111,7 @@ def validar(caminho: Path) -> bool:
     print(f"Validando: {caminho}")
     print(f"{'='*60}")
     print(f"Exemplos: {len(exemplos)}")
-    print(f"Intenções: {len(intencoes_vistas)}/{len(INTENCOES)}")
+    print(f"Intenções: {len(intencoes_vistas)}/12")
     print(f"Tags usadas: {len(tags_vistas & set(TAGS))}/19")
     tam = [len(ex["tokens"]) for ex in exemplos if "tokens" in ex]
     if tam:

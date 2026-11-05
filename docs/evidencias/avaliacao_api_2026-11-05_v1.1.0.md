@@ -1,6 +1,6 @@
 # Avaliação das 100 perguntas — modo `api`
 
-- **Data:** 05/11/2026 16:14 (UTC+0000)
+- **Data:** 05/11/2026 16:20 (UTC+0000)
 - **Alvo:** http://127.0.0.1:8001
 - **Ambiente do executor:** Linux 6.18.44-fc-v236 · Python 3.13.18
 - **Perguntas avaliadas:** 100
@@ -30,7 +30,7 @@
 
 | Mediana | p95 | Máxima | Média | Abaixo de 3 s |
 |---:|---:|---:|---:|---:|
-| 23 ms | 37 ms | 69 ms | 23 ms | 100/100 (100.0%) |
+| 18 ms | 29 ms | 58 ms | 18 ms | 100/100 (100.0%) |
 
 ## Erros
 
