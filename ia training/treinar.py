@@ -82,7 +82,7 @@ def construir_mapas(treino, dados):
     for t in TIPOS:
         tag2id[f"B-{t}"] = len(tag2id)
         tag2id[f"I-{t}"] = len(tag2id)
-    assert len(intent2id) == 12 and len(tag2id) == 19
+    assert len(intent2id) == 14 and len(tag2id) == 19
     return vocab, intent2id, tag2id
 
 

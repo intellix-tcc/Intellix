@@ -4,9 +4,9 @@ escolhe qual chave deste dicionario usar e preenche os %(...)s, que o
 psycopg parametriza -- nunca f-string/concatenacao.
 
 Nomes de tabela/coluna conferidos contra o schema real do Supabase (B7/B8).
-As 12 primeiras chaves batem com as 12 intencoes definidas em `ia training/moldes.py`;
-unidades_vendidas e melhor_mes sao refinamentos (app/refino.py) sobre a
-intencao que o modelo escolheu, sem retreino.
+As 14 chaves batem com as 14 intencoes de `ia training/moldes.py`
+(unidades_vendidas e melhor_mes entraram no modelo v1.2.0; app/refino.py
+tambem chega nelas por regra, como rede de seguranca).
 
 Convencao para parametros `*_nome` (busca por nome, ex.: vendedor_nome): quem
 monta `entidades` (NLU) e responsavel por já vir com os `%` do ILIKE, ex.:
