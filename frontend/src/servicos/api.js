@@ -1,5 +1,6 @@
 import { obterToken } from "./auth";
 import { datasetAtivo } from "../utils/dataset";
+import { resumoDeExemplo } from "../utils/resumoExemplo";
 
 const API = import.meta.env.VITE_API_URL;
 const MOCK = import.meta.env.VITE_MOCK === "true";
@@ -95,7 +96,6 @@ export async function buscarResumo({ ano, mes } = {}) {
   let dados;
   if (MOCK) {
     await new Promise((r) => setTimeout(r, 500));
-    const { resumoDeExemplo } = await import("../utils/resumoExemplo");
     dados = resumoDeExemplo({ ano, mes });
   } else {
     const dataset = datasetAtivo();

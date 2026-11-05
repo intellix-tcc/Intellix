@@ -4626,3 +4626,35 @@ kbd {
   padding-left: 0;
   align-items: flex-start;
 }
+
+/* Troca de página enquanto o arquivo dela chega (code splitting). Aparece
+   com atraso: em conexão boa a página chega antes e nada pisca. */
+.carregando-pagina {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 50vh;
+  animation: aparecer-tarde 0.2s ease 0.25s both;
+}
+.carregando-pagina-anel {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 3px solid var(--border);
+  border-top-color: var(--accent);
+  animation: girar 0.8s linear infinite;
+}
+@keyframes girar {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes aparecer-tarde {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
