@@ -163,6 +163,12 @@ export default function Sobre({ onIrParaImportar }) {
           Importar dados
         </button>
       </section>
+
+      <nav className="sobre-links anima-entrada" aria-label="Links institucionais">
+        <a href="#/faq">Perguntas frequentes</a>
+        <a href="#/termos">Termos de uso</a>
+        <a href="#/contato">Fale conosco</a>
+      </nav>
     </div>
   );
 }

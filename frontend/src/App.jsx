@@ -8,17 +8,25 @@ import Sobre from "./paginas/Sobre";
 import Chat from "./paginas/Chat";
 import Perfil from "./paginas/Perfil";
 import Importar from "./paginas/Importar";
+import Faq from "./paginas/Faq";
+import Termos from "./paginas/Termos";
+import FaleConosco from "./paginas/FaleConosco";
+import CascaPublica from "./componentes/CascaPublica";
+import { ROTAS_PUBLICAS } from "./utils/contato";
 import { carregarSessao, encerrarSessao, sessaoExpirou } from "./servicos/auth";
 import { carregarConversas, salvarConversas, novoId, tituloFromPergunta } from "./utils/historico";
 import "./estilos/App.css";
 
-const ROTAS = ["home", "chat", "importar", "sobre", "perfil"];
+const ROTAS = ["home", "chat", "importar", "sobre", "perfil", ...ROTAS_PUBLICAS];
 const TITULOS = {
   home: "Início",
   chat: "Perguntar",
   importar: "Importar dados",
   sobre: "Sobre",
   perfil: "Meu perfil",
+  faq: "Perguntas frequentes",
+  termos: "Termos de uso",
+  contato: "Fale conosco",
 };
 
 const MSG_EXPIRADA = "Sua sessão expirou por inatividade. Entre de novo para continuar.";
@@ -231,6 +239,15 @@ export default function App() {
   // Guarda de rota: sem sessão, nenhuma tela interna renderiza. O hash é
   // preservado, então depois de entrar a pessoa cai na página que pediu.
   if (!usuario) {
+    // FAQ, Termos e Fale conosco abrem sem login (os Termos são lidos antes
+    // do cadastro). Qualquer outra rota cai na vitrine/login.
+    if (ROTAS_PUBLICAS.includes(rota)) {
+      return (
+        <CascaPublica rota={rota} tema={tema} onAlternarTema={alternarTema}>
+          <PaginaInstitucional rota={rota} usuario={null} />
+        </CascaPublica>
+      );
+    }
     return (
       <Login onEntrar={aoEntrar} aviso={avisoSessao} tema={tema} onAlternarTema={alternarTema} />
     );
@@ -300,6 +317,9 @@ export default function App() {
           {rota === "perfil" && (
             <Perfil usuario={usuario} onAtualizar={setUsuario} onSair={sair} />
           )}
+          {ROTAS_PUBLICAS.includes(rota) && (
+            <PaginaInstitucional rota={rota} usuario={usuario} />
+          )}
           {rota === "chat" && (
             <Chat
               mensagens={mensagens}
@@ -314,4 +334,10 @@ export default function App() {
       </div>
     </div>
   );
+}
+
+function PaginaInstitucional({ rota, usuario }) {
+  if (rota === "faq") return <Faq />;
+  if (rota === "termos") return <Termos />;
+  return <FaleConosco usuario={usuario} />;
 }

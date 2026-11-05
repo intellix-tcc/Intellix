@@ -4,12 +4,16 @@ import Icone from "./Icone";
 import PainelHistorico from "./PainelHistorico";
 
 // Navegação curta de propósito. "Importar dados" é a porta para subir a
-// planilha de vendas; Perfil está logo abaixo, no rodapé.
+// planilha de vendas; Perfil está logo abaixo, no rodapé. Termos de uso
+// não ocupa item próprio: fica a um clique a partir de Ajuda, Fale conosco
+// e Sobre.
 const NAV = [
   { rota: "home", href: "#/", rotulo: "Início", icone: "inicio" },
   { rota: "chat", href: "#/chat", rotulo: "Perguntar", icone: "perguntar" },
   { rota: "importar", href: "#/importar", rotulo: "Importar dados", icone: "importar" },
   { rota: "sobre", href: "#/sobre", rotulo: "Sobre", icone: "sobre" },
+  { rota: "faq", href: "#/faq", rotulo: "Ajuda", icone: "ajuda" },
+  { rota: "contato", href: "#/contato", rotulo: "Fale conosco", icone: "envelope" },
 ];
 
 // A partir daqui a lista de conversas passa a valer mais que o respiro da
