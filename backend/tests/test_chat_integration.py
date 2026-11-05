@@ -50,3 +50,18 @@ def test_valores_decimais_viram_float_serializavel():
     assert r.status_code == 200
     valor = r.json()["linhas"][0][0]
     assert isinstance(valor, float)
+
+
+def test_resumo_do_mes_com_dados():
+    r = client.get("/resumo", params={"ano": 2024, "mes": 3})
+    assert r.status_code == 200
+    dados = r.json()
+    assert dados["periodo"]["rotulo"] == "março de 2024"
+    assert len(dados["serie_diaria"]) == 31
+    assert len(dados["serie_mensal"]) == 12
+    assert dados["kpis"][0]["chave"] == "faturamento"
+    assert isinstance(dados["kpis"][0]["valor"], float)
+
+
+def test_resumo_mes_invalido():
+    assert client.get("/resumo", params={"mes": 13}).status_code == 422
