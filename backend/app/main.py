@@ -60,6 +60,56 @@ def health():
     return {"status": "ok"}
 
 
+# Exemplos de pergunta por intenção, para o frontend exibir sugestões e deixar
+# claro o que o agente responde (melhoria: dizer o que ele sabe e o que não
+# sabe). As 12 chaves batem com os títulos de sql/templates.py.
+_EXEMPLOS_POR_INTENCAO: dict[str, list[str]] = {
+    "total_vendas_periodo": ["Quanto faturei em março de 2024?", "Qual o faturamento de 2024?"],
+    "top_produtos": ["Quais os 5 produtos mais vendidos?", "Top 3 produtos de março de 2024?"],
+    "ticket_medio": ["Qual o ticket médio em 2024?", "Ticket médio de janeiro de 2024?"],
+    "quantidade_vendas": ["Quantas vendas tiveram em março de 2024?", "Número de vendas em 2024?"],
+    "top_clientes": ["Quais os 5 clientes que mais compraram em 2024?", "Top 10 clientes do ano?"],
+    "desempenho_vendedor": ["Como foi o desempenho da Fernanda em março?", "Quanto o vendedor Carlos vendeu em 2024?"],
+    "produtos_sem_saida": ["Quais produtos não venderam em 2024?", "Produtos parados em março de 2024?"],
+    "comparacao_periodos": ["Compare o faturamento de março com abril de 2024.", "Vendas de 2023 versus 2024?"],
+    "variacao_periodo": ["Qual a variação do faturamento de março para abril de 2024?", "Quanto cresceu em relação ao ano passado?"],
+    "vendas_por_canal": ["Quanto vendi por canal em 2024?", "Qual canal vendeu mais esse ano?"],
+    "vendas_por_categoria": ["Quais categorias mais venderam em 2024?", "Faturamento por categoria em março de 2024?"],
+    "vendas_por_pagamento": ["Vendas por forma de pagamento em 2024?", "Quanto foi pago no pix em março de 2024?"],
+}
+
+_LIMITACOES = [
+    "Só respondo sobre os dados de vendas carregados (base demo ou planilha importada).",
+    "Não faço previsões nem recomendações — só o que já aconteceu nos dados.",
+    "Não respondo perguntas fora de vendas (clima, geografia, conversas gerais).",
+    "Preciso de um período claro (mês, ano ou trimestre) na maioria das perguntas.",
+    "Busco vendedor, produto e cliente por nome; nomes que não existem na base retornam 'sem resultado'.",
+]
+
+
+@app.get("/capacidades")
+def capacidades() -> dict:
+    """O que o agente sabe responder (com exemplos) e o que está fora de
+    escopo. Serve para o frontend montar sugestões e orientar o usuário."""
+    from app.sql.templates import TEMPLATES
+
+    intencoes = [
+        {
+            "chave": chave,
+            "titulo": TEMPLATES[chave]["titulo"],
+            "exemplos": exemplos,
+        }
+        for chave, exemplos in _EXEMPLOS_POR_INTENCAO.items()
+        if chave in TEMPLATES
+    ]
+    return {
+        "total_intencoes": len(intencoes),
+        "intencoes": intencoes,
+        "limitacoes": _LIMITACOES,
+        "dica": "Inclua sempre um período (ex.: 'em março de 2024' ou 'em 2024').",
+    }
+
+
 @app.post("/chat", response_model=ResultSet)
 def chat(pergunta: Pergunta) -> ResultSet:
     interpretacao = nlu.parse(pergunta.pergunta)
