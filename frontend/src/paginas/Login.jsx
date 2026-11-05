@@ -13,6 +13,7 @@ import { DIFERENCIAIS } from "../utils/diferenciais";
 import Logo from "../componentes/Logo";
 import Icone from "../componentes/Icone";
 import CampoSenha from "../componentes/CampoSenha";
+import { RodapeInstitucional } from "../componentes/CascaPublica";
 
 const FATURAMENTO_EXEMPLO = RESUMO_EXEMPLO.kpis[0];
 
@@ -43,7 +44,7 @@ const TEXTOS = {
   },
 };
 
-const VAZIO = { nome: "", email: "", senha: "", confirmarSenha: "" };
+const VAZIO = { nome: "", email: "", senha: "", confirmarSenha: "", aceiteTermos: false };
 
 // Resultado do link de recuperação de senha (ver auth.js). Lido uma vez: a
 // tela abre direto no passo certo quando a pessoa chega pelo e-mail.
@@ -110,6 +111,7 @@ export default function Login({ onEntrar, aviso, tema, onAlternarTema }) {
       if (!novos.senha && campos.senha !== campos.confirmarSenha) {
         novos.confirmarSenha = "As senhas não coincidem.";
       }
+      novos.aceiteTermos = campos.aceiteTermos ? "" : "Para criar a conta, aceite os Termos de uso.";
     } else if (modo === "entrar") {
       novos.email = validarEmail(campos.email);
       novos.senha = campos.senha ? "" : "Digite sua senha.";
@@ -290,10 +292,7 @@ export default function Login({ onEntrar, aviso, tema, onAlternarTema }) {
             </button>
           </section>
 
-          <footer className="landing-rodape">
-            <Logo variante="simbolo" largura={18} />
-            <p>Intellix, protótipo acadêmico (TCC de Ciência da Computação, UNIP).</p>
-          </footer>
+          <RodapeInstitucional />
         </div>
       </div>
     );
@@ -464,6 +463,34 @@ export default function Login({ onEntrar, aviso, tema, onAlternarTema }) {
                 autoComplete="new-password"
                 disabled={carregando}
               />
+            )}
+
+            {/* Aceite obrigatório. Os links abrem em outra aba para não
+                perder o que já foi digitado no formulário. */}
+            {modo === "registrar" && (
+              <div className={`auth-aceite${erros.aceiteTermos ? " com-erro" : ""}`}>
+                <label className="auth-aceite-rotulo">
+                  <input
+                    type="checkbox"
+                    checked={campos.aceiteTermos}
+                    onChange={(e) => mudar("aceiteTermos", e.target.checked)}
+                    disabled={carregando}
+                    aria-invalid={Boolean(erros.aceiteTermos)}
+                  />
+                  <span>
+                    Li e aceito os{" "}
+                    <a href="#/termos" target="_blank" rel="noopener noreferrer">
+                      Termos de uso
+                    </a>
+                    .
+                  </span>
+                </label>
+                {erros.aceiteTermos && (
+                  <span className="auth-campo-erro" role="alert">
+                    {erros.aceiteTermos}
+                  </span>
+                )}
+              </div>
             )}
 
             {erroGeral && (

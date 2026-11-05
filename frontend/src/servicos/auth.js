@@ -17,6 +17,7 @@
 //                           É pública por natureza; NUNCA use a service_role.
 import * as simulado from "./authSimulado";
 import { limparDataset } from "../utils/dataset";
+import { TERMOS_VERSAO } from "../utils/contato";
 import {
   normalizarEmail,
   normalizarNome,
@@ -275,8 +276,8 @@ export async function obterToken() {
 // Ações das telas
 // ---------------------------------------------------------------------------
 
-export async function registrar({ nome, email, senha, confirmarSenha }) {
-  if (MOCK) return simulado.registrar({ nome, email, senha, confirmarSenha });
+export async function registrar({ nome, email, senha, confirmarSenha, aceiteTermos }) {
+  if (MOCK) return simulado.registrar({ nome, email, senha, confirmarSenha, aceiteTermos });
 
   const erroNome = validarNome(nome);
   if (erroNome) throw erro(erroNome, "nome");
@@ -287,12 +288,19 @@ export async function registrar({ nome, email, senha, confirmarSenha }) {
   if (confirmarSenha !== undefined && senha !== confirmarSenha) {
     throw erro("As senhas não coincidem.", "confirmarSenha");
   }
+  if (!aceiteTermos) throw erro("Para criar a conta, aceite os Termos de uso.", "aceiteTermos");
 
+  // O aceite vai no user_metadata do Supabase: fica registrado quando e qual
+  // versão dos Termos de uso a pessoa aceitou, sem tabela nova no banco.
   const resposta = await chamar("/signup", {
     corpo: {
       email: normalizarEmail(email),
       password: senha,
-      data: { nome: normalizarNome(nome) },
+      data: {
+        nome: normalizarNome(nome),
+        termos_versao: TERMOS_VERSAO,
+        termos_aceitos_em: new Date().toISOString(),
+      },
     },
   });
 
