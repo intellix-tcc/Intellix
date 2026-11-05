@@ -92,7 +92,9 @@ def _texto(valor: Any) -> str:
     return "" if valor is None else str(valor).strip()
 
 
-def importar(conteudo: bytes, nome_arquivo: str, conn: psycopg.Connection) -> dict:
+def importar(
+    conteudo: bytes, nome_arquivo: str, conn: psycopg.Connection, dono_id: str | None = None
+) -> dict:
     """Lê a planilha e carrega no star schema, num dataset próprio.
 
     Cada importação cria uma **empresa nova** (dataset isolado) e devolve o
@@ -110,7 +112,11 @@ def importar(conteudo: bytes, nome_arquivo: str, conn: psycopg.Connection) -> di
     with conn.cursor() as cur:
         # Dataset próprio deste upload: isola os dados da planilha dos demais.
         nome_empresa = f"Importação: {nome_arquivo or 'planilha.xlsx'}"
-        cur.execute("insert into empresa (nome) values (%s) returning id", (nome_empresa,))
+        # dono_id: usuário logado que importou (None = sem login; ver acesso.py)
+        cur.execute(
+            "insert into empresa (nome, dono_id) values (%s, %s) returning id",
+            (nome_empresa, dono_id),
+        )
         empresa_id = str(cur.fetchone()[0])
 
         cur.execute(
