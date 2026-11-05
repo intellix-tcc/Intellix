@@ -64,6 +64,41 @@ def _nome_vendedor(entidades_modelo: dict) -> str | None:
     return v
 
 
+# Palavras que casam o padrão mas NÃO são nome de pessoa: substantivos do
+# domínio e, principalmente, os interrogativos/pronomes que iniciam a frase
+# ("Quem vendeu mais?" não pode virar o vendedor "Quem").
+_NAO_E_NOME = {
+    "time", "equipe", "vendas", "venda", "loja", "mês", "mes", "ano",
+    "período", "periodo", "trimestre", "semestre", "empresa", "setor",
+    "quem", "quanto", "quantos", "quanta", "quantas", "qual", "quais",
+    "como", "quando", "onde", "quem", "performance", "desempenho",
+    "ranking", "me", "quem", "todos", "cada",
+}
+
+# O modelo erra o nome do vendedor em ~metade dos casos (BIO F1 ~0,85): "da
+# Fernanda", "vendedor Carlos" escapavam e a pergunta virava 422. Como o nome
+# aqui é sempre um próprio capitalizado logo após um "cue" claro (vendedor(a),
+# da/do/de) ou antes de "vendeu/faturou", uma heurística determinística sobre
+# o TEXTO ORIGINAL (com maiúsculas) recupera esses casos sem tocar no modelo.
+_NOME_POS_CUE = re.compile(
+    r"\b(?:vendedor|vendedora|d[aeo])\s+([A-ZÀ-Ý][a-zà-ÿ]+)",
+)
+_NOME_ANTES_VERBO = re.compile(
+    r"\b([A-ZÀ-Ý][a-zà-ÿ]+)\s+(?:vendeu|vende|faturou|fatura)\b",
+)
+
+
+def _nome_por_heuristica(texto_original: str) -> str | None:
+    """Extrai um nome próprio de vendedor do texto como o usuário digitou.
+    Usada só quando o modelo não devolveu a entidade VENDEDOR."""
+    for padrao in (_NOME_POS_CUE, _NOME_ANTES_VERBO):
+        for m in padrao.finditer(texto_original):
+            candidato = m.group(1)
+            if candidato.lower() not in _NAO_E_NOME:
+                return candidato
+    return None
+
+
 # ---- item 4: resolução de DOIS períodos (relativos, anos, trimestres) -------
 # O modelo acerta a intenção (comparacao_periodos / variacao_periodo), mas os
 # templates exigem quatro datas ISO. Antes só resolvíamos quando a frase citava
@@ -185,7 +220,8 @@ def _pede_todos_vendedores(texto: str) -> bool:
     return bool(_SINAIS_TODOS_VENDEDORES.search(texto))
 
 
-def _resolver_entidades(intencao: str, texto: str, entidades_modelo: dict) -> dict:
+def _resolver_entidades(intencao: str, texto: str, entidades_modelo: dict,
+                        texto_original: str) -> dict:
     # ---- intenções de DOIS períodos ----------------------------------
     if intencao in _DOIS_PERIODOS:
         par = _dois_periodos(texto)
@@ -201,7 +237,8 @@ def _resolver_entidades(intencao: str, texto: str, entidades_modelo: dict) -> di
         entidades["limite"] = R._extrai_limite(texto)
 
     if intencao == "desempenho_vendedor":
-        nome = _nome_vendedor(entidades_modelo)
+        # 1ª escolha: entidade do modelo; 2ª: heurística sobre o texto original.
+        nome = _nome_vendedor(entidades_modelo) or _nome_por_heuristica(texto_original)
         if nome:
             # templates.py espera o % do ILIKE já montado pela NLU
             entidades["vendedor_nome"] = f"%{nome}%"
@@ -245,7 +282,7 @@ class ModeloTreinadoNLU:
                 texto_original=texto,
             )
 
-        entidades = _resolver_entidades(r["intencao"], texto.lower(), r["entidades"])
+        entidades = _resolver_entidades(r["intencao"], texto.lower(), r["entidades"], texto)
         return Interpretacao(
             intencao=r["intencao"],
             confianca=r["confianca"],
