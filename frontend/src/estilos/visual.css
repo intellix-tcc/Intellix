@@ -801,3 +801,12 @@ h2.eyebrow::before {
 .painel-secao .rosca-centro span {
   font-size: 9.5px;
 }
+
+.aviso-grafico {
+  margin: 0 0 8px;
+  padding: 8px 12px;
+  border-radius: 9px;
+  font-size: 13px;
+  color: var(--accent-2-text);
+  background: var(--accent-2-bg);
+}
