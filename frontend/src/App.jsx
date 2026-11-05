@@ -1,17 +1,41 @@
-import { useState, useRef, useEffect } from "react";
-import { perguntar, EVENTO_SESSAO_RECUSADA } from "./servicos/api";
+import { useState, useRef, useEffect, lazy, Suspense } from "react";
+import { perguntar, aquecerServidor, EVENTO_SESSAO_RECUSADA } from "./servicos/api";
 import Sidebar from "./componentes/Sidebar";
 import Icone from "./componentes/Icone";
 import Login from "./paginas/Login";
-import Home from "./paginas/Home";
-import Sobre from "./paginas/Sobre";
-import Chat from "./paginas/Chat";
-import Perfil from "./paginas/Perfil";
-import Importar from "./paginas/Importar";
-import Faq from "./paginas/Faq";
-import Termos from "./paginas/Termos";
-import FaleConosco from "./paginas/FaleConosco";
 import CascaPublica from "./componentes/CascaPublica";
+
+// Cada página vira um arquivo próprio, baixado só quando a rota abre. Antes
+// tudo (gráficos, leitor de planilha, páginas institucionais) vinha num
+// pacote único de ~700 kB antes de a primeira tela aparecer. A tela de login
+// continua no pacote principal: é a primeira coisa que quem chega vê.
+const carregar = {
+  home: () => import("./paginas/Home"),
+  chat: () => import("./paginas/Chat"),
+  importar: () => import("./paginas/Importar"),
+  sobre: () => import("./paginas/Sobre"),
+  perfil: () => import("./paginas/Perfil"),
+  faq: () => import("./paginas/Faq"),
+  termos: () => import("./paginas/Termos"),
+  contato: () => import("./paginas/FaleConosco"),
+};
+const Home = lazy(carregar.home);
+const Chat = lazy(carregar.chat);
+const Importar = lazy(carregar.importar);
+const Sobre = lazy(carregar.sobre);
+const Perfil = lazy(carregar.perfil);
+const Faq = lazy(carregar.faq);
+const Termos = lazy(carregar.termos);
+const FaleConosco = lazy(carregar.contato);
+
+/** Baixa as páginas mais usadas no tempo ocioso, depois da primeira tela. */
+function preCarregarPaginas() {
+  const agendar = window.requestIdleCallback || ((fn) => setTimeout(fn, 1500));
+  agendar(() => {
+    carregar.home();
+    carregar.chat();
+  });
+}
 import { ROTAS_PUBLICAS } from "./utils/contato";
 import { carregarSessao, encerrarSessao, sessaoExpirou } from "./servicos/auth";
 import { carregarConversas, salvarConversas, novoId, tituloFromPergunta } from "./utils/historico";
@@ -87,6 +111,13 @@ export default function App() {
   useEffect(() => {
     salvarConversas(conversas);
   }, [conversas]);
+
+  // Acorda o servidor e adianta o download das páginas principais enquanto a
+  // pessoa ainda está na primeira tela (vitrine, login ou Início).
+  useEffect(() => {
+    aquecerServidor();
+    preCarregarPaginas();
+  }, []);
 
   useEffect(() => {
     localStorage.setItem("intellix_sidebar", modoSidebar);
@@ -259,7 +290,9 @@ export default function App() {
     if (ROTAS_PUBLICAS.includes(rota)) {
       return (
         <CascaPublica rota={rota} tema={tema} onAlternarTema={alternarTema}>
-          <PaginaInstitucional rota={rota} usuario={null} />
+          <Suspense fallback={<CarregandoPagina />}>
+            <PaginaInstitucional rota={rota} usuario={null} />
+          </Suspense>
         </CascaPublica>
       );
     }
@@ -326,6 +359,7 @@ export default function App() {
         </header>
 
         <main className="area" key={rota}>
+          <Suspense fallback={<CarregandoPagina />}>
           {rota === "home" && (
             <Home
               usuario={usuario}
@@ -356,8 +390,20 @@ export default function App() {
               onPerguntar={perguntarTexto}
             />
           )}
+          </Suspense>
         </main>
       </div>
+    </div>
+  );
+}
+
+// Enquanto o arquivo da página chega. Quase sempre imperceptível (as
+// principais já foram pré-carregadas); em rede lenta, evita tela em branco.
+function CarregandoPagina() {
+  return (
+    <div className="carregando-pagina" role="status">
+      <span className="carregando-pagina-anel" aria-hidden="true" />
+      <span className="sr-only">Carregando…</span>
     </div>
   );
 }
