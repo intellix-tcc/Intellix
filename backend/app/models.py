@@ -32,6 +32,15 @@ class ResultSet(BaseModel):
     intencao: str | None = None
 
 
+class Contexto(BaseModel):
+    """Resumo da resposta anterior, reenviado pelo frontend para dar
+    continuidade à conversa (ver app/contexto.py). `intencao` e `entidades`
+    saem do ResultSet anterior (campos `intencao` e `parametros`)."""
+
+    intencao: str | None = None
+    entidades: dict[str, Any] = {}
+
+
 class Pergunta(BaseModel):
     pergunta: str
     # Dataset a consultar. Quando o usuário importa uma planilha, o /import
@@ -39,3 +48,6 @@ class Pergunta(BaseModel):
     # as perguntas caírem sobre os dados importados, não sobre a base demo.
     # Ausente (None) = base de demonstração (EMPRESA_ID fixo).
     empresa_id: str | None = None
+    # Contexto da pergunta anterior, para resolver frases elípticas como
+    # "e em abril?". Ausente (None) = pergunta tratada isoladamente.
+    contexto: Contexto | None = None
