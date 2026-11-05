@@ -30,6 +30,7 @@ const EXTENSOES = [".xlsx", ".xls"];
 const COLUNAS_OBRIGATORIAS = ["data_venda", "produto", "quantidade"];
 const COLUNAS_VALOR = ["valor_unitario", "valor_total"]; // pelo menos uma
 const COLUNAS_CONHECIDAS = [
+  "venda_id",
   "data_venda",
   "produto",
   "categoria",
@@ -46,6 +47,10 @@ const COLUNAS_CONHECIDAS = [
 // Sinônimos aceitos: a planilha de uma loja pequena não vem com o nome exato
 // da coluna do banco.
 const SINONIMOS = {
+  // Mesma lista do backend (app/importacao/leitor_excel.py). "id_venda" é o
+  // nome usado no próprio modelo de importação; antes a tela o marcava como
+  // "coluna ignorada", embora o backend sempre o tenha lido.
+  venda_id: ["id venda", "id da venda", "pedido", "nota", "cupom", "numero da venda"],
   data_venda: ["data", "data da venda", "dt venda", "emissao", "data emissao"],
   produto: ["item", "descricao", "descricao do produto", "mercadoria"],
   categoria: ["grupo", "linha", "departamento"],
