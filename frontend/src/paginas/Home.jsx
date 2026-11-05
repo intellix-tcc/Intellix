@@ -106,9 +106,13 @@ export default function Home({ usuario, conversas = [], onPerguntar, onAbrirConv
   return (
     <div className="pagina home">
       <div className="painel-inicio">
-        <header className="painel-cabecalho anima-entrada">
+        {/* Cabeçalho "centro de comando": marinho fixo com a grade de dados da
+            vitrine (mesma linguagem do login), saudação, controles e os
+            indicadores do mês em cartões de vidro. */}
+        <section className="painel-hero anima-entrada" aria-labelledby="h-saudacao">
+        <header className="painel-cabecalho">
           <div>
-            <h1 className="painel-saudacao">{cumprimento}</h1>
+            <h1 id="h-saudacao" className="painel-saudacao">{cumprimento}</h1>
             <p className="painel-subtitulo">
               {r ? (
                 r.periodo.parcial ? (
@@ -174,6 +178,32 @@ export default function Home({ usuario, conversas = [], onPerguntar, onAbrirConv
           )}
         </header>
 
+        {r && !semDados && (
+          <div
+            className={`painel-kpis${carregando ? " atualizando" : ""}`}
+            role="group"
+            aria-label={`Indicadores de ${r.periodo.rotulo}`}
+          >
+            {r.kpis.map((kpi, i) => (
+              <CartaoKpi
+                key={kpi.chave}
+                kpi={kpi}
+                indice={i}
+                anterior={r.periodo_anterior.rotulo.split(" de ")[0]}
+                serie={kpi.chave === "faturamento" ? r.serie_mensal : null}
+              />
+            ))}
+          </div>
+        )}
+        {carregando && !r && !erro && (
+          <div className="painel-kpis" aria-hidden="true">
+            {[0, 1, 2, 3, 4].map((i) => (
+              <div key={i} className="esqueleto esqueleto-kpi" />
+            ))}
+          </div>
+        )}
+        </section>
+
         {semDados && (
           <EstadoVazio
             icone="importar"
@@ -203,21 +233,6 @@ export default function Home({ usuario, conversas = [], onPerguntar, onAbrirConv
                 {erro.mensagem || "Não foi possível atualizar."} Mostrando o último panorama carregado.
               </p>
             )}
-
-            <section className="painel-secao anima-entrada" aria-labelledby="h-panorama">
-              <h2 id="h-panorama" className="eyebrow">Panorama</h2>
-              <div className="painel-kpis">
-                {r.kpis.map((kpi, i) => (
-                  <CartaoKpi
-                    key={kpi.chave}
-                    kpi={kpi}
-                    indice={i}
-                    anterior={r.periodo_anterior.rotulo.split(" de ")[0]}
-                    serie={kpi.chave === "faturamento" ? r.serie_mensal : null}
-                  />
-                ))}
-              </div>
-            </section>
 
             <div className="painel-duas-colunas">
               <section className="painel-secao anima-entrada" aria-labelledby="h-diario">
@@ -365,10 +380,23 @@ function Variacao({ valor, compacta = false, referencia }) {
   );
 }
 
+const ICONE_KPI = {
+  faturamento: "grafico",
+  ticket_medio: "cartao",
+  vendas: "selo",
+  itens: "planilha",
+  clientes: "usuarios",
+};
+
 function CartaoKpi({ kpi, indice, anterior, serie }) {
   return (
-    <div className={`painel-kpi painel-kpi-cor-${indice % 4}`}>
-      <p className="painel-kpi-rotulo">{kpi.rotulo}</p>
+    <div className={`painel-kpi painel-kpi-cor-${indice % 5}`}>
+      <div className="painel-kpi-topo">
+        <span className="painel-kpi-icone" aria-hidden="true">
+          <Icone nome={ICONE_KPI[kpi.chave] || "grafico"} size={16} />
+        </span>
+        <p className="painel-kpi-rotulo">{kpi.rotulo}</p>
+      </div>
       <p className="painel-kpi-valor">{valorKpi(kpi)}</p>
       <Variacao valor={kpi.variacao_pct} referencia={anterior} />
       {serie && (
@@ -377,11 +405,11 @@ function CartaoKpi({ kpi, indice, anterior, serie }) {
             <AreaChart data={serie} margin={{ top: 2, right: 0, left: 0, bottom: 0 }}>
               <defs>
                 <linearGradient id="grad-spark" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="var(--accent)" stopOpacity={0.28} />
-                  <stop offset="100%" stopColor="var(--accent)" stopOpacity={0} />
+                  <stop offset="0%" stopColor="#26c9c5" stopOpacity={0.4} />
+                  <stop offset="100%" stopColor="#26c9c5" stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <Area type="monotone" dataKey="valor" stroke="var(--accent)" strokeWidth={1.6} fill="url(#grad-spark)" isAnimationActive={false} />
+              <Area type="monotone" dataKey="valor" stroke="#26c9c5" strokeWidth={1.8} fill="url(#grad-spark)" isAnimationActive={false} />
             </AreaChart>
           </ResponsiveContainer>
         </div>
@@ -409,7 +437,13 @@ function GraficoDiario({ serie, mes }) {
               formatter={(v) => [moeda(v), "Faturamento"]}
               labelFormatter={(d) => `Dia ${String(d).padStart(2, "0")}/${mm}`}
             />
-            <Bar dataKey="valor" fill="var(--accent-3)" radius={[3, 3, 0, 0]} />
+            <defs>
+              <linearGradient id="grad-barra" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="var(--accent-3)" />
+                <stop offset="100%" stopColor="var(--accent)" stopOpacity={0.85} />
+              </linearGradient>
+            </defs>
+            <Bar dataKey="valor" fill="url(#grad-barra)" radius={[4, 4, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </div>
@@ -431,8 +465,12 @@ function GraficoTendencia({ serie }) {
           <AreaChart data={serie} margin={{ top: 6, right: 6, left: 0, bottom: 0 }}>
             <defs>
               <linearGradient id="grad-tendencia" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="var(--accent)" stopOpacity={0.3} />
+                <stop offset="0%" stopColor="var(--teal)" stopOpacity={0.35} />
                 <stop offset="100%" stopColor="var(--accent)" stopOpacity={0.02} />
+              </linearGradient>
+              <linearGradient id="grad-linha" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stopColor="var(--accent)" />
+                <stop offset="100%" stopColor="var(--teal)" />
               </linearGradient>
             </defs>
             <XAxis
@@ -445,7 +483,14 @@ function GraficoTendencia({ serie }) {
             />
             <YAxis hide domain={[0, "auto"]} />
             <Tooltip {...TOOLTIP} formatter={(v) => [moeda(v), "Faturamento"]} />
-            <Area type="monotone" dataKey="valor" stroke="var(--accent)" strokeWidth={2} fill="url(#grad-tendencia)" activeDot={{ r: 4 }} />
+            <Area
+              type="monotone"
+              dataKey="valor"
+              stroke="url(#grad-linha)"
+              strokeWidth={2.5}
+              fill="url(#grad-tendencia)"
+              activeDot={{ r: 5, fill: "var(--teal)", stroke: "var(--surface)", strokeWidth: 2 }}
+            />
           </AreaChart>
         </ResponsiveContainer>
       </div>
@@ -549,11 +594,6 @@ function EstadoVazio({ icone, titulo, texto, acao, onAcao }) {
 function Esqueleto() {
   return (
     <div className="painel-esqueleto" aria-busy="true" aria-label="Carregando o panorama">
-      <div className="painel-kpis">
-        {[0, 1, 2, 3, 4].map((i) => (
-          <div key={i} className="esqueleto esqueleto-kpi" />
-        ))}
-      </div>
       <div className="painel-duas-colunas">
         <div className="esqueleto esqueleto-grafico" />
         <div className="esqueleto esqueleto-grafico" />

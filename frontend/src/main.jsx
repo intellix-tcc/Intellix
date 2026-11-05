@@ -6,6 +6,10 @@ import '@fontsource/poppins/400.css'
 import '@fontsource/poppins/500.css'
 import '@fontsource/poppins/600.css'
 import '@fontsource/poppins/700.css'
+// Monoespaçada para números, rótulos técnicos e atalhos de teclado — o toque
+// de "painel de dados" do visual. Também self-hosted.
+import '@fontsource/jetbrains-mono/500.css'
+import '@fontsource/jetbrains-mono/600.css'
 import './estilos/index.css'
 import App from './App.jsx'
 
