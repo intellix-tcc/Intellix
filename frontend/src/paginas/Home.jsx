@@ -4,6 +4,8 @@ import {
   AreaChart,
   Bar,
   BarChart,
+  Cell,
+  LabelList,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -14,6 +16,8 @@ import { buscarResumo, resumoEmCache } from "../servicos/api";
 import { datasetAtivo } from "../utils/dataset";
 import { quando } from "../utils/conversas";
 import Icone from "../componentes/Icone";
+import Rosca from "../componentes/Rosca";
+import { coresDistintas } from "../utils/cores";
 
 const ICONE_OBSERVACAO = { alta: "seta-cima", queda: "seta-baixo", atencao: "alerta", padrao: "historico" };
 
@@ -254,9 +258,26 @@ export default function Home({ usuario, conversas = [], onPerguntar, onAbrirConv
 
               <section className="painel-secao anima-entrada" aria-labelledby="h-canais">
                 <h2 id="h-canais" className="eyebrow">Por canal</h2>
-                <Fatias itens={r.canais} deslocarCor={2} />
+                <Fatias itens={r.canais} />
               </section>
             </div>
+
+            {(r.dias_semana || r.pagamentos) && (
+              <div className="painel-duas-colunas">
+                {r.dias_semana && (
+                  <section className="painel-secao anima-entrada" aria-labelledby="h-semana">
+                    <h2 id="h-semana" className="eyebrow">Média por dia da semana</h2>
+                    <GraficoSemana dias={r.dias_semana} />
+                  </section>
+                )}
+                {r.pagamentos && (
+                  <section className="painel-secao anima-entrada" aria-labelledby="h-pagamentos">
+                    <h2 id="h-pagamentos" className="eyebrow">Formas de pagamento</h2>
+                    <Fatias itens={r.pagamentos} />
+                  </section>
+                )}
+              </div>
+            )}
 
             <section className="painel-secao anima-entrada" aria-labelledby="h-resumo">
               <h2 id="h-resumo" className="eyebrow">Resumo do mês</h2>
@@ -501,33 +522,60 @@ function GraficoTendencia({ serie }) {
   );
 }
 
-// Uma cor por fatia — roxo/turquesa/âmbar/marinho/azul, a mesma paleta dos
-// diferenciais da Sobre — para diferenciar sem depender só da posição.
-const CORES = ["var(--accent-3)", "var(--teal)", "var(--accent-2)", "var(--marinho)", "var(--accent)"];
-
-function Fatias({ itens, deslocarCor = 0 }) {
+// Composição do mês em rosca, com a cor fixa de cada item (utils/cores.js):
+// "Eletrônicos" tem a mesma cor aqui e nas respostas do chat. Até 6 fatias;
+// o resto vira "Outros" para a rosca continuar legível.
+function Fatias({ itens }) {
   if (!itens.length) return <p className="painel-legenda">Sem dados no período.</p>;
-  const visiveis = itens.slice(0, 6);
+  const visiveis = itens.length > 6 ? [...itens.slice(0, 5), {
+    nome: "Outros",
+    valor: itens.slice(5).reduce((s, i) => s + i.valor, 0),
+  }] : itens;
+  const cores = coresDistintas(visiveis.map((i) => i.nome));
   return (
-    <ul className="painel-categorias">
-      {visiveis.map((c, i) => (
-        <li key={c.nome}>
-          <div className="painel-categoria-topo">
-            <span>{c.nome}</span>
-            <span className="painel-categoria-valor">
-              {pct(c.pct)}
-              <span className="painel-categoria-moeda">{moedaCurta(c.valor)}</span>
-            </span>
-          </div>
-          <div className="painel-categoria-barra" aria-hidden="true">
-            <span
-              className="painel-categoria-preenchimento"
-              style={{ width: `${c.pct}%`, background: CORES[(i + deslocarCor) % CORES.length] }}
+    <Rosca
+      itens={visiveis.map((i, k) => ({ nome: i.nome, valor: i.valor, cor: cores[k] }))}
+      formatar={(v, centro) => (centro ? moedaCurta(v) : moeda(v))}
+      rotuloCentro="No mês"
+      altura={170}
+    />
+  );
+}
+
+// Faturamento médio por dia da semana: o melhor dia em turquesa, o resto no
+// azul da marca — o destaque é a informação, não a decoração.
+function GraficoSemana({ dias }) {
+  const melhor = dias.reduce((a, b) => (b.valor > a.valor ? b : a), dias[0]);
+  const pior = dias.reduce((a, b) => (b.valor < a.valor ? b : a), dias[0]);
+  if (!melhor.valor) return <p className="painel-legenda">Sem vendas no período.</p>;
+  return (
+    <>
+      <div
+        role="img"
+        aria-label={`Gráfico de barras do faturamento médio por dia da semana. Melhor: ${melhor.dia}, ${moeda(melhor.valor)}. Mais fraco: ${pior.dia}, ${moeda(pior.valor)}.`}
+      >
+        <ResponsiveContainer width="100%" height={200}>
+          <BarChart data={dias} margin={{ top: 20, right: 4, left: 0, bottom: 0 }}>
+            <XAxis dataKey="dia" tick={{ fontSize: 12, fill: "var(--text)" }} axisLine={false} tickLine={false} />
+            <YAxis hide />
+            <Tooltip
+              {...TOOLTIP}
+              cursor={{ fill: "var(--hover-bg)" }}
+              formatter={(v) => [moeda(v), "Média por dia"]}
             />
-          </div>
-        </li>
-      ))}
-    </ul>
+            <Bar dataKey="valor" radius={[6, 6, 0, 0]} maxBarSize={46}>
+              {dias.map((d) => (
+                <Cell key={d.dia} fill={d === melhor ? "var(--dado-2)" : "var(--dado-8)"} fillOpacity={d === melhor ? 1 : 0.75} />
+              ))}
+              <LabelList dataKey="valor" position="top" formatter={moedaCurta} style={{ fontSize: 11, fill: "var(--text-3)" }} />
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+      <p className="painel-legenda">
+        Melhor dia: {melhor.dia} ({moeda(melhor.valor)} em média) · mais fraco: {pior.dia}
+      </p>
+    </>
   );
 }
 

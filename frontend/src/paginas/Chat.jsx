@@ -1,11 +1,20 @@
 import { useEffect, useRef, useState } from "react";
-import GraficoBarra from "../componentes/GraficoBarra";
+import GraficoResultado from "../componentes/GraficoResultado";
 import Icone from "../componentes/Icone";
 import Logo from "../componentes/Logo";
 import { baixarExcel, baixarPdf } from "../utils/exportar";
 import { EXEMPLOS } from "../utils/exemplos";
 import { datasetAtivo, limparDataset } from "../utils/dataset";
 import { SUGESTOES_INICIAIS, sugestoesDeContinuacao } from "../utils/sugestoes";
+import {
+  formatarValor,
+  humanizarColuna,
+  indiceMetrica,
+  modosDisponiveis,
+  naturezaDoResultado,
+  rotuloItem,
+  serieDoResultado,
+} from "../utils/resultado";
 
 // Quanto tempo a mensagem "Encontrei N registros" fica na tela antes de dar
 // lugar à resposta completa — ver `reveladas` em Chat, mais abaixo.
@@ -101,14 +110,6 @@ function LinhaMeta({ r }) {
   );
 }
 
-// "valor_total" -> "Valor total". Não é um dicionário de tradução por coluna
-// (o backend tem dezenas delas, em templates que ainda vão crescer) — só
-// tira o snake_case, que já é mais legível que o nome cru da coluna.
-function humanizarColuna(nome) {
-  const s = String(nome || "").replace(/_/g, " ");
-  return s.charAt(0).toUpperCase() + s.slice(1);
-}
-
 function formatarData(iso) {
   const d = new Date(iso);
   // Datas puras ("2024-03-01") são parseadas como meia-noite UTC; sem fixar
@@ -118,35 +119,16 @@ function formatarData(iso) {
     : d.toLocaleDateString("pt-BR", { timeZone: "UTC" });
 }
 
-// Nem todo número de resposta é dinheiro: "quantidade_vendas" é contagem e
-// "variacao_percentual" é porcentagem. Decide pelo nome da coluna que veio
-// do backend (o mesmo nome dos templates SQL).
-function formatarValor(coluna, valor) {
-  if (valor === null || valor === undefined) return "—";
-  if (typeof valor !== "number") return valor;
-  const nome = String(coluna || "").toLowerCase();
-  if (nome.includes("percentual")) {
-    return `${valor.toLocaleString("pt-BR", { maximumFractionDigits: 2 })}%`;
-  }
-  if (nome.startsWith("quantidade") || nome.startsWith("itens") || nome.startsWith("unidades")) {
-    return valor.toLocaleString("pt-BR", { maximumFractionDigits: 0 });
-  }
-  return valor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-}
-
 // "Como cheguei nessa resposta": só usa o que o ResultSet já traz — o
 // período (quando o backend manda `parametros`, que o modo mock não
-// preenche), a métrica e o agrupamento (deduzidos das colunas). Quantos
-// registros voltaram já aparece na linha de meta (`LinhaMeta`) — repetir
-// aqui seria a mesma frase duas vezes na mesma resposta. Nada de campo novo
-// na API, nada de número inventado: se o dado não está no ResultSet, a
-// linha simplesmente não aparece.
+// preenche), a métrica e o agrupamento (deduzidos das colunas). Nada de
+// número inventado: se o dado não está no ResultSet, a linha não aparece.
 function DetalhesResposta({ r }) {
   const periodo =
     r.parametros?.periodo_inicio && r.parametros?.periodo_fim
       ? `${formatarData(r.parametros.periodo_inicio)} a ${formatarData(r.parametros.periodo_fim)}`
       : null;
-  const metrica = r.colunas?.[r.colunas.length - 1];
+  const metrica = r.colunas?.[indiceMetrica(r)];
   const agrupamento = r.colunas?.length > 1 ? r.colunas[0] : null;
 
   if (!periodo && !agrupamento && !metrica) return null;
@@ -161,30 +143,6 @@ function DetalhesResposta({ r }) {
       </ul>
     </details>
   );
-}
-
-// Mesmas linhas do gráfico, ordenadas da maior para a menor — o gráfico
-// mostra a comparação visual, a lista dá o valor exato de cada item, sem
-// precisar posicionar o mouse em cima da barra.
-function listaOrdenada(r) {
-  if (!r.linhas?.length || r.colunas.length < 2) return [];
-  const idx = r.colunas.length - 1;
-  return [...r.linhas].sort((a, b) => (Number(b[idx]) || 0) - (Number(a[idx]) || 0));
-}
-
-// O item que mais pesa na métrica, e sua fatia do total — puro cálculo em
-// cima de `r.linhas`, nada vindo de fora do ResultSet. Usado só para dar uma
-// frase de fechamento a gráficos de barra ("X lidera com Y% do total").
-function maiorItem(r) {
-  if (!r.linhas?.length || r.colunas.length < 2) return null;
-  const idx = r.colunas.length - 1;
-  const total = r.linhas.reduce((soma, linha) => soma + (Number(linha[idx]) || 0), 0);
-  if (!total) return null;
-  const maior = [...r.linhas].sort(
-    (a, b) => (Number(b[idx]) || 0) - (Number(a[idx]) || 0)
-  )[0];
-  if (typeof maior[0] !== "string") return null;
-  return { rotulo: maior[0], pct: Math.round((Number(maior[idx]) / total) * 100) };
 }
 
 // Lista de perguntas clicáveis — usada no erro, na resposta incerta e nas
@@ -204,6 +162,128 @@ function PerguntasClicaveis({ perguntas, onPerguntar, desativado }) {
   );
 }
 
+// Frase de fechamento, calculada só sobre as linhas do ResultSet.
+function Destaque({ r }) {
+  const natureza = naturezaDoResultado(r);
+  const serie = serieDoResultado(r);
+  const coluna = r.colunas[indiceMetrica(r)];
+  const total = serie.reduce((s, p) => s + p.valor, 0);
+  if (!serie.length || !total) return null;
+
+  if (natureza === "temporal") {
+    const melhor = serie.reduce((a, b) => (b.valor > a.valor ? b : a), serie[0]);
+    const primeiro = serie[0];
+    const ultimo = serie[serie.length - 1];
+    const variacao = primeiro.valor ? ((ultimo.valor - primeiro.valor) / primeiro.valor) * 100 : null;
+    return (
+      <p className="resultado-destaque">
+        Total de <strong>{formatarValor(coluna, total)}</strong> em {serie.length} meses. Melhor mês:{" "}
+        <strong>{melhor.rotulo}</strong> ({formatarValor(coluna, melhor.valor)})
+        {variacao != null && (
+          <>
+            ; de {primeiro.rotulo} para {ultimo.rotulo}, {variacao >= 0 ? "alta" : "queda"} de{" "}
+            <strong>{Math.abs(variacao).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%</strong>
+          </>
+        )}
+        .
+      </p>
+    );
+  }
+  if (natureza === "composicao" || natureza === "ranking") {
+    const maior = serie.reduce((a, b) => (b.valor > a.valor ? b : a), serie[0]);
+    return (
+      <p className="resultado-destaque">
+        <strong>{maior.rotulo}</strong> lidera com aproximadamente{" "}
+        <strong>{Math.round((maior.valor / total) * 100)}%</strong> do total de{" "}
+        {humanizarColuna(coluna).toLowerCase()}.
+      </p>
+    );
+  }
+  return null;
+}
+
+function TabelaResultado({ r }) {
+  return (
+    // Tabela mantém uma borda leve: sem limite visual, linha e coluna se
+    // perdem no texto ao redor — aqui a caixa cumpre função, não decora.
+    <div className="tabela-scroll">
+      <table>
+        <thead>
+          <tr>
+            {r.colunas.map((c) => (
+              <th key={c}>{humanizarColuna(c)}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {r.linhas.map((linha, i) => (
+            <tr key={i}>
+              {linha.map((v, j) => (
+                <td key={j} className={typeof v === "number" ? "num" : undefined}>
+                  {typeof v === "number" ? formatarValor(r.colunas[j], v) : rotuloItem(r.colunas[j], v)}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+const MODOS = {
+  linha: { rotulo: "Linha", icone: "linha" },
+  barra: { rotulo: "Barras", icone: "grafico" },
+  pizza: { rotulo: "Rosca", icone: "pizza" },
+  comparacao: { rotulo: "Comparação", icone: "grafico" },
+  tabela: { rotulo: "Tabela", icone: "planilha" },
+};
+
+// Resposta com várias linhas: o formato abre pelo tipo de dado (evolução no
+// tempo = linha, composição = rosca, ranking = barras, comparação = barras
+// lado a lado) e a pessoa pode trocar em "Ver como".
+function ResultadoVisual({ r }) {
+  const modos = modosDisponiveis(r);
+  const [modo, setModo] = useState(modos[0]);
+  const abertura = {
+    linha: "Evolução no período:",
+    barra: "Do maior para o menor:",
+    pizza: "Como o total se divide:",
+    comparacao: "Lado a lado:",
+    tabela: "Detalhamento, linha a linha:",
+  }[modo];
+
+  return (
+    <div className="resultado resultado-grafico">
+      <div className="resultado-cabecalho">
+        <p className="resultado-titulo">{r.titulo}</p>
+        {modos.length > 1 && (
+          <div className="ver-como" role="group" aria-label="Ver como">
+            {modos.map((m) => (
+              <button
+                key={m}
+                type="button"
+                className={m === modo ? "ativo" : undefined}
+                aria-pressed={m === modo}
+                onClick={() => setModo(m)}
+                title={`Ver como ${MODOS[m].rotulo.toLowerCase()}`}
+              >
+                <Icone nome={MODOS[m].icone} size={14} />
+                <span>{MODOS[m].rotulo}</span>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+      <p className="resultado-abertura">{abertura}</p>
+      {modo === "tabela" ? <TabelaResultado r={r} /> : <GraficoResultado r={r} modo={modo} />}
+      <Destaque r={r} />
+      <DetalhesResposta r={r} />
+      <LinhaMeta r={r} />
+    </div>
+  );
+}
+
 function Resultado({ r, onPerguntar }) {
   // D6 #3 — Prevenção de erros: confiança baixa → não adivinhe, mostre exemplos.
   if (r.confianca != null && r.confianca < CONFIANCA_MINIMA) {
@@ -216,54 +296,23 @@ function Resultado({ r, onPerguntar }) {
     );
   }
 
-  if (r.tipo_visualizacao === "numero") {
-    // Última coluna, não índice fixo: "faturamento" vem como [periodo, valor],
-    // mas "ticket_medio" vem sozinho, sem coluna de período antes.
-    const valor = r.linhas[0][r.colunas.length - 1];
+  const temNumero = r.linhas.some((l) => l.some((v) => typeof v === "number"));
+
+  // Um valor só (faturamento de um mês, ticket médio, variação): número grande.
+  if (r.linhas.length === 1 && temNumero && r.tipo_visualizacao !== "tabela") {
+    const i = indiceMetrica(r);
+    const linha = r.linhas[0];
+    const iAtual = r.colunas.indexOf("periodo_atual");
+    const iAnterior = r.colunas.indexOf("periodo_anterior");
     return (
-      // Sem moldura: um número grande, sozinho, já lê como resposta — uma
-      // caixa ao redor não ajuda a entender o dado, só imita um "widget".
+      // Sem moldura: um número grande, sozinho, já lê como resposta.
       <div className="resultado resultado-numero">
         <p className="resultado-titulo">{r.titulo}</p>
-        <p className="resultado-valor">
-          {formatarValor(r.colunas[r.colunas.length - 1], valor)}
-        </p>
-        <DetalhesResposta r={r} />
-        <LinhaMeta r={r} />
-      </div>
-    );
-  }
-
-  if (r.tipo_visualizacao === "barra") {
-    const destaque = maiorItem(r);
-    const metrica = r.colunas[r.colunas.length - 1];
-    const lista = listaOrdenada(r);
-    return (
-      // Sem moldura de card: o gráfico entra como continuação do texto da
-      // resposta — explicação, gráfico, lista com os valores exatos e a
-      // frase de destaque formam uma sequência só, não widgets isolados.
-      <div className="resultado resultado-grafico">
-        <p className="resultado-titulo">{r.titulo}</p>
-        <p className="resultado-abertura">Do maior para o menor:</p>
-        <GraficoBarra r={r} />
-        {lista.length > 1 && (
-          <ol className="resultado-lista">
-            {lista.map((linha, i) => {
-              const valor = linha[r.colunas.length - 1];
-              return (
-                <li key={linha[0] ?? i}>
-                  <span className="resultado-lista-rotulo">{linha[0]}</span>
-                  <span className="resultado-lista-valor">{formatarValor(metrica, valor)}</span>
-                </li>
-              );
-            })}
-          </ol>
-        )}
-        {destaque && (
-          <p className="resultado-destaque">
-            <strong>{destaque.rotulo}</strong> lidera com aproximadamente{" "}
-            <strong>{destaque.pct}%</strong> do total
-            {metrica ? ` de ${humanizarColuna(metrica).toLowerCase()}.` : "."}
+        <p className="resultado-valor">{formatarValor(r.colunas[i], linha[i])}</p>
+        {iAtual >= 0 && iAnterior >= 0 && (
+          <p className="resultado-abertura">
+            De {formatarValor("faturamento", linha[iAnterior])} para{" "}
+            {formatarValor("faturamento", linha[iAtual])}.
           </p>
         )}
         <DetalhesResposta r={r} />
@@ -272,40 +321,21 @@ function Resultado({ r, onPerguntar }) {
     );
   }
 
-  if (r.tipo_visualizacao === "tabela") {
+  // Sem número para desenhar (ex.: lista de produtos sem saída) ou resposta
+  // que o backend marcou como tabela: tabela.
+  if (!temNumero || r.tipo_visualizacao === "tabela") {
     return (
-      // Tabela mantém uma borda leve: sem limite visual, linha e coluna se
-      // perdem no texto ao redor — aqui a caixa cumpre função, não decora.
       <div className="resultado resultado-tabela">
         <p className="resultado-titulo">{r.titulo}</p>
         <p className="resultado-abertura">Aqui está o detalhamento, linha a linha:</p>
-        <div className="tabela-scroll">
-          <table>
-            <thead>
-              <tr>
-                {r.colunas.map((c) => (
-                  <th key={c}>{humanizarColuna(c)}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {r.linhas.map((linha, i) => (
-                <tr key={i}>
-                  {linha.map((v, j) => (
-                    <td key={j} className={typeof v === "number" ? "num" : undefined}>
-                      {typeof v === "number" ? formatarValor(r.colunas[j], v) : v}
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <TabelaResultado r={r} />
         <DetalhesResposta r={r} />
         <LinhaMeta r={r} />
       </div>
     );
   }
+
+  return <ResultadoVisual r={r} />;
 }
 
 function Mensagem({ msg, ultima, perguntaAnterior, onPerguntar, ocupado }) {
