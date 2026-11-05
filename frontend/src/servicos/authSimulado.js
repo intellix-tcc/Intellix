@@ -123,7 +123,7 @@ export function encerrarSessao() {
   localStorage.removeItem(CHAVE_SESSAO);
 }
 
-export async function registrar({ nome, email, senha, confirmarSenha }) {
+export async function registrar({ nome, email, senha, confirmarSenha, aceiteTermos }) {
   await espera();
 
   // Revalidação na camada de persistência: a tela já validou, mas não
@@ -137,6 +137,7 @@ export async function registrar({ nome, email, senha, confirmarSenha }) {
   if (confirmarSenha !== undefined && senha !== confirmarSenha) {
     throw erro("As senhas não coincidem.", "confirmarSenha");
   }
+  if (!aceiteTermos) throw erro("Para criar a conta, aceite os Termos de uso.", "aceiteTermos");
 
   const usuarios = carregarUsuarios();
   const emailNormalizado = normalizarEmail(email);
@@ -156,6 +157,7 @@ export async function registrar({ nome, email, senha, confirmarSenha }) {
     senha,
     foto: null,
     criadoEm: new Date().toISOString(),
+    termosAceitosEm: new Date().toISOString(),
   };
   salvarUsuarios([...usuarios, novo]);
   return salvarSessao(paraSessao(novo));
