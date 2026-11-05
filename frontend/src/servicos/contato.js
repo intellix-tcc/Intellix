@@ -13,7 +13,9 @@ import { EMAIL_CONTATO } from "../utils/contato";
 
 const MOCK = import.meta.env.VITE_MOCK === "true";
 const ENDPOINT = `https://formsubmit.co/ajax/${EMAIL_CONTATO}`;
-const TEMPO_LIMITE_MS = 15000;
+// A primeira mensagem (a que dispara a ativação) pode demorar bem mais que
+// as seguintes.
+const TEMPO_LIMITE_MS = 30000;
 
 const FALHA = "Não conseguimos enviar agora. Tente de novo em instantes.";
 
@@ -33,24 +35,33 @@ export async function enviarMensagemContato({ nome, email, assunto, mensagem, ar
   const controle = new AbortController();
   const timer = setTimeout(() => controle.abort(), TEMPO_LIMITE_MS);
 
+  // FormData, não JSON: com Content-Type application/json o navegador faz
+  // antes uma requisição OPTIONS (preflight de CORS), e quando o serviço não
+  // responde a ela direito o fetch falha sem nem enviar a mensagem. FormData
+  // + Accept é requisição "simples" de CORS: vai direto, sem preflight.
+  const corpo = new FormData();
+  corpo.append("nome", nome.trim());
+  corpo.append("email", email.trim());
+  corpo.append("assunto", assunto);
+  corpo.append("mensagem", mensagem.trim());
+  corpo.append("_subject", `[Intellix] ${assunto} — ${nome.trim()}`);
+  corpo.append("_replyto", email.trim()); // "Responder" no Gmail vai direto para a pessoa
+  corpo.append("_template", "table");
+
   let resposta;
   try {
     resposta = await fetch(ENDPOINT, {
       method: "POST",
-      headers: { "Content-Type": "application/json", Accept: "application/json" },
-      body: JSON.stringify({
-        nome: nome.trim(),
-        email: email.trim(),
-        assunto,
-        mensagem: mensagem.trim(),
-        _subject: `[Intellix] ${assunto} — ${nome.trim()}`,
-        _replyto: email.trim(), // "Responder" no Gmail vai direto para a pessoa
-        _template: "table",
-      }),
+      headers: { Accept: "application/json" },
+      body: corpo,
       signal: controle.signal,
     });
-  } catch {
-    throw { mensagem: "Sem conexão com o serviço de envio. Confira sua internet e tente de novo." };
+  } catch (e) {
+    if (e?.name === "AbortError") {
+      throw { mensagem: "O serviço de envio demorou demais para responder." };
+    }
+    // Falha de rede, bloqueador de anúncios/rastreadores ou serviço fora do ar.
+    throw { mensagem: "Não conseguimos falar com o serviço de envio." };
   } finally {
     clearTimeout(timer);
   }
