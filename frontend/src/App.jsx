@@ -47,6 +47,7 @@ import { ROTAS_PUBLICAS } from "./utils/contato";
 import { carregarSessao, encerrarSessao, sessaoExpirou } from "./servicos/auth";
 import { carregarConversas, salvarConversas, novoId, tituloFromPergunta } from "./utils/historico";
 import "./estilos/App.css";
+import "./estilos/visual.css";
 
 const ROTAS = ["home", "chat", "importar", "sobre", "perfil", ...ROTAS_PUBLICAS];
 const TITULOS = {

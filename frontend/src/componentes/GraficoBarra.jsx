@@ -28,12 +28,27 @@ export default function GraficoBarra({ r }) {
           angle={-30}
           textAnchor="end"
           height={54}
-          tick={{ fontSize: 12 }}
+          tick={{ fontSize: 12, fill: "var(--text)" }}
           tickFormatter={truncar}
+          axisLine={{ stroke: "var(--border-2)" }}
+          tickLine={false}
         />
-        <YAxis tick={{ fontSize: 11 }} />
+        <YAxis
+          tick={{ fontSize: 11, fill: "var(--text-3)" }}
+          tickFormatter={(v) => Number(v).toLocaleString("pt-BR", { notation: "compact" })}
+          axisLine={false}
+          tickLine={false}
+          width={48}
+        />
         {/* nome completo no tooltip, mesmo truncado embaixo do eixo */}
+        <defs>
+          <linearGradient id="grad-barra-chat" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="var(--accent-3)" />
+            <stop offset="100%" stopColor="var(--accent)" stopOpacity={0.85} />
+          </linearGradient>
+        </defs>
         <Tooltip
+          cursor={{ fill: "var(--hover-bg)" }}
           formatter={(v) => Number(v).toLocaleString("pt-BR")}
           contentStyle={{
             fontSize: 12.5,
@@ -49,7 +64,13 @@ export default function GraficoBarra({ r }) {
             roxo clareia para manter contraste contra o fundo marinho.
             No hover a barra passa para o azul de ação, reforçando que é
             ali que o tooltip com o valor exato está respondendo. */}
-        <Bar dataKey={r.colunas[2]} fill="var(--accent-3)" activeBar={{ fill: "var(--accent)" }} />
+        <Bar
+          dataKey={r.colunas[2]}
+          fill="url(#grad-barra-chat)"
+          radius={[6, 6, 0, 0]}
+          maxBarSize={72}
+          activeBar={{ fill: "var(--teal)" }}
+        />
       </BarChart>
     </ResponsiveContainer>
   );
