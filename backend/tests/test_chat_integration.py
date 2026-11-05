@@ -57,6 +57,7 @@ def test_resumo_do_mes_com_dados():
     assert r.status_code == 200
     dados = r.json()
     assert dados["periodo"]["rotulo"] == "março de 2024"
+    assert dados["periodo"]["parcial"] is False
     assert len(dados["serie_diaria"]) == 31
     assert len(dados["serie_mensal"]) == 12
     assert dados["kpis"][0]["chave"] == "faturamento"
