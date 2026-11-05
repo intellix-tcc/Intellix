@@ -75,11 +75,19 @@ def executar_template(interp: Interpretacao, empresa_id: str, conn: psycopg.Conn
 
     linhas = [[_para_json(valor) for valor in linha] for linha in linhas_brutas]
 
+    # Faturamento e quantidade de vendas já vêm um mês por linha. Com mais de
+    # um mês (ex.: "quanto faturei em 2024?"), a resposta é uma evolução no
+    # tempo: vira gráfico de linha. Antes saía como "numero" e a tela mostrava
+    # só o primeiro mês.
+    visual = template["visual"]
+    if visual == "numero" and len(linhas) > 1 and colunas and colunas[0] == "periodo":
+        visual = "linha"
+
     return ResultSet(
         titulo=template["titulo"],
         colunas=colunas,
         linhas=linhas,
-        tipo_visualizacao=template["visual"],
+        tipo_visualizacao=visual,
         parametros=interp.entidades,
         confianca=interp.confianca,
         gerado_em=datetime.now(timezone.utc).isoformat(),

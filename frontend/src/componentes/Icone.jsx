@@ -267,6 +267,22 @@ const DESENHOS = {
       <path d="M7.4 10h.01M10.4 10h.01M13.4 10h.01M16.4 10h.01M8.6 14.2h6.8" />
     </>
   ),
+  // linha que sobe — evolução no tempo
+  linha: (
+    <>
+      <path d="M4 19.4h16" />
+      <path d="m4.6 15.4 4.4-4.6 3.4 3 6.8-7.4" />
+      <path d="M15.6 6.4h3.6V10" />
+    </>
+  ),
+  // rosca — composição do todo
+  pizza: (
+    <>
+      <circle cx="12" cy="12" r="8.2" />
+      <circle cx="12" cy="12" r="3.6" />
+      <path d="M12 3.8v4.6M15.4 13.4l4.2 1.8" />
+    </>
+  ),
   // capelo — trabalho acadêmico
   capelo: (
     <>

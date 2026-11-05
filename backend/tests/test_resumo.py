@@ -7,10 +7,12 @@ from app.resumo import (
     gerar_observacoes,
     gerar_resumo_texto,
     limites_mes,
+    media_por_dia_semana,
     melhor_e_pior_dia_semana,
     mes_anterior,
     moeda,
     nome_canal,
+    nome_pagamento,
     variacao,
 )
 
@@ -136,3 +138,18 @@ def test_mes_parcial_compara_com_o_mesmo_periodo():
     )
     assert texto[0].startswith("Em novembro de 2026 (até o dia 4), a loja faturou")
     assert texto[0].endswith("20% acima do mesmo período de outubro.")
+
+
+def test_nome_pagamento():
+    assert nome_pagamento("cartao_credito") == "Cartão de crédito"
+    assert nome_pagamento("pix") == "Pix"
+    assert nome_pagamento("cheque_pre") == "Cheque pre"
+
+
+def test_media_por_dia_semana():
+    # março/2024 começa numa sexta: 5 sextas, todas com 100 -> média 100
+    por_dia = {1: 100.0, 8: 100.0, 15: 100.0, 22: 100.0, 29: 100.0}
+    medias = media_por_dia_semana(2024, 3, por_dia, 31)
+    assert [m["dia"] for m in medias] == ["seg", "ter", "qua", "qui", "sex", "sáb", "dom"]
+    assert medias[4]["valor"] == 100.0
+    assert medias[0]["valor"] == 0.0
