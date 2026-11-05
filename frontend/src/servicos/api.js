@@ -28,6 +28,28 @@ const FALSAS = {
     confianca: 0.91,
     gerado_em: new Date().toISOString(),
   },
+  // ano inteiro: um valor por mês -> gráfico de linha
+  anual: {
+    titulo: "Faturamento no período",
+    colunas: ["periodo", "faturamento"],
+    linhas: [
+      ["2024-01", 31840.2], ["2024-02", 28950.75], ["2024-03", 39275.59], ["2024-04", 41210.3],
+      ["2024-05", 52480.9], ["2024-06", 47390.15], ["2024-07", 40125.6], ["2024-08", 43870.0],
+      ["2024-09", 45210.85], ["2024-10", 49980.4], ["2024-11", 68420.1], ["2024-12", 81236.45],
+    ],
+    tipo_visualizacao: "linha",
+    parametros: { periodo_inicio: "2024-01-01", periodo_fim: "2024-12-31" },
+    confianca: 0.92,
+    gerado_em: new Date().toISOString(),
+  },
+  canal: {
+    titulo: "Vendas por canal",
+    colunas: ["canal", "faturamento", "quantidade_vendas"],
+    linhas: [["loja", 23010.5, 47], ["site", 16124.8, 33], ["whatsapp", 13650.2, 26], ["marketplace", 5791.45, 12]],
+    tipo_visualizacao: "pizza",
+    confianca: 0.88,
+    gerado_em: new Date().toISOString(),
+  },
   ticket: {
     titulo: "Ticket médio",
     // Sem coluna de período: o SQL real (backend/app/sql/templates.py)
@@ -57,6 +79,8 @@ export async function perguntar(pergunta) {
     await new Promise((r) => setTimeout(r, 600)); // simula a espera real
     if (/produto|vendidos/i.test(pergunta)) return { ...FALSAS.barra, intencao: "top_produtos" };
     if (/ticket/i.test(pergunta)) return { ...FALSAS.ticket, intencao: "ticket_medio" };
+    if (/canal/i.test(pergunta)) return { ...FALSAS.canal, intencao: "vendas_por_canal" };
+    if (/faturei em \d{4}\??$/i.test(pergunta.trim())) return { ...FALSAS.anual, intencao: "total_vendas_periodo" };
     if (/capital|tempo/i.test(pergunta))
       throw {
         mensagem: "Não entendi. Tente reformular.",

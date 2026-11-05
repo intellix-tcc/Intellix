@@ -72,6 +72,18 @@ export function resumoDeExemplo({ ano = 2026, mes = 3 } = {}) {
       { nome: "WhatsApp", valor: 25686.1, pct: 20 },
       { nome: "Marketplace", valor: 12843.1, pct: 10 },
     ],
+    pagamentos: [
+      { nome: "Pix", valor: 46234.98, pct: 36 },
+      { nome: "Cartão de crédito", valor: 42782.06, pct: 33.3 },
+      { nome: "Cartão de débito", valor: 19264.58, pct: 15 },
+      { nome: "Dinheiro", valor: 14127.36, pct: 11 },
+      { nome: "Boleto", valor: 6021.52, pct: 4.7 },
+    ],
+    dias_semana: [
+      { dia: "seg", valor: 3180 }, { dia: "ter", valor: 4920 }, { dia: "qua", valor: 3860 },
+      { dia: "qui", valor: 3710 }, { dia: "sex", valor: 4380 }, { dia: "sáb", valor: 2950 },
+      { dia: "dom", valor: 2210 },
+    ],
     top_produtos: [
       { nome: "Smartwatch", valor: 36420, pct: 28.4, variacao_pct: 18 },
       { nome: "Bota de couro", valor: 21800, pct: 17, variacao_pct: -9 },

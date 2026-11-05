@@ -66,3 +66,12 @@ def test_resumo_do_mes_com_dados():
 
 def test_resumo_mes_invalido():
     assert client.get("/resumo", params={"mes": 13}).status_code == 422
+
+
+def test_faturamento_de_um_ano_vira_serie_mensal_em_linha():
+    r = client.post("/chat", json={"pergunta": "quanto faturei em 2024"})
+    assert r.status_code == 200
+    dados = r.json()
+    assert dados["tipo_visualizacao"] == "linha"
+    assert len(dados["linhas"]) == 12
+    assert [linha[0] for linha in dados["linhas"]][:2] == ["2024-01", "2024-02"]
