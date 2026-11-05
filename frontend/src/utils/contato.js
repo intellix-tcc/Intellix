@@ -21,6 +21,25 @@ export const ASSUNTOS_CONTATO = [
   "Outro",
 ];
 
+/**
+ * Link que abre o Gmail no navegador com a mensagem já preenchida. É a saída
+ * quando o envio direto falha: não depende de aplicativo de e-mail instalado
+ * (o motivo de o mailto: não funcionar para quem usa e-mail só no navegador).
+ */
+export function linkGmail({ nome, email, assunto, mensagem }) {
+  const corpo = [mensagem.trim(), "", "—", `Nome: ${nome.trim()}`, `E-mail para resposta: ${email.trim()}`].join(
+    "\n"
+  );
+  const params = new URLSearchParams({
+    view: "cm",
+    fs: "1",
+    to: EMAIL_CONTATO,
+    su: `[Intellix] ${assunto}`,
+    body: corpo,
+  });
+  return `https://mail.google.com/mail/?${params.toString()}`;
+}
+
 // Páginas institucionais, abertas mesmo sem login (ver App.jsx). Usadas no
 // cabeçalho e no rodapé da vitrine e das páginas públicas.
 export const ROTAS_PUBLICAS = ["faq", "termos", "contato"];

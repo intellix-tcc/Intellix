@@ -1,7 +1,7 @@
 import { useState } from "react";
 import Icone from "../componentes/Icone";
 import { validarEmail, validarNome } from "../utils/validacao";
-import { ASSUNTOS_CONTATO, EMAIL_CONTATO } from "../utils/contato";
+import { ASSUNTOS_CONTATO, EMAIL_CONTATO, linkGmail } from "../utils/contato";
 import { enviarMensagemContato } from "../servicos/contato";
 
 const MENSAGEM_MIN = 10;
@@ -168,11 +168,30 @@ export default function FaleConosco({ usuario }) {
               </p>
             )}
 
+            {/* Falhou o envio direto: o texto já digitado não se perde —
+                vai pronto para o Gmail no navegador, ou é só copiar o
+                endereço. */}
             {erroEnvio && (
-              <p className="auth-erro" role="alert">
-                {erroEnvio} Se preferir, escreva direto para{" "}
-                <a href={`mailto:${EMAIL_CONTATO}`}>{EMAIL_CONTATO}</a>.
-              </p>
+              <div className="auth-erro contato-falha" role="alert">
+                <p>
+                  {erroEnvio} Você pode enviar a mesma mensagem pelo Gmail, ou escrever
+                  para <strong>{EMAIL_CONTATO}</strong> pelo e-mail que preferir.
+                </p>
+                <div className="contato-falha-acoes">
+                  <a
+                    className="botao-secundario contato-falha-botao"
+                    href={linkGmail(campos)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <Icone nome="envelope" size={16} />
+                    Enviar pelo Gmail
+                  </a>
+                  <button type="button" className="link" onClick={copiarEmail}>
+                    {copiado ? "E-mail copiado!" : "Copiar e-mail"}
+                  </button>
+                </div>
+              </div>
             )}
 
             <div className="painel-acoes">
