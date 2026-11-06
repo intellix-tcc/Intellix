@@ -50,6 +50,20 @@ def recriar_dataset(destino: Path) -> Path:
     return pasta / "dados" / "dataset.jsonl"
 
 
+def trechos(ex: dict) -> list[tuple[str, str]]:
+    """Entidades completas (tipo, texto) de um exemplo anotado em BIO."""
+    saida, atual = [], None
+    for token, tag in zip(ex["tokens"], ex["tags"], strict=False):
+        if tag.startswith("B-"):
+            atual = [tag[2:], [token]]
+            saida.append(atual)
+        elif tag.startswith("I-") and atual and atual[0] == tag[2:]:
+            atual[1].append(token)
+        else:
+            atual = None
+    return [(ent, " ".join(palavras)) for ent, palavras in saida]
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--modelo", default=str(RAIZ / "ia training" / "modelos" / "intellix_nlu_v1.0.0_2026-09-08.pt"))
@@ -75,6 +89,16 @@ def main() -> None:
     fora = sorted(t for t in palavras if t not in modelo["vocab"])
     b = {e: tags[f"B-{e}"] for e in ENTIDADES}
     ordem = sorted(ENTIDADES, key=lambda e: -b[e])
+    valores_treino = collections.defaultdict(set)
+    valores_teste = collections.defaultdict(set)
+    for ex in dados:
+        for ent, valor in trechos(ex):
+            valores_treino[ent].add(valor)
+    for ex in teste:
+        for ent, valor in trechos(ex):
+            valores_teste[ent].add(valor)
+    palavras_de_entidade = {p for vs in valores_teste.values() for v in vs for p in v.split()}
+    fora_em_entidade = sorted(set(fora) & palavras_de_entidade)
 
     linhas = [
         "# Conjunto de dados do modelo 1.0.0 (recriado)",
@@ -120,6 +144,19 @@ def main() -> None:
         "não estão no vocabulário do modelo 1.0.0:",
         "",
         ", ".join(fora),
+        "",
+        f"Dessas, {len(fora_em_entidade)} fazem parte de algum valor de entidade anotado no teste"
+        + (f": {', '.join(fora_em_entidade)}." if fora_em_entidade else "."),
+        "",
+        "## Teste real: valores de entidade já vistos no treino",
+        "",
+        "Valores distintos de cada entidade anotados no `teste_manual.jsonl` e quantos deles também aparecem,",
+        "com a mesma grafia, como valor da mesma entidade no conjunto de treino:",
+        "",
+        "| Entidade | Valores no treino | Valores no teste | Do teste presentes no treino |",
+        "|---|---:|---:|---:|",
+        *[f"| {e} | {len(valores_treino[e])} | {len(valores_teste[e])} | "
+          f"{len(valores_teste[e] & valores_treino[e])} |" for e in ordem],
         "",
     ]
     destino = Path(args.saida) / f"dataset_v1.0.0_{dt.datetime.now().astimezone():%Y-%m-%d}.md"
