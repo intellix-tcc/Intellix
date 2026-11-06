@@ -6,8 +6,10 @@ menor, segundo momento). Para cada ponto de código: onde mexer e o estado.
 
 - **Retorno 1 — Maria** (auditoria TC II): pendências de estrutura/evidência.
 - **Retorno 2 — Relatório TC2** (31/10/2026, nota indicativa **72/100**):
-  revisão técnica rigorosa em 14 achados (F01–F14). É o mais exigente, e a
-  maior parte ainda não foi aplicada.
+  revisão técnica rigorosa em 14 achados (F01–F14). É o mais exigente. Em
+  06/11/2026 todos os pontos de código estão aplicados (tabela abaixo); os
+  pontos de documento (F06, F07 no texto, F12–F14) ficam para a revisão final
+  do texto.
 
 Peso da nota do Retorno 2: Estrutura 25 · Requisitos 20 · **Rigor técnico 40**
 · Escrita 15. O que mais sobe a nota é o **rigor técnico** (verificação de
@@ -15,32 +17,25 @@ valor, ablação, correção de métrica).
 
 ---
 
-## 🔴 Código — prioridade alta
+## Estado do código em 06/11/2026 (versão final)
 
-| # | O que a banca pede | Onde no código | Estado |
-|---|---|---|---|
-| **F08** | Métrica por grão correto | `backend/app/sql/templates.py` (`ticket_medio`) | ✅ **feito** — `ticket_medio = sum(valor_total)/count(distinct venda_id)` (era `avg` por item). Falta ainda: regra para produto repetido na mesma venda (chave `unique(empresa,venda,produto)` em `001_schema.sql` descarta a 2ª linha) |
-| **F01** | Oráculo que confere **valores**, não só status/tipo | `scripts/avaliar_100_perguntas.py`, `docs/perguntas_validacao.md`, `backend/tests/test_valores_referencia.py` | 🟡 **iniciado** — criada base pequena calculável à mão (`test_valores_referencia.py`, 5 testes de valor). Falta: valor esperado por pergunta nas 100 + anexar divergências |
-| **F03** | **Ledger** das 100 perguntas (causa, esperado × observado) | harness do F01 + `docs/evidencias/` | ❌ a fazer |
-| **F04** | Demonstrar contribuição da **cabeça de entidades** (ablação) | `backend/app/nlu/adaptador_modelo.py` (slots por regras; modelo só p/ VENDEDOR+intenção), novo script em `ia training/` | ❌ a fazer — ablação modelo-só × regras-só × híbrido; teste por entidade incl. PRODUTO |
-| **F05** | Medir limiar, falso-aceite fora de domínio e margem | `backend/app/fallbacks.py` (limiar 0,70), `adaptador_modelo.py` (`_tem_termo_dominio`) | 🟡 parcial — filtro existe; falta medir e medir contra paráfrases válidas sem palavra-chave; pedir confirmação em caso ambíguo |
-| **F09** | Auditoria + isolamento testado | `log_consulta` (existe em `001_schema.sql`, **vazia**); `acesso.py`, `main.py` | 🟡 auth já existe; falta **escrever em `log_consulta`** por consulta e **teste de isolamento** (2 empresas, troca de id, acesso direto); avaliar RLS no Postgres |
-| **F10** | Backup/restore **comprovado** (não presumir Free) | `scripts/backup_db.py`, `scripts/restore_db.py` | 🟡 scripts existem; falta rodar dump+restore em ambiente separado, registrar tempo/resultado, definir RPO/RTO |
-| **F11** | Rastreabilidade de testes | `backend/tests/`, `.github/workflows/`, `docs/relatorio-execucao-testes.md` | 🟡 relatório existe; falta mapear RF01–09/RNF01–08→testes, confirmar modo **modelo**, DB efêmero no CI (opcional) |
-| **F07** | DER **real** do schema (não o diagrama de software) | gerar de `database/migrations/` | 🟡 doc, mas o artefato sai do schema real (grão, PK/FK, unicidade) + DDL sanitizado |
+Todos os pontos de código do Retorno 2 têm implementação e evidência
+versionada. O que resta é levar cada evidência para o texto (coluna "Vira no
+texto") e trocar as figuras.
 
----
-
-## ✅ Já resolvido nesta sessão (pontos do Retorno 2 que o código já cobre)
-
-| Ponto | O que foi feito | Vira no texto |
-|---|---|---|
-| **F02** (intenções fracas) | `variacao_periodo` 0→7, `comparacao` 3→5, `desempenho` melhorou; geral 58→**78%** (modelo v1.1.0) | atualizar síntese/capítulo 8 |
-| **F12** (importação indisponível) | importação de Excel **funciona e foi validada** | virar evidência |
-| Resolução temporal | ano-de-referência por dataset + períodos relativos | — |
-| **F09 (parte)** | autenticação no servidor + autorização por empresa (`auth.py`, `acesso.py`) | classificar RNF05 como parcial |
-| **F08** | ticket médio corrigido + verificado por valor | atualizar descrição da métrica |
-| **F01 (parte)** | base pequena com verificação de valor (`test_valores_referencia.py`) | descrever o oráculo com conferência numérica |
+| # | O que a banca pediu | O que foi feito | Evidência | Vira no texto |
+|---|---|---|---|---|
+| **F01** | Oráculo que confere **valores**, não só status/tipo | ✅ base calculável à mão com valores conferidos no `/chat` real (faturamento, ticket médio, contagem de vendas, ranking, período vazio) e produtos sem saída com recorte | `backend/tests/test_valores_referencia.py`, `test_sem_saida_recorte.py` | descrever o oráculo numérico. Limite honesto: nas 100 perguntas o critério continua sendo status HTTP + template, não o valor |
+| **F02** | Intenções fracas | ✅ modelo v1.2.0; 100 perguntas: 58 → 78 → 83 → **88/100** | `docs/avaliacao-correcoes-2026-11-06.md`, `docs/avaliacao-modelo-v1.2.md` | atualizar síntese e cap. 8 com 88/100 |
+| **F03** | **Ledger** das 100 perguntas (causa, esperado × observado) | ✅ cada erro com esperado, obtido, causa e "depende de" | `docs/evidencias/avaliacao_api_2026-11-06_versao_final.md` | tabela dos 12 erros e suas causas |
+| **F04** | Contribuição da **cabeça de entidades** (ablação) | ✅ modelo × regras × modelo sem BIO × modelo só com regras de slot | `docs/evidencias/ablacao_nlu_2026-11-05_1036.md`, `ia training/ablacao_nlu.py` | resultado: a cabeça BIO soma +0,0 pp; a heurística de vendedor, +3,6 pp |
+| **F05** | Limiar, falso-aceite fora de domínio e margem | ✅ medido: limiar 0,70 aceita 78/84 válidas e 0/12 fora de domínio; margens e custo do filtro léxico registrados | `docs/evidencias/confianca_filtro_2026-11-05_1044.md`, `ia training/medir_confianca.py` | justificar o 0,70 com a varredura. Pedir confirmação em caso de margem pequena ficou como trabalho futuro |
+| **F07** | DER **real** do schema | ✅ DER refeito das migrations (grão, PK/FK, unicidade), com `conversa` (008) | `docs/diagramas/der.png`, `der.dot`, `der.md` | trocar a figura 4 |
+| **F08** | Métrica no grão correto | ✅ `ticket_medio = sum(valor_total)/count(distinct venda_id)`; produto repetido na mesma venda agora é **somado** na importação (`linhas_agrupadas`), não descartado | `app/sql/templates.py`, `app/importacao/etl.py`, `test_valores_referencia.py`, `test_import_carga.py` | atualizar a descrição da métrica e da carga |
+| **F09** | Auditoria + isolamento testado | ✅ cada consulta gravada em `log_consulta`; dataset de outra pessoa → 404; **RLS no Postgres** com usuário de privilégio mínimo `intellix_app` (produção conecta com ele); login obrigatório em produção (`AUTH_OBRIGATORIA=true`) | `test_isolamento.py`, `test_auditoria.py`, `test_rls.py` (7/7 como `intellix_app`), migration `006_rls_e_usuario_app.sql` | RNF05 pode deixar de ser "parcial" |
+| **F10** | Backup/restore **comprovado** | ✅ dump + restauração em ambiente separado, 91,6 s para ~128 mil linhas; RPO 24 h e RTO < 15 min | `docs/evidencias/backup_restauracao_2026-11-05.md`, `scripts/backup_db.py`, `scripts/restore_db.py` | seção de operação/recuperação |
+| **F11** | Rastreabilidade de testes | ✅ 202 testes mapeados por módulo e capacidade; CI com Postgres efêmero e `NLU_BACKEND=modelo` a cada PR | `docs/evidencias/execucao_testes_2026-11-06.md`, `docs/relatorio-execucao-testes.md` | usar o texto do apêndice do relatório (202 testes, 198 aprovados, 4 de RLS à parte) |
+| **F12** | Importação indisponível | ✅ importação de Excel funciona, com relatório de linhas rejeitadas e motivos; "minhas planilhas" na conta | `test_import.py`, `test_import_carga.py`, `test_planilhas.py` | virar evidência; limitar conclusões ao cenário sintético |
 
 ---
 
@@ -51,13 +46,3 @@ valor, ablação, correção de métrica).
 - **F12**: limitar conclusões ao cenário sintético; separar custo estimado × observado.
 - **F13 / Maria**: ficha catalográfica, paginação desde a folha de rosto, listas/sumário, remissões cruzadas, número único da síntese.
 - **F14**: declaração de uso de IA nos 4 eixos (modelos/versões, ambiente, datas, prompts/saídas, assinaturas).
-
----
-
-## Ordem de ataque sugerida (código)
-
-1. **F08** ✅ + **F01** 🟡 (verificação de valor) — iniciado.
-2. **F03** — ledger das 100 perguntas a partir do harness do F01.
-3. **F04** — ablação do NLU (contribuição da cabeça de entidades).
-4. **F05 + F09** — medir limiar/fora-de-domínio; escrever auditoria + teste de isolamento.
-5. **F10 / F11 / F07** — evidência de backup, rastreabilidade de testes, DER real.
