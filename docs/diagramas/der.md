@@ -1,7 +1,9 @@
 # DER — modelo de dados implantado (TC2 F07)
 
 Gerado por introspecção do banco real (`scripts/gerar_der.py`), não um
-diagrama de software. DDL versionado em `database/migrations/` (001–005).
+diagrama de software. DDL versionado em `database/migrations/` (001 em diante;
+as migrations 006 e 007 não mudam tabelas, só permissões, RLS e funções, então
+o diagrama continua o mesmo).
 
 - **Grão da fato (`fato_item_venda`): um ITEM de venda** (produto dentro de
   uma venda). `quantidade_vendas` usa `count(distinct venda_id)`; o ticket
