@@ -106,3 +106,12 @@ def test_contexto_aceita_o_que_a_propria_api_devolve():
 def test_contexto_limite_em_texto_vira_numero():
     assert sanear_entidades({"limite": "10"}) == {"limite": 10}
     assert sanear_entidades({"limite": "500"}) == {}
+
+
+def test_produtos_sem_saida_vazio_cita_o_recorte_da_venda():
+    r = executar_template(
+        _interp("produtos_sem_saida", canal="site", **PERIODO),
+        "emp",
+        _Conexao(["produto", "categoria"], []),
+    )
+    assert r.mensagem.startswith("Todos os produtos (canal Site) tiveram")
