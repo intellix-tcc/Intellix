@@ -1,5 +1,11 @@
 # Execução dos testes — pacote e rastreabilidade (TC2 F11)
 
+> **Histórico.** A contagem oficial da versão final está em
+> [`execucao_testes_2026-11-06.md`](execucao_testes_2026-11-06.md)
+> (202 testes: 198 aprovados, 4 de RLS ignorados no CI e aprovados à parte
+> como `intellix_app`). A nota de CI no fim deste arquivo também foi superada:
+> o CI agora sobe um Postgres efêmero e roda os testes de integração.
+
 Atende ao feedback TC2 **F11** (identificar versão e cobertura real; confirmar
 que as verificações usaram o modelo treinado; mapear requisitos aos testes).
 Atualiza a contagem: **101 testes** (o texto antigo citava 5; o Quadro 13, 7).
@@ -8,7 +14,7 @@ Atualiza a contagem: **101 testes** (o texto antigo citava 5; o Quadro 13, 7).
 
 | Campo | Valor |
 |---|---|
-| Commit | `1fddc20` (+ `test_backend_nlu.py` desta entrega) |
+| Commit | `de98e41` (+ `test_backend_nlu.py` desta entrega) |
 | Comando | `cd backend && pytest -q --junitxml=../docs/evidencias/pytest_2026-11-05.xml` |
 | Ambiente | Windows 10 · Python 3.11.5 · pytest 8.3.2 |
 | **NLU ativo** | **`NLU_BACKEND=modelo`** → `ModeloTreinadoNLU` (confirmado pelo `test_backend_nlu.py`) |

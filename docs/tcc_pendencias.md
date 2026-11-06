@@ -98,11 +98,16 @@ formatar nem citar.
 | Indicador "taxa de sucesso de importação" | 8.4 | ⬜ |
 | Risco novo: heterogeneidade de planilhas | 6.8 | ⬜ |
 
-**Atenção em 6.7.4**: três dessas quatro entidades (`empresa`,
-`importacao`, `staging_venda`) **já existem no Supabase** — ver o schema
-real em `backend/CLAUDE.md`. A entidade `usuario` **não existe**, e
-autenticação ainda é decisão de escopo em aberto (ver `CLAUDE.md` da
-raiz). Não descrever `usuario` como implementada.
+**Atenção em 6.7.4** (atualizado em 06/11/2026): `empresa`, `importacao` e
+`staging_venda` existem no banco (`database/migrations/001_schema.sql`). Não
+há tabela `usuario` própria: o login é do **Supabase Auth**, e os usuários
+ficam em `auth.users`, gerenciada pelo Supabase. O sistema liga os dados a
+eles por chave estrangeira: `empresa.dono_id` (migration 005, quem importou a
+planilha) e `conversa.dono_id` (migration 008, histórico de conversas). No
+MER, representar `auth.users` como entidade externa e descrever `usuario`
+assim, não como tabela do Intellix. O DER real está em
+`docs/diagramas/der.png` (de `der.dot`, colunas conferidas contra as
+migrations; ver `docs/diagramas/README.md`).
 
 ---
 
@@ -120,11 +125,19 @@ trabalho novo:
 | `docs/perguntas_validacao.md` | **Tabela 1 do capítulo 8** (taxa de acerto por categoria) |
 | `docs/contratos.md` | contratos entre camadas — cap. 7 |
 | `docs/migrations_aplicadas.md` | evidência de implantação (datas, volumes) |
-| `backend/CLAUDE.md` | schema real, as 12 intenções, convenções — cap. 6.7 e 7 |
+| `database/migrations/` e `docs/diagramas/der.png` | schema real — cap. 6.7 |
+| `backend/app/sql/templates.py` e `ia training/moldes.py` | as 12 intenções do modelo e as 14 consultas (12 + 2 refinamentos; ver `docs/contratos.md`) — cap. 7 |
+| `docs/openapi.json` | contrato completo da API (10 operações) — cap. 7 |
+| `docs/evidencias/execucao_testes_2026-11-06.md` | testes da versão final — cap. 8 |
+| `docs/avaliacao-correcoes-2026-11-06.md` | 100 perguntas, 88/100 — cap. 8 |
 
 **Números reais já disponíveis para o capítulo 8**: 8.941 itens de venda,
 ≈ R$ 2,72 milhões, período 2023–2026, 40 produtos, 1.461 linhas em
-`dim_data`. Backend com 17 testes automatizados. Frontend publicado em
+`dim_data` (3.653 depois da migration 003, que estende o calendário até 2032).
+Backend com **202 testes automatizados** (198 aprovados e 4 de RLS ignorados
+no CI, aprovados à parte como `intellix_app`; ver
+`docs/evidencias/execucao_testes_2026-11-06.md`). 100 perguntas de validação:
+**88/100** com o modelo v1.2.0. Frontend publicado em
 `intellix-lilac.vercel.app`, backend em `intellix-api.onrender.com`.
 
 ---

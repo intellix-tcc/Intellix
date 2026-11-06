@@ -21,19 +21,57 @@
         }
       }
     },
+    "/capacidades": {
+      "get": {
+        "summary": "Capacidades",
+        "description": "O que o agente sabe responder (com exemplos) e o que está fora de\nescopo. Serve para o frontend montar sugestões e orientar o usuário.",
+        "operationId": "capacidades_capacidades_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "title": "Response Capacidades Capacidades Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/chat": {
       "post": {
         "summary": "Chat",
         "operationId": "chat_chat_post",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/Pergunta"
               }
             }
-          },
-          "required": true
+          }
         },
         "responses": {
           "200": {
@@ -59,20 +97,138 @@
         }
       }
     },
+    "/resumo": {
+      "get": {
+        "summary": "Resumo",
+        "description": "Panorama do mês para a tela Início (ver app/resumo.py). Sem ano/mês,\nusa o mês mais recente com dados. Mesmas regras de acesso do /chat.",
+        "operationId": "resumo_resumo_get",
+        "parameters": [
+          {
+            "name": "empresa_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Empresa Id"
+            }
+          },
+          {
+            "name": "ano",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "maximum": 2100,
+                  "minimum": 2000
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Ano"
+            }
+          },
+          {
+            "name": "mes",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "maximum": 12,
+                  "minimum": 1
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Mes"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "title": "Response Resumo Resumo Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/import": {
       "post": {
         "summary": "Import Planilha",
         "description": "Recebe o .xlsx do frontend (campo `arquivo`), valida e carrega no star\nschema. A resposta traz linhas_lidas/validas/rejeitadas -- campos que o\n`frontend/src/paginas/Importar.jsx` já lê. Mesmo padrão de erro do\nexecutor.py: nada de stack trace do Postgres vaza para o cliente.",
         "operationId": "import_planilha_import_post",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
         "requestBody": {
+          "required": true,
           "content": {
             "multipart/form-data": {
               "schema": {
                 "$ref": "#/components/schemas/Body_import_planilha_import_post"
               }
             }
-          },
-          "required": true
+          }
         },
         "responses": {
           "200": {
@@ -82,6 +238,281 @@
                 "schema": {
                   "type": "object",
                   "title": "Response Import Planilha Import Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/planilhas": {
+      "get": {
+        "summary": "Minhas Planilhas",
+        "description": "Planilhas importadas pelo usuário, da mais recente para a mais antiga.",
+        "operationId": "minhas_planilhas_planilhas_get",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "title": "Response Minhas Planilhas Planilhas Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/planilhas/{empresa_id}": {
+      "delete": {
+        "summary": "Apagar Planilha",
+        "description": "Apaga um dataset importado pelo próprio usuário. De outra pessoa, da\nbase demo ou inexistente: o mesmo 404 (não revela quais ids existem).",
+        "operationId": "apagar_planilha_planilhas__empresa_id__delete",
+        "parameters": [
+          {
+            "name": "empresa_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Empresa Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "title": "Response Apagar Planilha Planilhas  Empresa Id  Delete"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/conversas": {
+      "get": {
+        "summary": "Minhas Conversas",
+        "description": "Conversas do usuário, da mais recente para a mais antiga.",
+        "operationId": "minhas_conversas_conversas_get",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "title": "Response Minhas Conversas Conversas Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/conversas/{conversa_id}": {
+      "put": {
+        "summary": "Gravar Conversa",
+        "description": "Cria ou atualiza uma conversa da conta (o id é o mesmo do frontend).\nId de outra pessoa, ou malformado: 404, sem sobrescrever nada.",
+        "operationId": "gravar_conversa_conversas__conversa_id__put",
+        "parameters": [
+          {
+            "name": "conversa_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Conversa Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConversaPayload"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "title": "Response Gravar Conversa Conversas  Conversa Id  Put"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Apagar Conversa",
+        "description": "Apaga uma conversa da própria conta. De outra pessoa ou inexistente: 404.",
+        "operationId": "apagar_conversa_conversas__conversa_id__delete",
+        "parameters": [
+          {
+            "name": "conversa_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Conversa Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "title": "Response Apagar Conversa Conversas  Conversa Id  Delete"
                 }
               }
             }
@@ -116,6 +547,65 @@
         ],
         "title": "Body_import_planilha_import_post"
       },
+      "Contexto": {
+        "properties": {
+          "intencao": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 40
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Intencao"
+          },
+          "entidades": {
+            "type": "object",
+            "title": "Entidades",
+            "default": {}
+          }
+        },
+        "type": "object",
+        "title": "Contexto",
+        "description": "Resumo da resposta anterior, reenviado pelo frontend para dar\ncontinuidade à conversa (ver app/contexto.py). `intencao` e `entidades`\nsaem do ResultSet anterior (campos `intencao` e `parametros`)."
+      },
+      "ConversaPayload": {
+        "properties": {
+          "titulo": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Titulo"
+          },
+          "mensagens": {
+            "items": {
+              "type": "object"
+            },
+            "type": "array",
+            "maxItems": 200,
+            "title": "Mensagens"
+          },
+          "criadoEm": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Criadoem"
+          }
+        },
+        "type": "object",
+        "required": [
+          "titulo"
+        ],
+        "title": "ConversaPayload",
+        "description": "Corpo do PUT /conversas/{id}: a conversa inteira como o frontend a\nmantém (título + mensagens). O id vem na URL; o dono, do token. Aceita\ntanto `criadoEm` (nome do objeto no frontend) quanto `criado_em`."
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -133,7 +623,30 @@
         "properties": {
           "pergunta": {
             "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
             "title": "Pergunta"
+          },
+          "empresa_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Empresa Id"
+          },
+          "contexto": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Contexto"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "type": "object",
@@ -180,6 +693,39 @@
           "gerado_em": {
             "type": "string",
             "title": "Gerado Em"
+          },
+          "intencao": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Intencao"
+          },
+          "evolucao": {
+            "anyOf": [
+              {
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Evolucao"
+          },
+          "mensagem": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mensagem"
           }
         },
         "type": "object",

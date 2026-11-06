@@ -4,7 +4,7 @@
 **Atende:** crítica nº 2 do parecer de orientação (*integrar o modelo treinado à API,
 executar as cem perguntas e consolidar taxa funcional, latência e verificação dos objetivos*)
 **Data da execução:** 13/10/2026, 19:19 a 20:34 (UTC−3)
-**Versão:** `main`, commit `9c8c62a`, modelo `intellix_nlu_v1.0.0.pt` (BiLSTM, 1,09 MB)
+**Versão:** `main`, commit `04025b7`, modelo `intellix_nlu_v1.0.0.pt` (BiLSTM, 1,09 MB)
 **Responsável:** Erik Alves Gonçalves (dados e infraestrutura)
 
 ---
@@ -147,7 +147,7 @@ com o mesmo código e modelo), isso indica que a aplicação opera dentro do lim
 ### 3.4 Depois do pool de conexões
 
 Com base na decomposição acima, o `db.py` passou a usar um pool de conexões
-(`psycopg_pool`, commit `c534341`): a conexão com o banco é aberta uma vez e reaproveitada,
+(`psycopg_pool`, commit `79df3f8`): a conexão com o banco é aberta uma vez e reaproveitada,
 em vez de ser aberta a cada pergunta. As 100 perguntas foram executadas de novo nos dois
 ambientes. Os acertos não mudaram (58/100, idênticos pergunta a pergunta), como esperado,
 já que o pool não altera nenhuma resposta.

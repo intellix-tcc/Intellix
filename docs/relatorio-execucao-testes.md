@@ -2,13 +2,37 @@
 
 **Projeto:** Intellix — Agente inteligente de análise de vendas
 **Atende:** Feedback 7 da orientação (*"Evidenciar execução dos testes automatizados"*)
-**Data da execução de referência:** 13/10/2026, 19:01 (UTC−3)
-**Versão testada:** branch `feat/ingestao-excel-e-banco` (PR #4), commit `694a5d5`
+**Execução de referência (versão final):** 06/11/2026, commit `e48f6a4`
+**Primeira execução registrada:** 13/10/2026, commit `c48fa10` (seções 1 a 6, histórico)
 **Responsável:** Erik Alves Gonçalves (dados e infraestrutura)
 
 ---
 
-## 1. Objetivo
+## Situação atual (versão final, 06/11/2026)
+
+A suíte cresceu de 28 testes (13/10) para 101 (05/11) e **202** na versão
+final. Detalhes, módulo por módulo, em
+[`evidencias/execucao_testes_2026-11-06.md`](evidencias/execucao_testes_2026-11-06.md).
+
+| Ambiente | Banco | Aprovados | Falhos | Ignorados | Total |
+|---|---|---:|---:|---:|---:|
+| Integração contínua (GitHub Actions, Python 3.12, Postgres 16 efêmero) | Sim | 198 | 0 | 4 | 202 |
+| Verificação local (Linux, Python 3.13, Postgres 16, mesma montagem do CI) | Sim | 198 | 0 | 4 | 202 |
+| Isolamento por RLS como `intellix_app` (`test_rls.py`) | Sim | 7 | 0 | 0 | 7 |
+
+Os 4 ignorados são os testes de RLS, que só valem conectados como o usuário
+da aplicação (`intellix_app`); rodados assim, à parte, passam todos. As duas
+limitações da seção 5 foram resolvidas: o CI sobe um banco de teste efêmero e
+roda a integração a cada PR, e a carga do ETL tem teste automatizado com banco
+(`test_import_carga.py`).
+
+As seções 1 a 6 abaixo registram a primeira execução (13/10/2026) e ficam
+como histórico. O texto sugerido para o TCC, no apêndice, já usa os números
+da versão final.
+
+---
+
+## 1. Objetivo (execução de 13/10/2026)
 
 Registrar, com data, ambiente e contagens, a execução da suíte automatizada do backend,
 e comprovar que os testes de integração com o banco de dados foram de fato executados
@@ -34,7 +58,7 @@ execução com banco ocorre no ambiente de desenvolvimento, registrada na seçã
 
 ## 3. Ambientes e resultados
 
-A mesma versão do código (commit `694a5d5`) foi executada em três ambientes:
+A mesma versão do código (commit `c48fa10`) foi executada em três ambientes:
 
 | Ambiente | Sistema / Python | Banco disponível | Aprovados | Falhos | Ignorados | Total |
 |---|---|---|---:|---:|---:|---:|
@@ -75,14 +99,17 @@ O endpoint `POST /import` foi exercitado manualmente contra o mesmo banco em
 | Primeira importação | `status: processada` — 10 lidas, 9 válidas, 1 rejeitada (motivo gravado em `staging_venda.erros`) |
 | Reenvio do mesmo arquivo | `status: duplicada` — nenhuma linha reprocessada (deduplicação por hash SHA-256) |
 
-## 5. Limitações registradas
+## 5. Limitações registradas em 13/10/2026 (resolvidas depois)
 
 1. **Integração fora do CI.** Os testes com banco rodam apenas no ambiente de
    desenvolvimento. Levá-los ao CI exigiria um banco de teste efêmero ou credenciais
    guardadas como *secret*; optou-se por não expor o banco ao CI nesta fase.
+   **Resolvida:** o CI passou a subir um Postgres efêmero (sem credencial de
+   produção) e roda a integração a cada PR.
 2. **Carga do ETL sem teste automatizado com banco.** Os 11 testes de `test_import.py`
    cobrem leitura e validação; a carga no esquema estrela foi verificada manualmente
    (seção 4.1). Um teste de integração automatizado para ela é trabalho futuro.
+   **Resolvida:** `test_import_carga.py`.
 3. **Volume.** A importação foi validada com 10 linhas. Cargas de milhares de linhas
    pelo pooler do Supabase ainda não foram testadas.
 
@@ -102,23 +129,23 @@ Sem o `.env`, a mesma linha reproduz o resultado do CI (23 aprovados, 5 ignorado
 ## Apêndice — texto sugerido para o TCC (seção de validação)
 
 > Para evidenciar a execução dos testes automatizados, a suíte do backend, composta
-> por 28 testes escritos com a biblioteca pytest, foi executada em 13 de outubro de 2026
-> sobre a mesma versão do código (commit 694a5d5) em três ambientes, conforme a Tabela X.
-> No ambiente de desenvolvimento, com acesso ao banco PostgreSQL hospedado no Supabase,
-> todos os 28 testes foram aprovados, incluindo os cinco testes de integração, que
-> percorrem o fluxo completo da pergunta em linguagem natural até a consulta ao banco.
-> Nos ambientes sem credenciais de banco (integração contínua e verificação), esses cinco
-> testes são ignorados por projeto, e os 23 demais foram aprovados. Nenhum teste falhou.
-> A execução efetiva da integração é confirmada pelos tempos registrados: os testes que
-> consultam o banco levaram entre 147 e 294 ms, contra 3 ms do teste que, por desenho,
-> não o acessa.
+> por 202 testes escritos com a biblioteca pytest e distribuídos em 26 módulos, foi
+> executada sobre a versão final do código (commit e48f6a4), conforme a Tabela X. A
+> cada alteração proposta, o servidor de integração contínua (GitHub Actions) cria um
+> banco PostgreSQL temporário, aplica o esquema e os dados de demonstração e executa a
+> suíte inteira com o modelo de linguagem treinado ativo, sem acesso a credenciais de
+> produção. Foram aprovados 198 testes, nenhum falhou, e 4 foram ignorados por projeto:
+> são os testes do isolamento por segurança em nível de linha (RLS), que só têm efeito
+> quando a conexão usa o usuário restrito da aplicação. Executados à parte com esse
+> usuário, o mesmo que o sistema usa em produção, os 7 testes do módulo foram
+> aprovados. Além dos testes automatizados, as 100 perguntas de validação foram
+> reexecutadas ponta a ponta sobre a mesma versão, com 88 acertos.
 >
-> **Tabela X – Resultado da execução dos testes automatizados por ambiente**
+> **Tabela X – Resultado da execução dos testes automatizados**
 >
-> | Ambiente | Banco | Aprovados | Falhos | Ignorados |
+> | Execução | Banco | Aprovados | Falhos | Ignorados |
 > |---|---|---:|---:|---:|
-> | Desenvolvimento (Windows, Python 3.12) | Sim | 28 | 0 | 0 |
-> | Integração contínua (GitHub Actions, Python 3.12) | Não | 23 | 0 | 5 |
-> | Verificação (Linux, Python 3.11) | Não | 23 | 0 | 5 |
+> | Suíte completa (integração contínua) | PostgreSQL 16 temporário | 198 | 0 | 4 |
+> | Isolamento por RLS, como usuário da aplicação | PostgreSQL 16 temporário | 7 | 0 | 0 |
 >
 > Fonte: Elaborado pelos autores (2026).

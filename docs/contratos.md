@@ -21,6 +21,7 @@ class Interpretacao(BaseModel):
     confianca: float
     entidades: dict[str, Any] = {}
     texto_original: str
+    entidades_modelo: dict[str, Any] = {}
 ```
 
 | Campo | Tipo | Observação |
@@ -29,6 +30,7 @@ class Interpretacao(BaseModel):
 | `confianca` | `float` | 0.0–1.0. Abaixo de `0.70` o backend não tenta consultar — pede reformulação (ver `app/fallbacks.py`). |
 | `entidades` | `dict` | Só o que o template correspondente precisa (`periodo_inicio`, `periodo_fim`, `limite`, ...). |
 | `texto_original` | `str` | Pergunta como o usuário digitou, sem normalização. |
+| `entidades_modelo` | `dict` | Trechos que o modelo marcou na frase (tags BIO), crus: `{"PRODUTO": "botas de couro"}`. Não vão para o SQL; servem de pista para `app/filtros.py` achar o valor exato no catálogo. |
 
 ## 2. `ResultSet` — fronteira Backend → Frontend
 
@@ -44,6 +46,9 @@ class ResultSet(BaseModel):
     parametros: dict[str, Any] = {}
     confianca: float = 1.0
     gerado_em: str
+    intencao: str | None = None        # chave do template que respondeu
+    evolucao: dict[str, Any] | None = None  # 12 meses até o mês perguntado
+    mensagem: str | None = None        # frase pronta quando a lista vazia é a resposta
 ```
 
 Regra inegociável: **valores numéricos ficam como número** (`48231.50`),
@@ -51,12 +56,17 @@ nunca como texto formatado (`"R$ 48.231,50"`). Formatação de moeda é
 responsabilidade do frontend — é o que faz o exportador de Excel/PDF virar
 poucas linhas de código em vez de precisar re-parsear texto.
 
-`tipo_visualizacao` decide como o frontend renderiza (já implementado em
-[`frontend/src/App.jsx`](../frontend/src/App.jsx)):
+`tipo_visualizacao` decide como o frontend renderiza (ver
+[`frontend/src/paginas/Chat.jsx`](../frontend/src/paginas/Chat.jsx) e
+[`frontend/src/componentes/GraficoResultado.jsx`](../frontend/src/componentes/GraficoResultado.jsx)):
 
 - `numero` → usa `linhas[0][1]` como valor único.
-- `barra` → gráfico de barras (`GraficoBarra.jsx`), uma linha por categoria.
+- `barra` → gráfico de barras, uma linha por categoria.
+- `linha` → evolução no tempo (ex.: faturamento de um ano, mês a mês).
+- `pizza` → divisão do total (desenhada como rosca).
 - `tabela` → tabela com `colunas` como cabeçalho.
+
+O usuário pode trocar a visualização na tela; o tipo devolvido é só o padrão.
 
 ## 3. Endpoints
 
@@ -68,7 +78,7 @@ poucas linhas de código em vez de precisar re-parsear texto.
 { "status": "ok" }
 ```
 
-### Autenticação (vale para `/chat` e `/import`)
+### Autenticação (vale para todas as rotas, menos `/health` e `/capacidades`)
 
 O login é feito pelo **Supabase Auth**, direto do frontend: cadastro, entrada,
 recuperação e troca de senha não passam pelo backend, e o backend nunca vê
@@ -92,15 +102,61 @@ de quais datasets ele é dono ([`app/acesso.py`](../backend/app/acesso.py)).
 | Token expirado | `401`, `tipo: "sessao_expirada"` (frontend renova ou manda ao login) |
 | `empresa_id` de outro usuário, inexistente ou malformado | `404`, `tipo: "dataset_nao_encontrado"` (mesma resposta, para não revelar ids) |
 
+**Em produção (Render), `AUTH_OBRIGATORIA=true`:** nenhuma rota de dados
+responde sem login. O valor `false` (padrão do código e do
+`backend/.env.example`) existe para desenvolvimento local e para as
+avaliações automatizadas (`scripts/avaliar_100_perguntas.py`).
+`/planilhas` e `/conversas` exigem login mesmo com `false`: sem usuário não há
+"minhas planilhas" nem "minhas conversas".
+
+### Limite de requisições
+
+Por IP de origem, em memória ([`app/limite.py`](../backend/app/limite.py)):
+`/chat` 30 por minuto, `/resumo` 60 por minuto, `/import` 10 por hora
+(ajustáveis por variável de ambiente). Acima do limite: `429` com
+`tipo: "limite_requisicoes"` e o cabeçalho `Retry-After`.
+
+### `GET /capacidades`
+
+Aberto (sem login). Lista o que o agente responde, com exemplos, e o que está
+fora do escopo. Alimenta a tela "O que posso perguntar".
+
+```json
+{
+  "total_intencoes": 14,
+  "intencoes": [{ "chave": "top_produtos", "titulo": "Produtos mais vendidos", "exemplos": ["Quais os 5 produtos mais vendidos?"] }],
+  "limitacoes": ["Não faço previsões nem recomendações — só o que já aconteceu nos dados."],
+  "dica": "Inclua sempre um período (ex.: 'em março de 2024' ou 'em 2024')."
+}
+```
+
+**12 intenções × 14 tipos de pergunta.** O modelo NLU classifica **12
+intenções** (as de `ia training/moldes.py`). Duas consultas a mais,
+`unidades_vendidas` e `melhor_mes`, são **refinamentos** aplicados depois do
+modelo ([`app/refino.py`](../backend/app/refino.py)), sem retreino: "quantas
+botas vendemos" refina `total_vendas_periodo`; "qual foi o melhor mês" refina
+uma pergunta de período. Por isso `templates.py` tem 14 consultas e a tela
+mostra 14 tipos de pergunta, enquanto o modelo e as 100 perguntas de
+validação trabalham com 12 intenções.
+
 ### `POST /chat`
 
-**Contrato definido, implementação pendente** (depende de banco no ar —
-ver `dev-b-backend.md`, Bloco 2, item B10).
+**Implementado** ([`app/main.py`](../backend/app/main.py)). Pipeline: NLU
+(intenção + trechos) → filtros pelo catálogo do dataset → contexto da conversa
+→ refino → template SQL parametrizado → `ResultSet`. Cada consulta executada
+é registrada em `log_consulta` (auditoria).
 
 Requisição — modelo `Pergunta`:
 ```json
-{ "pergunta": "quanto faturei em março", "empresa_id": "opcional" }
+{
+  "pergunta": "e em abril?",
+  "empresa_id": "opcional",
+  "contexto": { "intencao": "total_vendas_periodo", "entidades": { "periodo_inicio": "2024-03-01", "periodo_fim": "2024-03-31" } }
+}
 ```
+`pergunta` tem de 1 a 500 caracteres. `contexto` é opcional: é o resumo da
+resposta anterior (`intencao` + `parametros`), que permite perguntas como
+"e em abril?" ou "e de calçados?" (ver [`app/contexto.py`](../backend/app/contexto.py)).
 `empresa_id` é **opcional**: quando presente (o id devolvido por um `/import`),
 a consulta cai sobre os dados daquela planilha, **desde que o usuário logado
 seja o dono** (ver Autenticação acima); ausente, usa a base de demonstração
@@ -132,9 +188,24 @@ implementado em [`app/fallbacks.py`](../backend/app/fallbacks.py):
 }
 ```
 
+Os demais erros do `/chat` seguem o mesmo formato (`detail.tipo` +
+`detail.mensagem`):
+
+| Situação | Código | `tipo` |
+|---|---|---|
+| Falta um dado obrigatório (período, vendedor, quantos no ranking) | `422` | `parametro_faltando` (com `faltando` e uma pergunta de esclarecimento em `mensagem`) |
+| Valor impossível vindo da pergunta ou do contexto | `422` | `parametro_invalido` |
+| Nenhum registro no período/filtro | `404` | `sem_resultado` |
+| Dataset de outra pessoa, inexistente ou malformado | `404` | `dataset_nao_encontrado` |
+| Banco fora do ar | `503` | `banco_indisponivel` |
+| Limite de requisições | `429` | `limite_requisicoes` |
+
+Exceção: "produtos sem saída" com todos os produtos vendidos responde `200`
+com `linhas: []` e a frase em `mensagem` (a lista vazia é a resposta).
+
 O frontend espera `err.mensagem` e `err.exemplos` no corpo de erro (ver
-[`frontend/src/api.js`](../frontend/src/api.js)) — por isso o fallback
-sempre populua esses dois campos dentro de `detail`.
+[`frontend/src/servicos/api.js`](../frontend/src/servicos/api.js)) — por isso
+os fallbacks sempre preenchem esses campos dentro de `detail`.
 
 ### `POST /import`
 
@@ -160,9 +231,14 @@ Resposta — `200 OK`:
   "linhas_validas": 1231,
   "linhas_rejeitadas": 9,
   "colunas_encontradas": ["data_venda", "produto", "quantidade", "valor_total"],
-  "colunas_ignoradas": ["observacao"]
+  "colunas_ignoradas": ["observacao"],
+  "motivos_rejeicao": { "data inválida ou ausente": 9 },
+  "linhas_agrupadas": 0
 }
 ```
+`motivos_rejeicao` explica, por motivo, quantas linhas ficaram de fora;
+`linhas_agrupadas` conta as linhas que repetiam o mesmo produto na mesma venda
+e foram somadas. Limite de 10 MB por arquivo.
 Cada importação cria um **dataset próprio** (uma empresa nova), registrado em
 nome do usuário logado (`empresa.dono_id`, migration 005), e devolve o
 `empresa_id`; o frontend o reenvia no `/chat` para as perguntas caírem sobre
@@ -209,6 +285,39 @@ dimensões e auditoria) e responde `{"excluida": true, "empresa_id": "..."}`.
 Planilha de outra pessoa, a base de demonstração, id inexistente ou
 malformado: o mesmo 404 `dataset_nao_encontrado`, sem revelar quais ids
 existem.
+
+### `GET /conversas`, `PUT /conversas/{id}` e `DELETE /conversas/{id}` — histórico de conversas
+
+Exigem login, como `/planilhas`. Guardam as conversas do chat na conta, para
+a pessoa reencontrá-las em outro aparelho (antes ficavam só no
+`localStorage`). Dependem da migration `008_historico_conversas.sql`; o dono
+vem sempre do token.
+
+`GET /conversas` devolve as conversas da conta, da mais recente para a mais
+antiga:
+
+```json
+{
+  "conversas": [
+    {
+      "id": "5f0c1c8e-2a4b-4c0e-9d0a-0b8f2d7c6e11",
+      "titulo": "Faturamento de março",
+      "mensagens": [{ "tipo": "usuario", "texto": "Quanto faturei em março de 2024?" }],
+      "criadoEm": "2026-11-06T13:10:00+00:00",
+      "atualizadoEm": "2026-11-06T13:12:00+00:00"
+    }
+  ]
+}
+```
+
+`PUT /conversas/{id}` cria ou atualiza (o `id` é o UUID gerado pelo
+frontend). Corpo: `titulo` (1 a 200 caracteres), `mensagens` (até 200, no
+formato do frontend, gravadas como JSONB) e `criadoEm` (opcional). Resposta:
+`{"id": "..."}`. `DELETE /conversas/{id}` responde
+`{"excluida": true, "id": "..."}`.
+
+Conversa de outra pessoa, inexistente ou id malformado: o mesmo `404`
+`conversa_nao_encontrada`, sem sobrescrever nem revelar nada.
 
 ### `GET /resumo` — panorama do mês (implementado)
 
