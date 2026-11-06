@@ -66,7 +66,17 @@ export default function EvolucaoMensal({ evolucao }) {
         <ResponsiveContainer width="100%" height={220}>
           <BarChart data={serie} margin={{ top: 22, right: 8, left: 0, bottom: 0 }}>
             <CartesianGrid vertical={false} stroke="var(--border)" strokeDasharray="3 4" />
-            <XAxis dataKey="rotulo" tick={{ fontSize: 11, fill: "var(--text-3)" }} axisLine={false} tickLine={false} interval={0} />
+            {/* preserveStartEnd: no celular os 12 rótulos ("abr/23"…) não
+                cabem e se sobrepunham; o gráfico pula os que colidiriam,
+                mantendo o primeiro e o último. Em tela larga, todos aparecem. */}
+            <XAxis
+              dataKey="rotulo"
+              tick={{ fontSize: 11, fill: "var(--text-3)" }}
+              axisLine={false}
+              tickLine={false}
+              interval="preserveStartEnd"
+              minTickGap={6}
+            />
             <YAxis hide />
             <Tooltip
               cursor={{ fill: "var(--hover-bg)" }}
@@ -110,6 +120,9 @@ function criarRotuloBarra(rotular, destaque) {
   return function RotuloBarra({ x, y, width, value, index }) {
     if (x == null || value == null) return null;
     const ehDestaque = index === destaque;
+    // Barra estreita (celular): os números das vizinhas se encostavam. Fica
+    // só o do mês perguntado; os demais seguem no tooltip ao tocar na barra.
+    if (!ehDestaque && width < 22) return null;
     return (
       <text
         x={x + width / 2}
