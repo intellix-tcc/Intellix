@@ -2,18 +2,27 @@
 
 Gerado por introspecção do banco real (`scripts/gerar_der.py`), não um
 diagrama de software. DDL versionado em `database/migrations/` (001 em diante;
-as migrations 006 e 007 não mudam tabelas, só permissões, RLS e funções, então
-o diagrama continua o mesmo).
+as migrations 006 e 007 não mudam tabelas, só permissões, RLS e funções; a 008
+acrescenta a tabela `conversa`, do histórico de conversas por conta).
 
 - **Grão da fato (`fato_item_venda`): um ITEM de venda** (produto dentro de
   uma venda). `quantidade_vendas` usa `count(distinct venda_id)`; o ticket
   médio = faturamento / vendas distintas (ver sql/templates.py).
-- **`empresa.dono_id`** referencia `auth.users` (gerido pelo Supabase, em
-  outro schema), por isso essa relação não é desenhada aqui. Não há
+- **`empresa.dono_id`** e **`conversa.dono_id`** referenciam `auth.users`
+  (gerido pelo Supabase, em outro schema), por isso essas relações não são
+  desenhadas aqui. Não há
   tabela `usuario` própria do projeto.
 
 ```mermaid
 erDiagram
+  conversa {
+    uuid id PK
+    uuid dono_id
+    text titulo
+    jsonb mensagens
+    timestamptz criada_em
+    timestamptz atualizada_em
+  }
   empresa {
     uuid id PK
     text nome

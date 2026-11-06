@@ -11,12 +11,12 @@ digraph arquitetura {
 
   apresentacao [label=<<TABLE BORDER="1" CELLBORDER="1" CELLSPACING="4" CELLPADDING="4" COLOR="#333333">
     <TR><TD COLSPAN="2" BGCOLOR="#333333" ALIGN="LEFT"><FONT COLOR="white"><B>Camada de apresentação</B> · React + Vite, publicada na Vercel</FONT></TD></TR>
-    <TR><TD>Chat, painel Início,<BR/>importação e Minhas planilhas</TD>
-        <TD>Histórico de conversas e exportação<BR/>em Excel e PDF, no navegador</TD></TR></TABLE>>];
+    <TR><TD>Chat, painel Início, O que posso perguntar,<BR/>importação, Minhas planilhas e histórico</TD>
+        <TD>Exportação em Excel e PDF,<BR/>gerada no navegador</TD></TR></TABLE>>];
 
   auth [label=<<TABLE BORDER="1" CELLBORDER="0" CELLPADDING="5" COLOR="#333333" STYLE="dashed">
     <TR><TD><B>Supabase Auth</B></TD></TR>
-    <TR><TD>cadastro, login e<BR/>emissão do token (JWT)</TD></TR></TABLE>>];
+    <TR><TD>cadastro, login e emissão do<BR/>token (JWT); guarda só o<BR/>hash (bcrypt) das senhas</TD></TR></TABLE>>];
 
   aplicacao [label=<<TABLE BORDER="1" CELLBORDER="1" CELLSPACING="4" CELLPADDING="4" COLOR="#333333">
     <TR><TD COLSPAN="3" BGCOLOR="#333333" ALIGN="LEFT"><FONT COLOR="white"><B>Camada de aplicação</B> · API FastAPI (Python 3.12), publicada no Render</FONT></TD></TR>
@@ -26,16 +26,17 @@ digraph arquitetura {
         <TD>Executor e<BR/>14 modelos de consulta</TD></TR>
     <TR><TD>Importação de planilhas<BR/><FONT POINT-SIZE="9">leitura, validação e carga</FONT></TD>
         <TD>Panorama do mês<BR/><FONT POINT-SIZE="9">tela Início</FONT></TD>
-        <TD>Auditoria<BR/><FONT POINT-SIZE="9">registro em log_consulta</FONT></TD></TR></TABLE>>];
+        <TD>Auditoria<BR/><FONT POINT-SIZE="9">registro em log_consulta</FONT></TD></TR>
+    <TR><TD COLSPAN="3">Histórico de conversas e Minhas planilhas, por conta <FONT POINT-SIZE="9">(sempre filtrados pelo dono)</FONT></TD></TR></TABLE>>];
 
   dados [label=<<TABLE BORDER="1" CELLBORDER="1" CELLSPACING="4" CELLPADDING="4" COLOR="#333333">
     <TR><TD BGCOLOR="#333333" ALIGN="LEFT"><FONT COLOR="white"><B>Camada de acesso a dados</B> · psycopg 3</FONT></TD></TR>
     <TR><TD>Pool de conexões · consultas sempre parametrizadas, sem concatenação de valores</TD></TR></TABLE>>];
 
   persistencia [label=<<TABLE BORDER="1" CELLBORDER="1" CELLSPACING="4" CELLPADDING="4" COLOR="#333333">
-    <TR><TD BGCOLOR="#333333" ALIGN="LEFT"><FONT COLOR="white"><B>Camada de persistência</B> · PostgreSQL gerenciado pelo Supabase (São Paulo)</FONT></TD></TR>
-    <TR><TD>Esquema estrela · tabelas de importação · log_consulta<BR/>migrações versionadas · backups automáticos</TD></TR>
-    <TR><TD STYLE="dashed">Segurança em nível de linha por empresa e usuário com privilégio mínimo<BR/>(aplicados no ambiente de desenvolvimento)</TD></TR></TABLE>>];
+    <TR><TD BGCOLOR="#333333" ALIGN="LEFT"><FONT COLOR="white"><B>Camada de persistência</B> · PostgreSQL gerenciado pelo Supabase</FONT></TD></TR>
+    <TR><TD>Esquema estrela · tabelas de importação · log_consulta · conversa<BR/>migrações versionadas · backups automáticos<BR/><FONT POINT-SIZE="9">desenvolvimento: São Paulo · produção: Oregon (EUA)</FONT></TD></TR>
+    <TR><TD STYLE="dashed">Segurança em nível de linha por empresa e usuário com privilégio mínimo<BR/>(aplicados em desenvolvimento e em produção)</TD></TR></TABLE>>];
 
 
   {rank=same; apresentacao; auth;}
