@@ -1459,6 +1459,13 @@ h2.eyebrow::before {
   .resultado .tabela-scroll td {
     display: block;
     width: 100%;
+    /* Sem isso o cartão somava padding e borda aos 100% e passava ~26px da
+       largura da resposta, cortado na direita. */
+    box-sizing: border-box;
+  }
+  /* A tabela larga (min-width do desktop) não vale nos cartões. */
+  .resultado .tabela-scroll table {
+    min-width: 0;
   }
   .resultado .tabela-scroll thead {
     position: absolute;
@@ -1482,6 +1489,8 @@ h2.eyebrow::before {
     border: none;
     border-bottom: 1px dashed var(--border);
     text-align: right;
+    /* Nome de produto longo quebra linha em vez de alargar o cartão. */
+    overflow-wrap: anywhere;
   }
   .resultado .tabela-scroll td:last-child {
     border-bottom: none;
