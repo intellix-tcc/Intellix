@@ -682,12 +682,34 @@ h2.eyebrow::before {
   gap: 7px;
 }
 .rosca-legenda li {
+  position: relative;
   display: grid;
   grid-template-columns: 10px minmax(0, 1fr) auto auto;
   align-items: center;
   gap: 8px;
   font-size: 13.5px;
   color: var(--text-h);
+}
+/* Drill-down da Início: a legenda clicável ganha um botão em sobreposição
+   (ver Rosca.jsx). O realce de hover/foco vai no próprio <li>, atrás do
+   conteúdo, para não cobrir o texto. */
+.rosca-legenda-acao {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  border: none;
+  background: none;
+  border-radius: 7px;
+  cursor: pointer;
+}
+.rosca-legenda-clicavel:has(.rosca-legenda-acao:hover) {
+  background: var(--hover-bg);
+  border-radius: 7px;
+}
+.rosca-legenda-clicavel:has(.rosca-legenda-acao:focus-visible) {
+  outline: 2px solid var(--accent);
+  outline-offset: 0;
+  border-radius: 7px;
 }
 .rosca-cor {
   width: 10px;
@@ -966,7 +988,8 @@ h2.eyebrow::before {
 .cartao .rosca-legenda li {
   grid-template-columns: 10px minmax(0, 1fr) auto;
   row-gap: 1px;
-  padding: 5px 0;
+  padding: 5px 6px;
+  margin: 0 -6px;
   border-bottom: 1px dashed var(--border);
 }
 .cartao .rosca-legenda .rosca-valor {

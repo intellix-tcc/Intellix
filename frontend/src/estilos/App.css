@@ -795,22 +795,49 @@ img.logo {
   padding: 0;
 }
 .painel-ranking li {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 9px 10px;
-  margin: 0 -10px;
-  border-radius: 8px;
   border-bottom: 1px solid var(--border);
-  font-size: 14px;
-  transition: background-color 0.16s ease, padding-left 0.16s ease;
-}
-.painel-ranking li:hover {
-  background: var(--hover-bg);
-  padding-left: 16px;
 }
 .painel-ranking li:last-child {
   border-bottom: none;
+}
+/* A linha inteira é um botão: clicar abre a análise daquele produto no chat
+   (drill-down da Início). O layout flex e o realce de hover, que antes
+   ficavam no <li>, moram aqui para o foco do teclado pegar a linha toda. */
+.painel-ranking-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: calc(100% + 20px);
+  margin: 0 -10px;
+  padding: 9px 10px;
+  border: none;
+  background: none;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 14px;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.16s ease, padding-left 0.16s ease;
+}
+.painel-ranking-link:hover {
+  background: var(--hover-bg);
+  padding-left: 16px;
+}
+.painel-ranking-link:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+.painel-ranking-seta {
+  flex-shrink: 0;
+  margin-left: -2px;
+  color: var(--text-3);
+  opacity: 0;
+  transition: opacity 0.16s ease;
+}
+.painel-ranking-link:hover .painel-ranking-seta,
+.painel-ranking-link:focus-visible .painel-ranking-seta {
+  opacity: 1;
 }
 .painel-ranking-pos {
   flex-shrink: 0;

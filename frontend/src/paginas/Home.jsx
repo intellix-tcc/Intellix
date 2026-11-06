@@ -272,15 +272,23 @@ export default function Home({ usuario, conversas = [], onPerguntar, onAbrirConv
                   <ol className="painel-ranking">
                     {r.top_produtos.map((p, i) => (
                       <li key={p.nome}>
-                        <span className="painel-ranking-pos">{i + 1}</span>
-                        <span className="painel-ranking-nome">
-                          {p.nome}
-                          <span className="painel-ranking-barra" aria-hidden="true">
-                            <span style={{ width: `${(p.valor / r.top_produtos[0].valor) * 100}%` }} />
+                        <button
+                          type="button"
+                          className="painel-ranking-link"
+                          onClick={() => onPerguntar(perguntaDeProduto(p.nome, r.periodo.rotulo))}
+                          title={`Analisar ${p.nome} no chat`}
+                        >
+                          <span className="painel-ranking-pos">{i + 1}</span>
+                          <span className="painel-ranking-nome">
+                            {p.nome}
+                            <span className="painel-ranking-barra" aria-hidden="true">
+                              <span style={{ width: `${(p.valor / r.top_produtos[0].valor) * 100}%` }} />
+                            </span>
                           </span>
-                        </span>
-                        <span className="painel-ranking-valor">{moeda(p.valor)}</span>
-                        <Variacao valor={p.variacao_pct} compacta />
+                          <span className="painel-ranking-valor">{moeda(p.valor)}</span>
+                          <Variacao valor={p.variacao_pct} compacta />
+                          <Icone nome="seta-direita" size={13} className="painel-ranking-seta" />
+                        </button>
                       </li>
                     ))}
                   </ol>
@@ -289,18 +297,18 @@ export default function Home({ usuario, conversas = [], onPerguntar, onAbrirConv
                 )}
               </Cartao>
               <Cartao id="h-categorias" titulo="Por categoria" icone="pizza" cor="var(--dado-3)">
-                <Fatias itens={r.categorias} />
+                <Fatias itens={r.categorias} tipo="categoria" periodoRotulo={r.periodo.rotulo} onPerguntar={onPerguntar} />
               </Cartao>
             </div>
 
             <Capitulo numero="04" titulo="Como os clientes compraram" descricao="Canais de venda e formas de pagamento." />
             <div className="painel-grade grade-1-1">
               <Cartao id="h-canais" titulo="Por canal" icone="api" cor="var(--dado-6)">
-                <Fatias itens={r.canais} />
+                <Fatias itens={r.canais} tipo="canal" periodoRotulo={r.periodo.rotulo} onPerguntar={onPerguntar} />
               </Cartao>
               {r.pagamentos && (
                 <Cartao id="h-pagamentos" titulo="Formas de pagamento" icone="cartao" cor="var(--dado-7)">
-                  <Fatias itens={r.pagamentos} />
+                  <Fatias itens={r.pagamentos} tipo="pagamento" periodoRotulo={r.periodo.rotulo} onPerguntar={onPerguntar} />
                 </Cartao>
               )}
             </div>
@@ -467,6 +475,31 @@ function Destaques({ observacoes, onPerguntar }) {
       ))}
     </ul>
   );
+}
+
+// Drill-down da Início: clicar num item da composição (categoria, canal,
+// pagamento) ou num produto do ranking abre a análise daquele recorte no
+// chat. As frases seguem os exemplos que o backend reconhece bem (filtros de
+// produto/categoria/canal/pagamento — ver backend/app/filtros.py). Itens sem
+// recorte possível não viram link.
+const SEM_RECORTE = new Set(["Sem categoria", "Não informado", "Outros"]);
+
+function perguntaDeFatia(tipo, nome, rotulo) {
+  if (SEM_RECORTE.has(nome)) return null;
+  // "da categoria X": medido nos 35 meses da base demo, 280/280 respostas
+  // certas. "Quanto faturei em X em <mês>" acertava só 79,6%: o modelo
+  // confundia com variação ou recusava por baixa confiança.
+  if (tipo === "categoria") return `Qual o faturamento da categoria ${nome} em ${rotulo}?`;
+  // "no canal X": a palavra "canal" é a pista que o filtro usa e mantém a
+  // frase correta seja qual for o gênero do canal (no canal Loja/Site/...).
+  if (tipo === "canal") return `Quanto vendi no canal ${nome} em ${rotulo}?`;
+  // Mesma forma do exemplo do backend ("Quanto foi pago no pix em março…").
+  if (tipo === "pagamento") return `Quanto foi pago no ${nome} em ${rotulo}?`;
+  return null;
+}
+
+function perguntaDeProduto(nome, rotulo) {
+  return `Quantas unidades de ${nome} vendemos em ${rotulo}?`;
 }
 
 function atalhos(rotulo) {
@@ -663,8 +696,10 @@ function GraficoTendencia({ serie }) {
 
 // Composição do mês em rosca, com a cor fixa de cada item (utils/cores.js):
 // "Eletrônicos" tem a mesma cor aqui e nas respostas do chat. Até 6 fatias;
-// o resto vira "Outros" para a rosca continuar legível.
-function Fatias({ itens }) {
+// o resto vira "Outros" para a rosca continuar legível. Cada item da legenda
+// abre, no chat, a análise daquele recorte (`tipo` + `periodoRotulo` montam a
+// pergunta); "Outros" e itens sem cadastro não viram link.
+function Fatias({ itens, tipo, periodoRotulo, onPerguntar }) {
   if (!itens.length) return <p className="painel-legenda">Sem dados no período.</p>;
   const visiveis = itens.length > 6 ? [...itens.slice(0, 5), {
     nome: "Outros",
@@ -674,7 +709,13 @@ function Fatias({ itens }) {
   return (
     <LimiteErro alternativo={<p className="painel-legenda">Não foi possível desenhar este gráfico.</p>}>
       <Rosca
-        itens={visiveis.map((i, k) => ({ nome: i.nome, valor: i.valor, cor: cores[k] }))}
+        itens={visiveis.map((i, k) => ({
+          nome: i.nome,
+          valor: i.valor,
+          cor: cores[k],
+          pergunta: onPerguntar ? perguntaDeFatia(tipo, i.nome, periodoRotulo) : null,
+        }))}
+        aoClicarItem={onPerguntar}
         formatar={(v, centro) => (centro ? moedaCurta(v) : moeda(v))}
         rotuloCentro="No mês"
         altura={170}
