@@ -3,6 +3,7 @@ import { datasetAtivo } from "../utils/dataset";
 import { resumoDeExemplo } from "../utils/resumoExemplo";
 
 const API = import.meta.env.VITE_API_URL;
+const TEMPO_LIMITE_MS = 60000;
 const MOCK = import.meta.env.VITE_MOCK === "true";
 
 const FALSAS = {
@@ -211,6 +212,11 @@ async function chamar(caminho, { metodo = "GET", corpo } = {}) {
 
   // Servidor fora do ar, DNS, CORS: fetch rejeita com TypeError, não com uma
   // resposta. Sem este try o erro cru subia e a UI só dizia "Algo deu errado".
+  // Teto de espera: sem ele, um servidor travado deixava a tela esperando
+  // para sempre. 60 s cobrem o despertar do Render gratuito (~50 s); a tela
+  // já avisa "acordando o servidor" bem antes disso.
+  const controle = new AbortController();
+  const relogio = setTimeout(() => controle.abort(), TEMPO_LIMITE_MS);
   let r;
   try {
     r = await fetch(`${API}${caminho}`, {
@@ -220,9 +226,18 @@ async function chamar(caminho, { metodo = "GET", corpo } = {}) {
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
       body: corpo ? JSON.stringify(corpo) : undefined,
+      signal: controle.signal,
     });
   } catch (err) {
+    if (err?.name === "AbortError") {
+      throw {
+        mensagem: "O servidor demorou demais para responder. Tente de novo em instantes.",
+        tecnico: "timeout",
+      };
+    }
     throw erroDeRede(err?.message);
+  } finally {
+    clearTimeout(relogio);
   }
 
   // 500 do servidor ou proxy costuma devolver HTML, não JSON — r.json()

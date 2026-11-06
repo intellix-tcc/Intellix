@@ -14,7 +14,7 @@ from app.db import fechar_pool, get_connection
 from app.fallbacks import CONFIANCA_MINIMA, verificar_confianca
 from app.filtros import aplicar_filtros, carregar_catalogo, sem_acento
 from app.importacao.etl import importar
-from app.importacao.leitor_excel import ErroImportacao
+from app.importacao.leitor_excel import TAMANHO_MAX_MB, ErroImportacao
 from app.limite import LimiteDeRequisicoes
 from app.models import Pergunta, ResultSet
 from app.nlu.regras import RuleBasedNLU, usar_referencia
@@ -228,7 +228,19 @@ async def import_planilha(arquivo: UploadFile, usuario: UsuarioAtual) -> dict:
     schema. A resposta traz linhas_lidas/validas/rejeitadas -- campos que o
     `frontend/src/paginas/Importar.jsx` já lê. Mesmo padrão de erro do
     executor.py: nada de stack trace do Postgres vaza para o cliente."""
-    conteudo = await arquivo.read()
+    # Lê no máximo 1 byte além do limite: o suficiente para saber que passou,
+    # sem trazer para a memória um arquivo de qualquer tamanho que alguém
+    # mande direto para a API (o navegador já barra acima de 10 MB).
+    limite_bytes = TAMANHO_MAX_MB * 1024 * 1024
+    conteudo = await arquivo.read(limite_bytes + 1)
+    if len(conteudo) > limite_bytes:
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "tipo": "planilha_invalida",
+                "mensagem": f"A planilha precisa ter no máximo {TAMANHO_MAX_MB} MB.",
+            },
+        )
     try:
         with get_connection() as conn:
             # Cada importação cria o próprio dataset (empresa) e devolve o
