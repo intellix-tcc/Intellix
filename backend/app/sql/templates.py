@@ -126,7 +126,20 @@ TEMPLATES: dict[str, dict] = {
                   from fato_item_venda f
                   join dim_data d on d.id = f.data_id
                   where f.produto_id = p.id
+                    and f.empresa_id = %(empresa_id)s
                     and d.data between %(periodo_inicio)s and %(periodo_fim)s
+                    -- recorte da venda: "parados NO SITE" = sem venda pelo
+                    -- site no período (antes o canal era ignorado e a
+                    -- resposta era a do total). Produto não entra aqui: é o
+                    -- próprio item listado.
+                    and (%(vendedor)s::text is null or f.vendedor_id in (
+                          select id from dim_vendedor
+                          where empresa_id = %(empresa_id)s and nome = %(vendedor)s))
+                    and (%(cliente)s::text is null or f.cliente_id in (
+                          select id from dim_cliente
+                          where empresa_id = %(empresa_id)s and nome = %(cliente)s))
+                    and (%(canal)s::text is null or f.canal = %(canal)s)
+                    and (%(forma_pagamento)s::text is null or f.forma_pagamento = %(forma_pagamento)s)
               )
             order by p.nome
         """,

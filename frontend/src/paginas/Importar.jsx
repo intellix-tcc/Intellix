@@ -9,6 +9,7 @@ import {
 } from "../servicos/importacao";
 import { salvarDataset } from "../utils/dataset";
 import SuasPlanilhas from "../componentes/SuasPlanilhas";
+import { listarPlanilhas } from "../servicos/api";
 
 // Estados possíveis: vazio -> lendo -> lido -> enviando -> (enviado | pendente | erro)
 // "pendente" é o caso de hoje: o arquivo passou na validação, mas o endpoint
@@ -29,6 +30,10 @@ export default function Importar({ onIrParaChat }) {
   const [arrastando, setArrastando] = useState(false);
   // Troca a `key` da lista "Suas planilhas" para ela recarregar após importar.
   const [versaoLista, setVersaoLista] = useState(0);
+  // Mesmo nome de arquivo já importado pela conta: importar de novo cria uma
+  // cópia em "Suas planilhas". Avisa antes, sem impedir (pode ser outra versão).
+  const [jaImportada, setJaImportada] = useState(null);
+  const arquivoAtual = useRef(null); // a resposta da lista só vale para o arquivo ainda escolhido
   const inputArquivo = useRef(null);
 
   function limpar() {
@@ -38,6 +43,7 @@ export default function Importar({ onIrParaChat }) {
     setErro("");
     setProgresso(0);
     setResultadoEnvio(null);
+    setJaImportada(null);
   }
 
   async function receber(novo) {
@@ -52,11 +58,19 @@ export default function Importar({ onIrParaChat }) {
     }
 
     setArquivo(novo);
+    arquivoAtual.current = novo;
     setEstado("lendo");
     try {
       const resultado = await analisarPlanilha(novo);
       setAnalise(resultado);
       setEstado("lido");
+      // aviso opcional: se a lista não vier (sem rede), segue sem ele
+      listarPlanilhas()
+        .then((lista) => {
+          if (arquivoAtual.current !== novo) return;
+          setJaImportada(lista.find((p) => p.nome_arquivo === novo.name) || null);
+        })
+        .catch(() => {});
     } catch (err) {
       setErro(err?.mensagem || "Não conseguimos ler essa planilha.");
       setEstado("erro");
@@ -204,6 +218,17 @@ export default function Importar({ onIrParaChat }) {
 
         {analise && estado !== "erro" && <Conferencia analise={analise} />}
 
+        {estado === "lido" && jaImportada && (
+          <div className="aviso aviso-pendente" role="status">
+            <p>
+              Você já importou um arquivo chamado <strong>{jaImportada.nome_arquivo}</strong> em{" "}
+              {new Date(jaImportada.importada_em).toLocaleDateString("pt-BR")}. Enviar de novo
+              cria uma segunda cópia em “Suas planilhas”. Se for o mesmo arquivo, use a que já
+              está lá.
+            </p>
+          </div>
+        )}
+
         {estado === "lido" && (
           <div className="painel-acoes">
             <button
@@ -239,9 +264,11 @@ export default function Importar({ onIrParaChat }) {
                 colunas sempre vêm da leitura local. Nada estimado. */}
             <ul className="stats-sucesso">
               <li>
-                {(resultadoEnvio?.linhas_validas ?? analise?.totalLinhas) != null
-                  ? `${resultadoEnvio?.linhas_validas ?? analise?.totalLinhas} registros encontrados`
-                  : "Registros processados"}
+                {/* Linhas LIDAS da planilha; as aceitas já estão na frase acima.
+                    Antes este item repetia as aceitas com o rótulo "encontrados". */}
+                {(resultadoEnvio?.linhas_lidas ?? analise?.totalLinhas) != null
+                  ? `${resultadoEnvio?.linhas_lidas ?? analise?.totalLinhas} linhas lidas`
+                  : "Linhas processadas"}
               </li>
               <li>{analise?.colunasEncontradas?.length ?? 0} colunas identificadas</li>
               <li>Dados prontos para análise</li>
