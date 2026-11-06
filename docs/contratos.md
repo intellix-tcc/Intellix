@@ -229,6 +229,17 @@ O `ResultSet` do `/chat` também passou a trazer `intencao` (opcional), a
 chave do template que respondeu — o frontend usa para sugerir a próxima
 pergunta.
 
+E `mensagem` (opcional), presente quando a resposta certa é uma lista
+vazia: em "produtos sem saída", se todos os produtos venderam no período, o
+`/chat` devolve 200 com `linhas: []` e a frase pronta em `mensagem`, em vez
+do 404 `sem_resultado`.
+
+O `contexto` reenviado pelo frontend é filtrado antes de chegar ao SQL
+(`sanear_entidades` em `app/models.py`): datas que não são ISO válidas,
+`limite` fora de 1..100, listas, objetos e textos acima de 200 caracteres
+são descartados. Um valor impossível que ainda chegue ao banco vira 422
+`parametro_invalido`, nunca 500.
+
 ## Regra de ouro: a pergunta nunca vira SQL diretamente
 
 O NLU só escolhe **qual** template usar (uma chave fixa de
