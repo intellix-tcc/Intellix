@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   entrar,
   obterRetornoDoEmail,
   redefinirSenha,
+  reenviarConfirmacao,
   registrar,
   solicitarRecuperacao,
 } from "../servicos/auth";
@@ -49,9 +50,20 @@ const TEXTOS = {
 
 const VAZIO = { nome: "", email: "", senha: "", confirmarSenha: "", aceiteTermos: false };
 
-// Resultado do link de recuperação de senha (ver auth.js). Lido uma vez: a
-// tela abre direto no passo certo quando a pessoa chega pelo e-mail.
+// Resultado do link do e-mail, de recuperação de senha ou de confirmação do
+// cadastro (ver auth.js). Lido uma vez: a tela abre direto no passo certo
+// quando a pessoa chega pelo e-mail.
 const RETORNO_EMAIL = obterRetornoDoEmail();
+// Só a recuperação abre no modo "recuperar"; o retorno do cadastro (deu certo
+// ou link vencido) abre no "entrar", que é o próximo passo da pessoa.
+const ABRE_EM_RECUPERAR =
+  RETORNO_EMAIL?.tipo === "recuperacao" ||
+  (RETORNO_EMAIL?.tipo === "erro" && RETORNO_EMAIL.fluxo !== "cadastro");
+
+// O Supabase recusa um segundo e-mail de confirmação para o mesmo endereço
+// antes de 1 minuto; o botão de reenviar espera o mesmo tempo, em vez de
+// deixar a pessoa clicar e tomar erro.
+const ESPERA_REENVIO_MS = 60 * 1000;
 
 export default function Login({ onEntrar, aviso, tema, onAlternarTema }) {
   // "landing" é a vitrine (quem somos, o que fazemos) — quem chega sem sessão
@@ -59,7 +71,7 @@ export default function Login({ onEntrar, aviso, tema, onAlternarTema }) {
   // Sessão expirada (aviso preenchido) pula direto pro formulário: a pessoa
   // já conhece o produto, só precisa entrar de novo.
   const [tela, setTela] = useState(() => (aviso || RETORNO_EMAIL ? "formulario" : "landing"));
-  const [modo, setModo] = useState(() => (RETORNO_EMAIL ? "recuperar" : "entrar"));
+  const [modo, setModo] = useState(() => (ABRE_EM_RECUPERAR ? "recuperar" : "entrar"));
   const [campos, setCampos] = useState(VAZIO);
   const [erros, setErros] = useState({});
   const [erroGeral, setErroGeral] = useState(() =>
@@ -76,9 +88,38 @@ export default function Login({ onEntrar, aviso, tema, onAlternarTema }) {
   const porLink = RETORNO_EMAIL?.tipo === "recuperacao";
   const [codigo, setCodigo] = useState("");
   const [codigoGerado, setCodigoGerado] = useState("");
-  const [sucesso, setSucesso] = useState("");
+  const [sucesso, setSucesso] = useState(() =>
+    RETORNO_EMAIL?.tipo === "cadastroConfirmado"
+      ? "E-mail confirmado! Agora entre com seu e-mail e senha."
+      : ""
+  );
+
+  // Cadastro feito, esperando o clique no link do e-mail: guarda o endereço
+  // para mostrar e para o reenvio. Vazio fora desse passo.
+  const [aguardandoConfirmacao, setAguardandoConfirmacao] = useState("");
+  // Tentou entrar com conta ainda não confirmada: mostra o reenvio no login.
+  const [emailNaoConfirmado, setEmailNaoConfirmado] = useState(false);
+  const [reenviando, setReenviando] = useState(false);
+  const [reenvioLiberaEm, setReenvioLiberaEm] = useState(0);
+  const [agora, setAgora] = useState(0);
+
+  // Contagem regressiva do botão de reenviar: um tique por segundo, só
+  // enquanto houver espera.
+  useEffect(() => {
+    if (reenvioLiberaEm <= agora) return;
+    const id = setTimeout(() => setAgora(Date.now()), 1000);
+    return () => clearTimeout(id);
+  }, [reenvioLiberaEm, agora]);
+  const esperaReenvio = Math.max(0, Math.ceil((reenvioLiberaEm - agora) / 1000));
+
+  function segurarReenvio() {
+    const instante = Date.now();
+    setAgora(instante);
+    setReenvioLiberaEm(instante + ESPERA_REENVIO_MS);
+  }
 
   const t = TEXTOS[modo];
+  const confirmandoCadastro = modo === "registrar" && Boolean(aguardandoConfirmacao);
 
   function mudar(campo, valor) {
     setCampos((c) => ({ ...c, [campo]: valor }));
@@ -95,7 +136,26 @@ export default function Login({ onEntrar, aviso, tema, onAlternarTema }) {
     setEtapa("pedir");
     setCodigo("");
     setCodigoGerado("");
+    setAguardandoConfirmacao("");
+    setEmailNaoConfirmado(false);
     setCampos((c) => ({ ...VAZIO, email: c.email }));
+  }
+
+  async function reenviar() {
+    const email = aguardandoConfirmacao || campos.email;
+    setErroGeral("");
+    setSucesso("");
+    setReenviando(true);
+    try {
+      await reenviarConfirmacao({ email });
+      setErros((e) => ({ ...e, email: "" }));
+      setSucesso(`Enviamos um novo link para ${email}. Confira também a caixa de spam.`);
+      segurarReenvio();
+    } catch (err) {
+      setErroGeral(err?.mensagem || "Não consegui reenviar o e-mail. Tente de novo em instantes.");
+    } finally {
+      setReenviando(false);
+    }
   }
 
   function acessar(modoDestino) {
@@ -144,7 +204,18 @@ export default function Login({ onEntrar, aviso, tema, onAlternarTema }) {
       if (modo === "entrar") {
         onEntrar(await entrar({ email: campos.email, senha: campos.senha }));
       } else if (modo === "registrar") {
-        onEntrar(await registrar(campos));
+        const resultado = await registrar(campos);
+        if (resultado?.confirmacaoPendente) {
+          setAguardandoConfirmacao(resultado.email);
+          setSucesso(
+            `Enviamos um link de confirmação para ${resultado.email}. Abra o e-mail e ` +
+              "clique no link para ativar a conta; depois é só entrar. Confira também a caixa de spam."
+          );
+          // o Supabase acabou de enviar: o reenvio só vale daqui a 1 minuto
+          segurarReenvio();
+        } else {
+          onEntrar(resultado);
+        }
       } else if (etapa === "pedir") {
         const { codigo: gerado } = await solicitarRecuperacao({ email: campos.email });
         if (gerado) {
@@ -168,6 +239,7 @@ export default function Login({ onEntrar, aviso, tema, onAlternarTema }) {
         setSucesso("Senha alterada. Entre com a nova senha.");
       }
     } catch (err) {
+      if (modo === "entrar") setEmailNaoConfirmado(err?.codigo === "email_not_confirmed");
       // auth.js devolve { mensagem, campo? } — com campo, o erro aparece
       // colado no input certo em vez de num aviso solto no topo.
       if (err?.campo) setErros((atual) => ({ ...atual, [err.campo]: err.mensagem }));
@@ -180,6 +252,22 @@ export default function Login({ onEntrar, aviso, tema, onAlternarTema }) {
   const forca = modo !== "entrar" && campos.senha ? forcaSenha(campos.senha) : null;
   const rotuloAcao =
     modo === "recuperar" && etapa === "redefinir" ? "Redefinir senha" : t.acao;
+
+  // Usado no passo "confira seu e-mail" e no login de conta não confirmada.
+  const botaoReenviar = (
+    <button
+      type="button"
+      className="link"
+      onClick={reenviar}
+      disabled={carregando || reenviando || esperaReenvio > 0}
+    >
+      {reenviando
+        ? "Reenviando…"
+        : esperaReenvio > 0
+          ? `Reenviar e-mail em ${esperaReenvio}s`
+          : "Reenviar e-mail de confirmação"}
+    </button>
+  );
 
   if (tela === "landing") {
     return (
@@ -353,7 +441,9 @@ export default function Login({ onEntrar, aviso, tema, onAlternarTema }) {
 
           {/* 2. O que esta tela faz. É o <h1> da página, com aparência de
               frase — o cabeçalho existe para quem navega por leitor de tela. */}
-          <h1 className="auth-sub">{t.sub}</h1>
+          <h1 className="auth-sub">
+            {confirmandoCadastro ? "Confirme seu e-mail para ativar a conta." : t.sub}
+          </h1>
 
           {aviso && <p className="auth-aviso">{aviso}</p>}
           {sucesso && (
@@ -362,7 +452,21 @@ export default function Login({ onEntrar, aviso, tema, onAlternarTema }) {
             </p>
           )}
 
-          {/* Formulário */}
+          {/* Cadastro feito: no lugar do formulário, o próximo passo. A
+              mensagem com o e-mail de destino é o `sucesso`, logo acima. */}
+          {confirmandoCadastro ? (
+            <div className="auth-form">
+              <button type="button" className="auth-botao" onClick={() => trocarModo("entrar")}>
+                Ir para o login
+              </button>
+              <div className="auth-esqueci">{botaoReenviar}</div>
+              {erroGeral && (
+                <p className="auth-erro" role="alert">
+                  {erroGeral}
+                </p>
+              )}
+            </div>
+          ) : (
           <form onSubmit={enviar} className="auth-form" noValidate>
             {modo === "registrar" && (
               <Campo
@@ -447,6 +551,10 @@ export default function Login({ onEntrar, aviso, tema, onAlternarTema }) {
               </div>
             )}
 
+            {modo === "entrar" && emailNaoConfirmado && (
+              <div className="auth-esqueci">{botaoReenviar}</div>
+            )}
+
             {forca && (
               <div className="forca" aria-hidden="true">
                 <span className={`forca-barra forca-${forca.nivel}`} />
@@ -505,8 +613,11 @@ export default function Login({ onEntrar, aviso, tema, onAlternarTema }) {
               {carregando ? t.carregando : rotuloAcao}
             </button>
           </form>
+          )}
 
-          {/* 4. Caminho secundário */}
+          {/* 4. Caminho secundário (no passo de confirmação o "Ir para o
+              login" já faz esse papel) */}
+          {!confirmandoCadastro && (
           <div className="auth-rodape">
             {modo === "entrar" ? (
               <p>
@@ -521,6 +632,7 @@ export default function Login({ onEntrar, aviso, tema, onAlternarTema }) {
               </button>
             )}
           </div>
+          )}
 
           <p className="auth-nota">
             Protótipo acadêmico. O login é feito pelo Supabase Auth: sua senha é
