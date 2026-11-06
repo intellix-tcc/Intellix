@@ -47,7 +47,9 @@ const GRUPOS = [
             </ul>
             <p>
               Não precisa de palavra-chave nem de formato especial: escreva como
-              perguntaria a alguém do time.
+              perguntaria a alguém do time. No app, a lista completa por tema — e o
+              que o Intellix ainda não responde — fica em{" "}
+              <a href="#/capacidades">O que posso perguntar</a>.
             </p>
           </>
         ),

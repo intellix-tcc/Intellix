@@ -1,6 +1,7 @@
 import { obterToken } from "./auth";
 import { datasetAtivo } from "../utils/dataset";
 import { resumoDeExemplo } from "../utils/resumoExemplo";
+import { CAPACIDADES_ESTATICAS } from "../utils/capacidades";
 
 const API = import.meta.env.VITE_API_URL;
 const TEMPO_LIMITE_MS = 60000;
@@ -153,6 +154,33 @@ export async function buscarResumo({ ano, mes } = {}) {
     cacheResumo.set(chaveResumo(dados.periodo.ano, dados.periodo.mes), { dados, em: Date.now() });
   }
   return dados;
+}
+
+/**
+ * O que o agente sabe responder (GET /capacidades): intenções com exemplos,
+ * limitações e a dica de período. É a fonte que a tela "O que posso
+ * perguntar" mostra. Nunca rejeita: o servidor do Render hiberna e essa tela
+ * precisa abrir na hora, então uma falha (ou o modo mock) devolve a cópia
+ * estática de utils/capacidades.js, que espelha o mesmo endpoint. Cache em
+ * memória porque a resposta não muda entre datasets nem durante a sessão.
+ */
+let cacheCapacidades = null;
+
+export async function buscarCapacidades() {
+  if (cacheCapacidades) return cacheCapacidades;
+  if (MOCK || !API) {
+    cacheCapacidades = CAPACIDADES_ESTATICAS;
+    return cacheCapacidades;
+  }
+  try {
+    const dados = await chamar("/capacidades");
+    // Só aceita a resposta do servidor se vier no formato esperado; qualquer
+    // coisa estranha (proxy, versão antiga) cai no fallback estático.
+    cacheCapacidades = dados?.intencoes?.length ? dados : CAPACIDADES_ESTATICAS;
+  } catch {
+    cacheCapacidades = CAPACIDADES_ESTATICAS;
+  }
+  return cacheCapacidades;
 }
 
 /**

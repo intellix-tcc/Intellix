@@ -605,6 +605,14 @@ export default function Chat({
                 </div>
               ))}
             </div>
+            {/* As sugestões acima são só um ponto de partida; a lista completa
+                do que o agente responde (e o que não responde) fica na própria
+                tela "O que posso perguntar". */}
+            <a className="tela-inicial-tudo" href="#/capacidades">
+              <Icone nome="selo" size={15} />
+              Ver tudo que posso responder
+              <Icone nome="seta-direita" size={14} />
+            </a>
           </div>
         )}
 

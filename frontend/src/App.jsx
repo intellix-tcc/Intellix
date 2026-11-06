@@ -51,6 +51,7 @@ const carregar = {
   home: comRecarga(() => import("./paginas/Home")),
   chat: comRecarga(() => import("./paginas/Chat")),
   importar: comRecarga(() => import("./paginas/Importar")),
+  capacidades: comRecarga(() => import("./paginas/Capacidades")),
   sobre: comRecarga(() => import("./paginas/Sobre")),
   perfil: comRecarga(() => import("./paginas/Perfil")),
   faq: comRecarga(() => import("./paginas/Faq")),
@@ -60,6 +61,7 @@ const carregar = {
 const Home = lazy(carregar.home);
 const Chat = lazy(carregar.chat);
 const Importar = lazy(carregar.importar);
+const Capacidades = lazy(carregar.capacidades);
 const Sobre = lazy(carregar.sobre);
 const Perfil = lazy(carregar.perfil);
 const Faq = lazy(carregar.faq);
@@ -80,11 +82,12 @@ import { carregarConversas, donoDe, salvarConversas, novoId, tituloFromPergunta 
 import "./estilos/App.css";
 import "./estilos/visual.css";
 
-const ROTAS = ["home", "chat", "importar", "sobre", "perfil", ...ROTAS_PUBLICAS];
+const ROTAS = ["home", "chat", "importar", "capacidades", "sobre", "perfil", ...ROTAS_PUBLICAS];
 const TITULOS = {
   home: "Início",
   chat: "Perguntar",
   importar: "Importar dados",
+  capacidades: "O que posso perguntar",
   sobre: "Sobre",
   perfil: "Meu perfil",
   faq: "Perguntas frequentes",
@@ -469,6 +472,7 @@ export default function App() {
     ...[
       ["home", "inicio", "panorama painel dashboard"],
       ["chat", "perguntar", "chat conversa"],
+      ["capacidades", "selo", "o que posso perguntar capacidades exemplos limitacoes o que sabe responder"],
       ["importar", "importar", "planilha excel upload"],
       ["perfil", "usuarios", "conta senha foto preferencias tema texto"],
       ["sobre", "sobre", ""],
@@ -623,6 +627,12 @@ export default function App() {
           )}
           {rota === "sobre" && <Sobre onIrParaImportar={() => irPara("importar")} />}
           {rota === "importar" && <Importar onIrParaChat={() => irPara("chat")} />}
+          {rota === "capacidades" && (
+            <Capacidades
+              onPerguntar={(p) => perguntarTexto(p, { nova: true })}
+              ocupado={carregando}
+            />
+          )}
           {rota === "perfil" && (
             <Perfil
               usuario={usuario}
