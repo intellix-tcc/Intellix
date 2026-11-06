@@ -107,6 +107,11 @@ def _sem_produtos_parados(template: dict, colunas: list[str], interp: Interpreta
     recorte = descrever(interp.entidades, interp.intencao)
     categoria = interp.entidades.get("categoria")
     quem = f"Todos os produtos da categoria {categoria}" if categoria else "Todos os produtos"
+    # recorte da venda (canal, pagamento, vendedor, cliente): "...no período, com canal Site"
+    recorte_venda = descrever({k: v for k, v in interp.entidades.items() if k != "categoria"},
+                              interp.intencao)
+    if recorte_venda:
+        quem = f"{quem} ({recorte_venda})"
     return ResultSet(
         titulo=f"{template['titulo']} · {recorte}" if recorte else template["titulo"],
         colunas=colunas,
