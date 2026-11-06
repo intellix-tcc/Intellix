@@ -7,7 +7,6 @@ import {
   solicitarRecuperacao,
 } from "../servicos/auth";
 import { validarEmail, validarNome, validarSenha, forcaSenha } from "../utils/validacao";
-import { EXEMPLOS } from "../utils/exemplos";
 import { RESUMO_EXEMPLO } from "../utils/resumoExemplo";
 import { DIFERENCIAIS } from "../utils/diferenciais";
 import Logo from "../componentes/Logo";
@@ -16,6 +15,10 @@ import CampoSenha from "../componentes/CampoSenha";
 import { RodapeInstitucional } from "../componentes/CascaPublica";
 
 const FATURAMENTO_EXEMPLO = RESUMO_EXEMPLO.kpis[0];
+// Pergunta do preview decorativo da vitrine, montada a partir do MESMO
+// período do dado de exemplo (resumoExemplo.js) que a resposta abaixo mostra:
+// assim pergunta e resposta nunca divergem de mês nem de ano.
+const PERGUNTA_EXEMPLO = `Quanto faturei em ${RESUMO_EXEMPLO.periodo.rotulo}?`;
 
 // Modos da tela: entrar | registrar | recuperar.
 //
@@ -240,10 +243,9 @@ export default function Login({ onEntrar, aviso, tema, onAlternarTema }) {
 
             {/* Decorativo (aria-hidden): mesma pergunta e mesmo dado de
                 exemplo já usados no painel de marca do formulário e na
-                Início (utils/exemplos.js, utils/resumoExemplo.js) — não
-                inventa número novo. */}
+                Início (utils/resumoExemplo.js) — não inventa número novo. */}
             <div className="landing-mockup" aria-hidden="true">
-              <p className="landing-mockup-pergunta">{EXEMPLOS[0]}</p>
+              <p className="landing-mockup-pergunta">{PERGUNTA_EXEMPLO}</p>
               <div className="landing-mockup-resposta">
                 <span className="landing-mockup-avatar">
                   <Logo variante="simbolo" largura={14} />
@@ -304,8 +306,7 @@ export default function Login({ onEntrar, aviso, tema, onAlternarTema }) {
           App.css); no celular a tela volta a ser só o card, como antes.
           O preview de conversa é decorativo (aria-hidden): repete a mesma
           pergunta de exemplo e o mesmo dado de exemplo já usados na Início
-          (utils/exemplos.js, utils/resumoExemplo.js) — não inventa número
-          novo. */}
+          (utils/resumoExemplo.js) — não inventa número novo. */}
       <aside className="auth-painel-marca">
         <div className="auth-painel-conteudo">
           <Logo largura={148} className="auth-painel-logo" />
@@ -318,7 +319,7 @@ export default function Login({ onEntrar, aviso, tema, onAlternarTema }) {
           </p>
 
           <div className="auth-painel-mockup" aria-hidden="true">
-            <p className="mockup-pergunta">{EXEMPLOS[0]}</p>
+            <p className="mockup-pergunta">{PERGUNTA_EXEMPLO}</p>
             <div className="mockup-resposta">
               <span className="mockup-avatar">
                 <Logo variante="simbolo" largura={13} />
