@@ -10,6 +10,7 @@ import PainelHistorico from "./PainelHistorico";
 const NAV = [
   { rota: "home", href: "#/", rotulo: "Início", icone: "inicio" },
   { rota: "chat", href: "#/chat", rotulo: "Perguntar", icone: "perguntar" },
+  { rota: "capacidades", href: "#/capacidades", rotulo: "O que posso perguntar", icone: "selo" },
   { rota: "importar", href: "#/importar", rotulo: "Importar dados", icone: "importar" },
   { rota: "sobre", href: "#/sobre", rotulo: "Sobre", icone: "sobre" },
   { rota: "faq", href: "#/faq", rotulo: "Ajuda", icone: "ajuda" },

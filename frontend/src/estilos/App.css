@@ -5029,3 +5029,139 @@ kbd {
   margin: 0;
   padding-left: 18px;
 }
+
+/* ==========================================================
+   "O que posso perguntar" (Capacidades.jsx) — catálogo das
+   análises que o agente responde + o que ele não faz. Reaproveita
+   o cabeçalho de página, os cartões .painel e as .perguntas-clicaveis.
+   ========================================================== */
+.capacidades-dica {
+  width: min(1180px, 100% - 80px);
+  margin: 20px auto 0;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border: 1px solid var(--border-2);
+  border-radius: 12px;
+  background: var(--accent-bg);
+  color: var(--text-h);
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+.capacidades-dica .icone {
+  color: var(--accent);
+  flex-shrink: 0;
+}
+.capacidades-grupo-topo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.capacidades-grupo-topo .painel-titulo {
+  margin: 0;
+}
+.capacidades-grupo-selo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  flex-shrink: 0;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 28%, transparent);
+}
+.capacidades-grupo-selo.atencao {
+  color: var(--accent-2-text);
+  background: color-mix(in srgb, var(--accent-2-text) 13%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent-2-text) 26%, transparent);
+}
+.capacidades-intencoes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 18px 24px;
+}
+.capacidade-intencao-titulo {
+  margin: 0 0 2px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--accent-3);
+}
+.capacidades-limites .painel-texto {
+  margin-bottom: 14px;
+}
+.capacidades-limites-lista {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.capacidades-limites-lista li {
+  position: relative;
+  padding-left: 22px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text);
+}
+.capacidades-limites-lista li::before {
+  content: "";
+  position: absolute;
+  left: 2px;
+  top: 0.62em;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent-2-text);
+  opacity: 0.6;
+}
+
+/* Link do estado inicial do chat para o catálogo completo. */
+.tela-inicial-tudo {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 22px;
+  padding: 9px 16px;
+  border: 1px solid var(--border-2);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text-h);
+  font-size: 13.5px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: border-color 0.16s ease, color 0.16s ease, background 0.16s ease;
+}
+.tela-inicial-tudo .icone {
+  color: var(--text-3);
+}
+.tela-inicial-tudo:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-bg);
+}
+.tela-inicial-tudo:hover .icone {
+  color: var(--accent);
+}
+.tela-inicial-tudo:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+@media (max-width: 860px) {
+  .capacidades-dica {
+    width: min(1180px, 100% - 36px);
+  }
+}
+@media (max-width: 720px) {
+  .capacidades-intencoes {
+    grid-template-columns: 1fr;
+  }
+}
