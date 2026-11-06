@@ -113,6 +113,21 @@ class Contexto(BaseModel):
         return sanear_entidades(valor)
 
 
+class ConversaPayload(BaseModel):
+    """Corpo do PUT /conversas/{id}: a conversa inteira como o frontend a
+    mantém (título + mensagens). O id vem na URL; o dono, do token. Aceita
+    tanto `criadoEm` (nome do objeto no frontend) quanto `criado_em`."""
+
+    model_config = {"populate_by_name": True}
+
+    titulo: str = Field(min_length=1, max_length=200)
+    # Mensagens no formato do frontend (tipo + texto/dados). Teto de 200 por
+    # conversa: o bastante para uma conversa real, e um limite para o corpo não
+    # crescer sem fim. O conteúdo não é interpretado aqui — vai como JSONB.
+    mensagens: list[dict[str, Any]] = Field(default_factory=list, max_length=200)
+    criado_em: str | None = Field(default=None, alias="criadoEm")
+
+
 class Pergunta(BaseModel):
     # Mesmo limite do campo da tela (500 caracteres): uma pergunta de vendas
     # não precisa de mais, e texto gigante só serviria para gastar CPU do NLU.
