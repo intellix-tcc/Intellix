@@ -56,6 +56,10 @@ function erro(mensagem, campo) {
 // do App olhar o endereço, e limpamos o endereço na hora: o token não pode
 // ficar visível, no histórico nem em print de tela. O token de recuperação
 // fica só em memória, para trocar a senha, e some ao recarregar a página.
+//
+// O link de confirmação do cadastro volta com "?origem=cadastro" no endereço
+// (ver linkDeVoltaDoCadastro). Sem essa marca não daria para saber de qual
+// e-mail veio um link vencido: o Supabase manda o mesmo erro para os dois.
 let tokenRecuperacao = null;
 const retornoDoEmail = (() => {
   if (MOCK || typeof window === "undefined") return null;
@@ -63,13 +67,31 @@ const retornoDoEmail = (() => {
   if (!/(access_token|error_code)=/.test(hash)) return null;
 
   const p = new URLSearchParams(hash.replace(/^#\/?/, ""));
-  window.history.replaceState(null, "", window.location.pathname + window.location.search);
+  const busca = new URLSearchParams(window.location.search);
+  const doCadastro = busca.get("origem") === "cadastro";
+  busca.delete("origem");
+  const resto = busca.toString();
+  window.history.replaceState(null, "", window.location.pathname + (resto ? `?${resto}` : ""));
 
   if (p.get("error_code") || p.get("error")) {
+    if (doCadastro) {
+      return {
+        tipo: "erro",
+        fluxo: "cadastro",
+        mensagem:
+          "Este link de confirmação venceu ou já foi usado. Entre com seu e-mail e senha para receber um novo.",
+      };
+    }
     return {
       tipo: "erro",
       mensagem: "Este link de recuperação venceu ou já foi usado. Peça um novo abaixo.",
     };
+  }
+  // Link de confirmação do cadastro: a conta já ficou confirmada no Supabase.
+  // O token que veio junto é descartado de propósito: a pessoa entra com a
+  // própria senha, como em qualquer outro login.
+  if (p.get("type") === "signup" || doCadastro) {
+    return { tipo: "cadastroConfirmado" };
   }
   if (p.get("type") === "recovery" && p.get("access_token")) {
     tokenRecuperacao = p.get("access_token");
@@ -87,7 +109,8 @@ const retornoDoEmail = (() => {
 
 /**
  * O que veio do link do e-mail, para a tela de login abrir no passo certo:
- * { tipo: "recuperacao" } | { tipo: "erro", mensagem } | null.
+ * { tipo: "recuperacao" } | { tipo: "cadastroConfirmado" } |
+ * { tipo: "erro", mensagem, fluxo? } | null.
  */
 export function obterRetornoDoEmail() {
   return MOCK ? null : retornoDoEmail;
@@ -292,7 +315,7 @@ export async function registrar({ nome, email, senha, confirmarSenha, aceiteTerm
 
   // O aceite vai no user_metadata do Supabase: fica registrado quando e qual
   // versão dos Termos de uso a pessoa aceitou, sem tabela nova no banco.
-  const resposta = await chamar("/signup", {
+  const resposta = await chamar(`/signup?redirect_to=${linkDeVoltaDoCadastro()}`, {
     corpo: {
       email: normalizarEmail(email),
       password: senha,
@@ -305,13 +328,38 @@ export async function registrar({ nome, email, senha, confirmarSenha, aceiteTerm
   });
 
   // Com "Confirm email" ligado no Supabase, o cadastro não devolve sessão:
-  // a conta só vale depois do clique no link do e-mail.
+  // a conta só vale depois do clique no link do e-mail. Não é erro, então
+  // volta como resultado, para a tela mostrar o passo "confira seu e-mail".
   if (!resposta?.access_token) {
-    throw erro(
-      "Conta criada. Enviamos um link de confirmação para o seu e-mail: confirme e depois entre."
-    );
+    return { confirmacaoPendente: true, email: normalizarEmail(email) };
   }
   return salvarSessao(resposta);
+}
+
+/**
+ * Pede ao Supabase outro e-mail de confirmação do cadastro. O Supabase só
+ * aceita um pedido por minuto para o mesmo e-mail; a tela segura o botão
+ * pelo mesmo tempo (ESPERA_REENVIO_MS em Login.jsx).
+ */
+export async function reenviarConfirmacao({ email }) {
+  // No dublê a conta já nasce confirmada: não há o que reenviar.
+  if (MOCK) return { ok: true };
+
+  const erroEmail = validarEmail(email);
+  if (erroEmail) throw erro(erroEmail, "email");
+
+  await chamar(`/resend?redirect_to=${linkDeVoltaDoCadastro()}`, {
+    corpo: { type: "signup", email: normalizarEmail(email) },
+  });
+  return { ok: true };
+}
+
+// Para onde o link de confirmação devolve a pessoa. Como na recuperação de
+// senha, o endereço precisa estar em Authentication -> URL Configuration ->
+// Redirect URLs no Supabase; se não estiver, o Supabase usa a Site URL e a
+// marca "origem=cadastro" se perde (a confirmação continua valendo).
+function linkDeVoltaDoCadastro() {
+  return encodeURIComponent(`${window.location.origin}/?origem=cadastro`);
 }
 
 export async function entrar({ email, senha }) {
