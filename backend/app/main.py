@@ -10,13 +10,16 @@ from app.acesso import resolver_empresa
 from app.auditoria import registrar_consulta
 from app.auth import Usuario, usuario_atual
 from app.contexto import aplicar_contexto
+from app.conversas import excluir as excluir_conversa
+from app.conversas import listar as listar_conversas
+from app.conversas import salvar as salvar_conversa
 from app.db import fechar_pool, get_connection
 from app.fallbacks import CONFIANCA_MINIMA, verificar_confianca
 from app.filtros import aplicar_filtros, carregar_catalogo, sem_acento
 from app.importacao.etl import importar
 from app.importacao.leitor_excel import TAMANHO_MAX_MB, ErroImportacao
 from app.limite import LimiteDeRequisicoes
-from app.models import Pergunta, ResultSet
+from app.models import ConversaPayload, Pergunta, ResultSet
 from app.nlu.regras import RuleBasedNLU, usar_referencia
 from app.periodo_dataset import data_referencia, tem_ano_explicito
 from app.planilhas import excluir as excluir_planilha
@@ -319,5 +322,62 @@ def apagar_planilha(empresa_id: str, usuario: UsuarioAtual) -> dict:
                     },
                 )
             return {"excluida": True, "empresa_id": empresa_id}
+    except psycopg.OperationalError:
+        raise _banco_indisponivel()
+
+
+# ---- Histórico de conversas (migration 008) ---------------------------------
+# As conversas do chat da conta logada. Como "minhas planilhas", exigem login
+# mesmo com AUTH_OBRIGATORIA=false: sem usuário não há "minhas".
+
+
+def _conversa_nao_encontrada() -> HTTPException:
+    # Mesma resposta para "não é sua" e "não existe": não revela ids de outros.
+    return HTTPException(
+        status_code=404,
+        detail={
+            "tipo": "conversa_nao_encontrada",
+            "mensagem": "Não encontrei essa conversa na sua conta.",
+        },
+    )
+
+
+@app.get("/conversas")
+def minhas_conversas(usuario: UsuarioAtual) -> dict:
+    """Conversas do usuário, da mais recente para a mais antiga."""
+    dono = _exigir_login(usuario)
+    try:
+        with get_connection() as conn:
+            return {"conversas": listar_conversas(conn, dono.id)}
+    except psycopg.OperationalError:
+        raise _banco_indisponivel()
+
+
+@app.put("/conversas/{conversa_id}")
+def gravar_conversa(conversa_id: str, payload: ConversaPayload, usuario: UsuarioAtual) -> dict:
+    """Cria ou atualiza uma conversa da conta (o id é o mesmo do frontend).
+    Id de outra pessoa, ou malformado: 404, sem sobrescrever nada."""
+    dono = _exigir_login(usuario)
+    try:
+        with get_connection() as conn:
+            salvo = salvar_conversa(
+                conn, conversa_id, dono.id, payload.titulo, payload.mensagens, payload.criado_em
+            )
+            if not salvo:
+                raise _conversa_nao_encontrada()
+            return {"id": salvo}
+    except psycopg.OperationalError:
+        raise _banco_indisponivel()
+
+
+@app.delete("/conversas/{conversa_id}")
+def apagar_conversa(conversa_id: str, usuario: UsuarioAtual) -> dict:
+    """Apaga uma conversa da própria conta. De outra pessoa ou inexistente: 404."""
+    dono = _exigir_login(usuario)
+    try:
+        with get_connection() as conn:
+            if not excluir_conversa(conn, conversa_id, dono.id):
+                raise _conversa_nao_encontrada()
+            return {"excluida": True, "id": conversa_id}
     except psycopg.OperationalError:
         raise _banco_indisponivel()

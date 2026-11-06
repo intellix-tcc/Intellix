@@ -1,5 +1,13 @@
 import { useState, useRef, useEffect, lazy, Suspense } from "react";
-import { perguntar, aquecerServidor, EVENTO_SESSAO_RECUSADA } from "./servicos/api";
+import {
+  perguntar,
+  aquecerServidor,
+  EVENTO_SESSAO_RECUSADA,
+  historicoRemotoAtivo,
+  listarConversas,
+  salvarConversaRemota,
+  excluirConversaRemota,
+} from "./servicos/api";
 import Sidebar from "./componentes/Sidebar";
 import Icone from "./componentes/Icone";
 import Login from "./paginas/Login";
@@ -78,7 +86,15 @@ function preCarregarPaginas() {
 }
 import { ROTAS_PUBLICAS } from "./utils/contato";
 import { carregarSessao, encerrarSessao, sessaoExpirou } from "./servicos/auth";
-import { carregarConversas, donoDe, salvarConversas, novoId, tituloFromPergunta } from "./utils/historico";
+import {
+  carregarConversas,
+  donoDe,
+  salvarConversas,
+  novoId,
+  tituloFromPergunta,
+  ehUuid,
+  juntarConversas,
+} from "./utils/historico";
 import "./estilos/App.css";
 import "./estilos/visual.css";
 
@@ -120,6 +136,13 @@ function sidebarInicial() {
 // Altura a partir da qual a sidebar recolhe. Alto o bastante para um ajuste
 // pequeno de rolagem não ficar piscando a barra.
 const ROLAGEM_PARA_RECOLHER = 140;
+
+// "Impressão digital" do conteúdo de uma conversa: muda quando o título ou as
+// mensagens mudam. Serve para a sincronização com o banco só reenviar o que
+// de fato mudou, sem comparar objeto a objeto a cada render.
+function assinaturaConversa(c) {
+  return `${c.titulo || ""}\u0000${JSON.stringify(c.mensagens || [])}`;
+}
 
 export default function App() {
   // Declarado antes de `usuario` de propósito: carregarSessao() apaga a sessão
@@ -250,6 +273,63 @@ export default function App() {
     salvarConversas(dono, conversas);
   }, [dono, conversas]);
 
+  // Sincronização do histórico com a conta (migration 008). O localStorage
+  // acima continua sendo o espelho local (instantâneo, offline); aqui as
+  // conversas também vão para o banco e voltam em qualquer aparelho.
+  // `sincronizadas` guarda a última assinatura enviada de cada conversa, para
+  // não reenviar o que não mudou; `syncFeita` segura o envio até a busca
+  // inicial terminar.
+  const sincronizadas = useRef(new Map());
+  const syncFeita = useRef(false);
+
+  // (ao entrar) traz as conversas da conta e mescla com o que já está na tela —
+  // sem perder uma conversa criada enquanto a busca carregava (merge funcional).
+  useEffect(() => {
+    if (!usuario || !historicoRemotoAtivo()) {
+      syncFeita.current = true;
+      return;
+    }
+    syncFeita.current = false;
+    sincronizadas.current = new Map();
+    let ativo = true;
+    listarConversas()
+      .then((remotas) => {
+        if (!ativo || !remotas) return;
+        for (const c of remotas) sincronizadas.current.set(c.id, assinaturaConversa(c));
+        setConversas((prev) => juntarConversas(remotas, prev));
+      })
+      .catch(() => {
+        // offline ou servidor hibernando: segue com o histórico local e o
+        // efeito de envio tenta de novo quando algo mudar.
+      })
+      .finally(() => {
+        if (ativo) syncFeita.current = true;
+      });
+    return () => {
+      ativo = false;
+    };
+    // só ao trocar de usuário: a mescla usa a forma funcional de setConversas.
+  }, [usuario]);
+
+  // (ao mudar algo) sobe ao banco, com um respiro, as conversas novas ou
+  // alteradas. Conversa local antiga (id fora do padrão uuid) fica só no
+  // aparelho; a assinatura é marcada de forma otimista e desfeita se o envio
+  // falhar, para tentar de novo na próxima mudança.
+  useEffect(() => {
+    if (!dono || !historicoRemotoAtivo() || !conversas.length) return;
+    const timer = setTimeout(() => {
+      if (!syncFeita.current) return;
+      for (const c of conversas) {
+        if (!ehUuid(c.id)) continue;
+        const assinatura = assinaturaConversa(c);
+        if (sincronizadas.current.get(c.id) === assinatura) continue;
+        sincronizadas.current.set(c.id, assinatura);
+        salvarConversaRemota(c).catch(() => sincronizadas.current.delete(c.id));
+      }
+    }, 900);
+    return () => clearTimeout(timer);
+  }, [conversas, dono]);
+
   // Acorda o servidor e adianta o download das páginas principais enquanto a
   // pessoa ainda está na primeira tela (vitrine, login ou Início).
   useEffect(() => {
@@ -345,6 +425,10 @@ export default function App() {
 
   function excluirConversa(id) {
     setConversas((atual) => atual.filter((c) => c.id !== id));
+    sincronizadas.current.delete(id);
+    // some também do banco; no mock/sem login é no-op, e um 404 (já não era de
+    // lá) é inofensivo.
+    excluirConversaRemota(id).catch(() => {});
     if (atualId === id) {
       setAtualId(null);
       setMensagens([]);
