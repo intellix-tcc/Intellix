@@ -29,7 +29,11 @@ function RotuloFatia({ cx, cy, midAngle, innerRadius, outerRadius, percent }) {
 // Para composição do todo: categorias, canais, formas de pagamento. A
 // legenda é texto de verdade, então o dado continua legível sem o gráfico
 // (e para leitor de tela).
-export default function Rosca({ itens, formatar, rotuloCentro = "Total", altura = 190 }) {
+//
+// `aoClicarItem` (opcional): quando passado, cada item da legenda que trouxer
+// `pergunta` vira um botão que abre aquela análise no chat (drill-down da
+// Início). Sem ele, a legenda é só texto — é o caso do uso no chat.
+export default function Rosca({ itens, formatar, rotuloCentro = "Total", altura = 190, aoClicarItem }) {
   const total = itens.reduce((s, i) => s + i.valor, 0);
   const pct = (v) => (total ? (v / total) * 100 : 0);
   const fmtPct = (v) => `${pct(v).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%`;
@@ -77,14 +81,28 @@ export default function Rosca({ itens, formatar, rotuloCentro = "Total", altura 
         </div>
       </div>
       <ul className="rosca-legenda">
-        {itens.map((i, k) => (
-          <li key={`${k}-${i.nome}`}>
-            <span className="rosca-cor" style={{ background: i.cor }} aria-hidden="true" />
-            <span className="rosca-nome">{i.nome}</span>
-            <span className="rosca-pct">{fmtPct(i.valor)}</span>
-            <span className="rosca-valor">{formatar(i.valor)}</span>
-          </li>
-        ))}
+        {itens.map((i, k) => {
+          const clicavel = aoClicarItem && i.pergunta;
+          return (
+            <li key={`${k}-${i.nome}`} className={clicavel ? "rosca-legenda-clicavel" : undefined}>
+              {/* Botão em sobreposição: mantém o layout da legenda (que na
+                  Início tem duas linhas) intacto e, ainda assim, deixa a
+                  linha inteira clicável e focável pelo teclado. */}
+              {clicavel && (
+                <button
+                  type="button"
+                  className="rosca-legenda-acao"
+                  onClick={() => aoClicarItem(i.pergunta)}
+                  aria-label={`Analisar ${i.nome} no chat`}
+                />
+              )}
+              <span className="rosca-cor" style={{ background: i.cor }} aria-hidden="true" />
+              <span className="rosca-nome">{i.nome}</span>
+              <span className="rosca-pct">{fmtPct(i.valor)}</span>
+              <span className="rosca-valor">{formatar(i.valor)}</span>
+            </li>
+          );
+        })}
       </ul>
     </div>
   );
