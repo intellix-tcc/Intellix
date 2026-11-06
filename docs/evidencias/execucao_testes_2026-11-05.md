@@ -1,5 +1,11 @@
 # Execução dos testes — pacote e rastreabilidade (TC2 F11)
 
+> **Histórico.** A contagem oficial da versão final está em
+> [`execucao_testes_2026-11-06.md`](execucao_testes_2026-11-06.md)
+> (202 testes: 198 aprovados, 4 de RLS ignorados no CI e aprovados à parte
+> como `intellix_app`). A nota de CI no fim deste arquivo também foi superada:
+> o CI agora sobe um Postgres efêmero e roda os testes de integração.
+
 Atende ao feedback TC2 **F11** (identificar versão e cobertura real; confirmar
 que as verificações usaram o modelo treinado; mapear requisitos aos testes).
 Atualiza a contagem: **101 testes** (o texto antigo citava 5; o Quadro 13, 7).

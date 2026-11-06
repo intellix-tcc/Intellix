@@ -1,16 +1,37 @@
-# React + Vite
+# Intellix — frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Aplicação React (Vite) do Intellix. Visão geral do projeto no
+[README da raiz](../README.md).
 
-Currently, two official plugins are available:
+## Rodar
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+```bash
+npm ci
+cp .env.example .env.local   # e preencha
+npm run dev
+```
 
-## React Compiler
+| Variável | Para quê |
+|---|---|
+| `VITE_API_URL` | endereço do backend (FastAPI) |
+| `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` | login pelo Supabase Auth (a chave "anon" é pública por natureza) |
+| `VITE_MOCK` | `true` simula login e respostas, sem servidor nenhum |
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Antes de abrir um pull request: `npm run lint` e `npm run build` (o CI roda os
+dois).
 
-## Expanding the ESLint configuration
+## Organização
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+```
+src/
+  App.jsx          rotas (por hash: #/chat, #/importar...), sessão e layout
+  paginas/         uma tela por arquivo (Início, Chat, Importar, Perfil...)
+  componentes/     gráficos, barra lateral, histórico, paleta de comandos...
+  servicos/        api.js (backend), auth.js (Supabase Auth), importacao.js
+  utils/           formatação, exportação Excel/PDF, sugestões, histórico local
+public/            ícones, logo e o modelo de planilha para importação
+vercel.json        cabeçalhos de segurança (CSP, HSTS) e cache
+```
+
+Cada página é carregada só quando a rota abre (`React.lazy`). O contrato com o
+backend está em [`docs/contratos.md`](../docs/contratos.md).
