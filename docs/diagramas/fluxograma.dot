@@ -1,0 +1,51 @@
+// Figura 5 do TCC: fluxograma do processamento de uma pergunta (rota /chat).
+// Segue app/main.py::chat e app/sql/executor.py. Gerar:
+//   dot -Tpng -Gdpi=200 fluxograma.dot -o fluxograma.png
+digraph fluxograma {
+  graph [rankdir=TB, fontname="Arial", nodesep=0.35, ranksep=0.2, pad=0.15, splines=ortho];
+  node  [fontname="Arial", fontsize=11, shape=box, style=solid, width=2.9, height=0.42, margin="0.08,0.04"];
+  edge  [fontname="Arial", fontsize=10, arrowsize=0.7, color="#222222"];
+
+  inicio [label="Início", shape=ellipse, width=1.1];
+  envia  [label="Usuário envia a pergunta\nem linguagem natural"];
+  post   [label="Interface envia POST /chat\n(pergunta, contexto e token)"];
+  nlu    [label="Normaliza e tokeniza o texto; o modelo\nclassifica a intenção e marca entidades"];
+  conf   [label="Confiança ≥ 0,70 e\ntermo do domínio?", shape=diamond, width=2.6, height=0.95];
+  reform [label="Pede para reformular,\ncom exemplos de perguntas", width=2.1];
+  dados  [label="Identifica o conjunto de dados do\nusuário e aplica filtros, contexto\nda conversa e refino da intenção"];
+  param  [label="Parâmetros obrigatórios\npresentes?", shape=diamond, width=2.6, height=0.95];
+  falta  [label="Pergunta o que falta\n(ex.: \"de qual período?\")", width=2.1];
+  exec   [label="Executa o modelo de consulta\ncom parâmetros nomeados"];
+  banco  [label="Banco\ndisponível?", shape=diamond, width=1.9, height=0.8];
+  indisp [label="Informa indisponibilidade\ntemporária", width=2.1];
+  vazio  [label="Há registros?*", shape=diamond, width=1.9, height=0.8];
+  semres [label="Informa que não há\nregistros para o período\nou filtro", width=2.1];
+  log    [label="Registra a consulta (log_consulta)"];
+  exibe  [label="Exibe número, gráfico ou tabela,\ncom indicador de confiança"];
+  fim    [label="Fim", shape=ellipse, width=1.1];
+
+  {rank=same; conf; reform;}
+  {rank=same; param; falta;}
+  {rank=same; banco; indisp;}
+  {rank=same; vazio; semres;}
+
+  inicio -> envia -> post -> nlu -> conf;
+  conf -> dados [xlabel="sim "];
+  conf -> reform [xlabel="não"];
+  dados -> param;
+  param -> exec [xlabel="sim "];
+  param -> falta [xlabel="não"];
+  exec -> banco;
+  banco -> vazio [xlabel="sim "];
+  banco -> indisp [xlabel="não"];
+  vazio -> log [xlabel="sim "];
+  vazio -> semres [xlabel="não"];
+  log -> exibe -> fim;
+  // saídas laterais: o usuário reformula (volta ao início do ciclo) ou o fluxo termina
+  edge [style=dashed, constraint=false];
+  reform -> envia; falta -> envia;
+  indisp -> fim; semres -> fim;
+  nota [shape=plaintext, fontsize=9.5, width=0.1, label="* Em \"produtos sem saída\", a lista vazia é\numa resposta válida (\"nenhum produto ficou\nparado\") e segue pelo \"sim\"."];
+  {rank=same; exibe; nota;}
+  exibe -> nota [style=invis];
+}

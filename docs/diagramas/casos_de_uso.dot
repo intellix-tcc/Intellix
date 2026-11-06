@@ -1,0 +1,44 @@
+// Figura 1 do TCC: casos de uso. Gerar: dot -Tpng -Gdpi=200 casos_de_uso.dot -o casos_de_uso.png
+digraph casos_de_uso {
+  graph [rankdir=LR, fontname="Arial", fontsize=13, nodesep=0.22, ranksep=0.55, pad=0.2, newrank=true];
+  node  [fontname="Arial", fontsize=12];
+  edge  [fontname="Arial", fontsize=10, arrowsize=0.7];
+
+  gestor [shape=none, label=<<TABLE BORDER="0" CELLSPACING="0"><TR><TD FIXEDSIZE="TRUE" WIDTH="40" HEIGHT="70"><IMG SRC="ator.png" SCALE="TRUE"/></TD></TR><TR><TD>Gestor da</TD></TR><TR><TD>pequena empresa</TD></TR></TABLE>>];
+  supa   [shape=none, label=<<TABLE BORDER="0" CELLSPACING="0"><TR><TD FIXEDSIZE="TRUE" WIDTH="40" HEIGHT="70"><IMG SRC="ator.png" SCALE="TRUE"/></TD></TR><TR><TD>Serviço de</TD></TR><TR><TD>autenticação</TD></TR><TR><TD>(Supabase Auth)</TD></TR></TABLE>>];
+
+  subgraph cluster_sistema {
+    label=<<B>Sistema Intellix</B>>; labeljust=l; style=solid; color="#333333"; margin=14;
+    node [shape=ellipse, style=solid, width=2.6, height=0.62, fixedsize=false, margin="0.12,0.04"];
+    perg   [label="Fazer pergunta em\nlinguagem natural"];
+    resp   [label="Visualizar resposta\n(número, gráfico ou tabela)"];
+    hist   [label="Consultar histórico\nde conversas"];
+    pan    [label="Ver panorama do mês\n(tela Início)"];
+    imp    [label="Importar planilha\nde vendas"];
+    plan   [label="Gerenciar minhas planilhas\n(escolher ou excluir)"];
+    login  [label="Cadastrar-se e\nentrar na conta"];
+    acomp  [label="Fazer pergunta\nde acompanhamento"];
+    reform [label="Reformular pergunta\nnão compreendida"];
+    expo   [label="Exportar resultado\n(Excel ou PDF)"];
+    interp [label="Interpretar a pergunta\n(intenção e entidades)"];
+    cons   [label="Consultar dados de vendas\n(consulta parametrizada)"];
+    valid  [label="Validar e carregar\nas linhas da planilha"];
+    {rank=same; acomp; reform; interp; cons; expo; valid;}
+  }
+
+  edge [dir=none, color="#000000"];
+  gestor -> perg; gestor -> resp; gestor -> hist;
+  gestor -> pan; gestor -> imp; gestor -> plan; gestor -> login;
+  {rank=same; gestor; supa;}
+  supa -> login;
+
+  edge [dir=forward, style=dashed, arrowhead=vee, color="#333333"];
+  perg -> interp [label="«include»"];
+  perg -> cons   [label="«include»"];
+  pan  -> cons   [label="«include»"];
+  imp  -> valid  [label="«include»"];
+  acomp  -> perg [label="«extend»", constraint=false];
+  reform -> perg [label="«extend»", constraint=false];
+  expo   -> resp [label="«extend»", constraint=false];
+  plan -> login [label="«include»", constraint=false];
+}

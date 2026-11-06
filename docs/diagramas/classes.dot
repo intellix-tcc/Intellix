@@ -1,0 +1,82 @@
+// Figura 2 do TCC: classes e módulos do backend, com os nomes do código.
+// Assinaturas resumidas (sem a conexão com o banco). Gerar:
+//   dot -Tpng -Gdpi=200 classes.dot -o classes.png   (layout=neato, posições fixas)
+digraph classes {
+  layout=neato;
+  graph [rankdir=TB, fontname="Arial", nodesep=0.25, ranksep=0.42, pad=0.12, splines=true, overlap=false];
+  node  [shape=plain, fontname="Arial", fontsize=11];
+  edge  [fontname="Arial", fontsize=9, color="#333333", arrowsize=0.7];
+
+  api [pos="220,0!", label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="3">
+    <TR><TD BGCOLOR="#D9D9D9"><FONT POINT-SIZE="9">«controlador»</FONT><BR/><B>API FastAPI</B><BR/><FONT POINT-SIZE="9" COLOR="#444444">main.py</FONT></TD></TR>
+    <TR><TD ALIGN="LEFT" BALIGN="LEFT">+ chat(pergunta): ResultSet<BR/>+ resumo(): dict<BR/>+ import_planilha(arquivo)<BR/>+ minhas_planilhas()<BR/>+ apagar_planilha(id)</TD></TR></TABLE>>];
+
+  acesso [pos="0,0!", label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="3">
+    <TR><TD BGCOLOR="#D9D9D9"><FONT POINT-SIZE="9">«módulos»</FONT><BR/><B>Autenticação e acesso</B><BR/><FONT POINT-SIZE="9" COLOR="#444444">auth.py · acesso.py</FONT></TD></TR>
+    <TR><TD ALIGN="LEFT" BALIGN="LEFT">+ usuario_atual(token)<BR/>+ resolver_empresa(id, usuario)</TD></TR></TABLE>>];
+
+  auditoria [pos="220,-545!", label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="3">
+    <TR><TD BGCOLOR="#D9D9D9"><FONT POINT-SIZE="9">«módulo»</FONT><BR/><B>Auditoria</B><BR/><FONT POINT-SIZE="9" COLOR="#444444">auditoria.py</FONT></TD></TR>
+    <TR><TD ALIGN="LEFT" BALIGN="LEFT">+ registrar_consulta(interp)</TD></TR></TABLE>>];
+
+  nlu [pos="0,-150!", label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="3">
+    <TR><TD BGCOLOR="#D9D9D9"><FONT POINT-SIZE="9">«interface»</FONT><BR/><B>NLUService</B><BR/><FONT POINT-SIZE="9" COLOR="#444444">nlu/base.py</FONT></TD></TR>
+    <TR><TD ALIGN="LEFT" BALIGN="LEFT">+ parse(texto): Interpretacao</TD></TR></TABLE>>];
+
+  pos [pos="220,-150!", label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="3">
+    <TR><TD BGCOLOR="#D9D9D9"><FONT POINT-SIZE="9">«módulos»</FONT><BR/><B>Filtros, contexto e refino</B><BR/><FONT POINT-SIZE="9" COLOR="#444444">filtros.py · contexto.py<BR/>refino.py</FONT></TD></TR>
+    <TR><TD ALIGN="LEFT" BALIGN="LEFT">+ aplicar_filtros(interp)<BR/>+ aplicar_contexto(interp)<BR/>+ refinar(interp)</TD></TR></TABLE>>];
+
+  executor [pos="440,-150!", label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="3">
+    <TR><TD BGCOLOR="#D9D9D9"><FONT POINT-SIZE="9">«módulo»</FONT><BR/><B>Executor de consultas</B><BR/><FONT POINT-SIZE="9" COLOR="#444444">sql/executor.py</FONT></TD></TR>
+    <TR><TD ALIGN="LEFT" BALIGN="LEFT">+ executar_template(interp)</TD></TR></TABLE>>];
+
+  regras [pos="0,-290!", label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="3">
+    <TR><TD BGCOLOR="#D9D9D9"><B>RuleBasedNLU</B><BR/><FONT POINT-SIZE="9" COLOR="#444444">nlu/regras.py<BR/>(linha de base)</FONT></TD></TR>
+    <TR><TD ALIGN="LEFT" BALIGN="LEFT">+ parse(texto): Interpretacao</TD></TR></TABLE>>];
+
+  treinado [pos="220,-290!", label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="3">
+    <TR><TD BGCOLOR="#D9D9D9"><B>ModeloTreinadoNLU</B><BR/><FONT POINT-SIZE="9" COLOR="#444444">nlu/adaptador_modelo.py</FONT></TD></TR>
+    <TR><TD ALIGN="LEFT" BALIGN="LEFT">+ parse(texto): Interpretacao</TD></TR></TABLE>>];
+
+  templates [pos="440,-290!", label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="3">
+    <TR><TD BGCOLOR="#D9D9D9"><FONT POINT-SIZE="9">«dicionário fixo»</FONT><BR/><B>TEMPLATES</B><BR/><FONT POINT-SIZE="9" COLOR="#444444">sql/templates.py<BR/>14 modelos</FONT></TD></TR>
+    <TR><TD ALIGN="LEFT" BALIGN="LEFT">sql com parâmetros<BR/>nomeados, obrigatorios,<BR/>titulo, visual</TD></TR></TABLE>>];
+
+  modelo [pos="220,-420!", label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="3">
+    <TR><TD BGCOLOR="#D9D9D9"><B>ModeloIntellix</B><BR/><FONT POINT-SIZE="9" COLOR="#444444">nlu/modelo_nlu.py<BR/>rede BiLSTM</FONT></TD></TR>
+    <TR><TD ALIGN="LEFT" BALIGN="LEFT">+ prever(pergunta): dict</TD></TR></TABLE>>];
+
+  interp [pos="0,-420!", label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="3">
+    <TR><TD BGCOLOR="#EFEFEF"><FONT POINT-SIZE="9">«contrato Pydantic»</FONT><BR/><B>Interpretacao</B></TD></TR>
+    <TR><TD ALIGN="LEFT" BALIGN="LEFT">intencao: str<BR/>confianca: float<BR/>entidades: dict<BR/>texto_original: str</TD></TR></TABLE>>];
+
+  resultset [pos="440,-420!", label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="3">
+    <TR><TD BGCOLOR="#EFEFEF"><FONT POINT-SIZE="9">«contrato Pydantic»</FONT><BR/><B>ResultSet</B></TD></TR>
+    <TR><TD ALIGN="LEFT" BALIGN="LEFT">titulo · colunas · linhas<BR/>tipo_visualizacao<BR/>parametros · confianca<BR/>evolucao · mensagem</TD></TR></TABLE>>];
+
+  importacao [pos="440,0!", label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="3">
+    <TR><TD BGCOLOR="#D9D9D9"><FONT POINT-SIZE="9">«módulos»</FONT><BR/><B>Importação de planilhas</B><BR/><FONT POINT-SIZE="9" COLOR="#444444">importacao/</FONT></TD></TR>
+    <TR><TD ALIGN="LEFT" BALIGN="LEFT">+ ler_planilha(arquivo)<BR/>+ importar(arquivo, dono)</TD></TR></TABLE>>];
+
+  db [pos="440,-545!", label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="3">
+    <TR><TD BGCOLOR="#D9D9D9"><FONT POINT-SIZE="9">«módulo»</FONT><BR/><B>Acesso a dados</B><BR/><FONT POINT-SIZE="9" COLOR="#444444">db.py (pool psycopg 3)</FONT></TD></TR>
+    <TR><TD ALIGN="LEFT" BALIGN="LEFT">+ get_connection()<BR/>+ declarar_empresa(id)</TD></TR></TABLE>>];
+
+    {rank=same; importacao; interp; modelo;}
+
+  regras   -> nlu [style=dashed, arrowhead=empty];
+  treinado -> nlu [style=dashed, arrowhead=empty];
+  treinado -> modelo [dir=back, arrowtail=diamond];
+
+  edge [arrowhead=vee];
+  api -> acesso; api -> auditoria;
+  api -> nlu; api -> pos; api -> executor;
+  api -> importacao;
+  regras -> interp [style=dashed, label="cria"];
+  treinado -> interp [style=dashed];
+  executor -> templates [label="seleciona"];
+  executor -> resultset [style=dashed, label="cria"];
+    executor -> db [style=dashed];
+  importacao -> db [style=dashed];
+}
