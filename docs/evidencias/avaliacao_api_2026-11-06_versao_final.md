@@ -1,7 +1,7 @@
 # Avaliação das 100 perguntas — modo `api`
 
 - **Data:** 06/11/2026 18:25 (UTC+0000)
-- **Alvo:** API local (porta 8010), commit `311c866`, conectada como `intellix_app` (com RLS), `NLU_BACKEND=modelo` (v1.2.0), Postgres 16 com `database/seed.py`
+- **Alvo:** API local (porta 8010), commit `e48f6a4`, conectada como `intellix_app` (com RLS), `NLU_BACKEND=modelo` (v1.2.0), Postgres 16 com `database/seed.py`
 - **Ambiente do executor:** Linux 6.18.44-fc-v242 · Python 3.13.18
 - **Perguntas avaliadas:** 100
 

@@ -14,7 +14,7 @@ Atualiza a contagem: **101 testes** (o texto antigo citava 5; o Quadro 13, 7).
 
 | Campo | Valor |
 |---|---|
-| Commit | `1fddc20` (+ `test_backend_nlu.py` desta entrega) |
+| Commit | `de98e41` (+ `test_backend_nlu.py` desta entrega) |
 | Comando | `cd backend && pytest -q --junitxml=../docs/evidencias/pytest_2026-11-05.xml` |
 | Ambiente | Windows 10 · Python 3.11.5 · pytest 8.3.2 |
 | **NLU ativo** | **`NLU_BACKEND=modelo`** → `ModeloTreinadoNLU` (confirmado pelo `test_backend_nlu.py`) |

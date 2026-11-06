@@ -2,8 +2,8 @@
 
 **Projeto:** Intellix — Agente inteligente de análise de vendas
 **Atende:** Feedback 7 da orientação (*"Evidenciar execução dos testes automatizados"*)
-**Execução de referência (versão final):** 06/11/2026, commit `311c866`
-**Primeira execução registrada:** 13/10/2026, commit `694a5d5` (seções 1 a 6, histórico)
+**Execução de referência (versão final):** 06/11/2026, commit `e48f6a4`
+**Primeira execução registrada:** 13/10/2026, commit `c48fa10` (seções 1 a 6, histórico)
 **Responsável:** Erik Alves Gonçalves (dados e infraestrutura)
 
 ---
@@ -58,7 +58,7 @@ execução com banco ocorre no ambiente de desenvolvimento, registrada na seçã
 
 ## 3. Ambientes e resultados
 
-A mesma versão do código (commit `694a5d5`) foi executada em três ambientes:
+A mesma versão do código (commit `c48fa10`) foi executada em três ambientes:
 
 | Ambiente | Sistema / Python | Banco disponível | Aprovados | Falhos | Ignorados | Total |
 |---|---|---|---:|---:|---:|---:|
@@ -130,7 +130,7 @@ Sem o `.env`, a mesma linha reproduz o resultado do CI (23 aprovados, 5 ignorado
 
 > Para evidenciar a execução dos testes automatizados, a suíte do backend, composta
 > por 202 testes escritos com a biblioteca pytest e distribuídos em 26 módulos, foi
-> executada sobre a versão final do código (commit 311c866), conforme a Tabela X. A
+> executada sobre a versão final do código (commit e48f6a4), conforme a Tabela X. A
 > cada alteração proposta, o servidor de integração contínua (GitHub Actions) cria um
 > banco PostgreSQL temporário, aplica o esquema e os dados de demonstração e executa a
 > suíte inteira com o modelo de linguagem treinado ativo, sem acesso a credenciais de

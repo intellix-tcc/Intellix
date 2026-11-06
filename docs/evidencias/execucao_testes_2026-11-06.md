@@ -21,7 +21,7 @@ número oficial, as contagens anteriores** (28 testes em 13/10/2026 e 101 em
 
 | Campo | Valor |
 |---|---|
-| Commit | `311c866` (main, após o PR #37) |
+| Commit | `e48f6a4` (main, após o PR #37) |
 | Comando | `cd backend && pytest -q -rs --junitxml=../docs/evidencias/pytest_2026-11-06.xml` |
 | Banco | PostgreSQL 16 local, montado como no CI: `database/local/supabase_minimo.sql` + `database/migrations/*.sql` (001 a 008) + `database/seed.py` |
 | Usuário do banco | `postgres` (o mesmo do CI) |
@@ -101,11 +101,16 @@ O workflow `.github/workflows/ci.yml` roda em todo PR e em todo push na
 Com isso, os testes de integração deixaram de ser "ignorados no CI": só os 4
 de RLS ficam de fora, pelo motivo explicado acima.
 
-**Execução do CI neste mesmo commit:** run
+**Execução do CI sobre este mesmo conteúdo:** run
 [`42266814533`](https://github.com/intellix-tcc/Intellix/actions/runs/42266814533)
 (06/11/2026, 18:00 UTC), os três jobs com sucesso. Job `test` em Python
 3.12.16 e PostgreSQL 16.15: **198 passed, 4 skipped** — o mesmo resultado da
 execução local acima.
+
+> O run foi feito antes de o histórico do repositório ser reescrito para
+> corrigir a autoria dos commits (06/11/2026). Na época este commit se chamava
+> `311c866`; o conteúdo é idêntico (mesma árvore de arquivos, `f90d57a`). Os
+> hashes citados nos documentos já são os do histórico atual.
 
 ## Avaliação ponta a ponta (100 perguntas)
 

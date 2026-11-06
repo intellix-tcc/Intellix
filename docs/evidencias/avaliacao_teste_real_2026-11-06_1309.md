@@ -252,4 +252,4 @@ weighted avg      0.787     0.914     0.841       105
   parecidas com as que falhavam na validação, o que melhorou aquele repertório, mas
   não a generalização para frases novas.
 - O modelo 1.0.0 não está mais no repositório; foi recuperado do histórico do git
-  (commit anterior a `8c77998`, arquivo `backend/app/nlu/intellix_nlu_v1.0.0.pt`).
+  (commit anterior a `22f0d17`, arquivo `backend/app/nlu/intellix_nlu_v1.0.0.pt`).

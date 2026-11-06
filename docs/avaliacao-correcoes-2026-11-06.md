@@ -11,7 +11,7 @@ backend, no mesmo dia e sobre o mesmo banco:
 
 | | Antes | Depois |
 |---|---|---|
-| Código | `663988e` (main antes das correções da revisão) | `838f195` (main + PR #30) |
+| Código | `c6d47be` (main antes das correções da revisão) | `3e71918` (main + PR #30) |
 | API | local, porta 8001 | local, porta 8002 |
 | Banco | Postgres 16 local, base de demonstração (`database/seed.py`) | o mesmo |
 | NLU | modelo treinado v1.2.0 (`NLU_BACKEND=modelo`) | o mesmo |
