@@ -76,7 +76,7 @@ function preCarregarPaginas() {
 }
 import { ROTAS_PUBLICAS } from "./utils/contato";
 import { carregarSessao, encerrarSessao, sessaoExpirou } from "./servicos/auth";
-import { carregarConversas, salvarConversas, novoId, tituloFromPergunta } from "./utils/historico";
+import { carregarConversas, donoDe, salvarConversas, novoId, tituloFromPergunta } from "./utils/historico";
 import "./estilos/App.css";
 import "./estilos/visual.css";
 
@@ -138,7 +138,11 @@ export default function App() {
   // No modo automático quem decide é a rolagem; nos outros, a escolha da pessoa.
   const recolhida = modoSidebar === "auto" ? rolouPagina : modoSidebar === "fechada";
 
-  const [conversas, setConversas] = useState(carregarConversas);
+  // Histórico de quem está logado (utils/historico.js): cada usuário tem o seu.
+  const dono = donoDe(usuario);
+  const [conversas, setConversas] = useState(() =>
+    carregarConversas(donoDe(usuario), { adotarLegado: true })
+  );
   const [atualId, setAtualId] = useState(null);
   const [mensagens, setMensagens] = useState([]);
   const [texto, setTexto] = useState("");
@@ -237,9 +241,11 @@ export default function App() {
     return () => window.removeEventListener("keydown", aoTeclar);
   }, [usuario]);
 
+  // Quem troca o usuário (entrar/sair) troca as conversas no mesmo passo, então
+  // aqui `dono` e `conversas` são sempre da mesma pessoa.
   useEffect(() => {
-    salvarConversas(conversas);
-  }, [conversas]);
+    salvarConversas(dono, conversas);
+  }, [dono, conversas]);
 
   // Acorda o servidor e adianta o download das páginas principais enquanto a
   // pessoa ainda está na primeira tela (vitrine, login ou Início).
@@ -279,6 +285,9 @@ export default function App() {
     function aoRecusar(e) {
       encerrarSessao();
       setUsuario(null);
+      setConversas([]);
+      setAtualId(null);
+      setMensagens([]);
       setAvisoSessao(e.detail?.mensagem || MSG_EXPIRADA);
     }
     window.addEventListener(EVENTO_SESSAO_RECUSADA, aoRecusar);
@@ -291,6 +300,9 @@ export default function App() {
     function conferir() {
       if (!carregarSessao()) {
         setUsuario(null);
+        setConversas([]);
+        setAtualId(null);
+        setMensagens([]);
         setAvisoSessao(MSG_EXPIRADA);
       }
     }
@@ -413,12 +425,18 @@ export default function App() {
   function sair() {
     encerrarSessao();
     setUsuario(null);
+    setConversas([]);
+    setAtualId(null);
+    setMensagens([]);
     setAvisoSessao("");
     irPara("home");
   }
 
   function aoEntrar(sessao) {
     setUsuario(sessao);
+    setConversas(carregarConversas(donoDe(sessao)));
+    setAtualId(null);
+    setMensagens([]);
     setAvisoSessao("");
   }
 

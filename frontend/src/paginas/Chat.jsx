@@ -334,6 +334,21 @@ function Resultado({ r, onPerguntar }) {
     );
   }
 
+  // Lista vazia que É a resposta (ex.: nenhum produto parado no período): o
+  // backend manda a frase pronta em `mensagem`. Sem isso a tela abria uma
+  // tabela vazia sob "Aqui está o detalhamento, linha a linha".
+  if (r.linhas.length === 0) {
+    return (
+      <div className="resultado resultado-numero">
+        <p className="resultado-titulo">{r.titulo}</p>
+        <p className="resultado-abertura">
+          {r.mensagem || "Nenhum registro atende a esse recorte no período."}
+        </p>
+        <DetalhesResposta r={r} />
+      </div>
+    );
+  }
+
   const temNumero = r.linhas.some((l) => l.some((v) => typeof v === "number"));
 
   // Um valor só (faturamento de um mês, ticket médio, variação): número grande.

@@ -20,6 +20,7 @@ convidado a reformular, em vez de rodar um SQL errado.
 
 import os
 import re
+import unicodedata
 
 from app.models import Interpretacao
 from app.nlu import regras as R
@@ -262,6 +263,15 @@ _SINAIS_TODOS_VENDEDORES = re.compile(
 )
 
 
+def _chave_busca(nome: str) -> str:
+    """Mesma forma de dim_vendedor.nome_norm (norm_key no banco): minúsculas,
+    sem acento e sem espaços nas pontas. Tira também % e _, que no ILIKE são
+    curingas e não fazem parte de nome de pessoa."""
+    s = unicodedata.normalize("NFKD", str(nome))
+    s = "".join(c for c in s if not unicodedata.combining(c))
+    return s.replace("%", "").replace("_", "").strip().lower()
+
+
 def _pede_todos_vendedores(texto: str) -> bool:
     return bool(_SINAIS_TODOS_VENDEDORES.search(texto))
 
@@ -286,8 +296,11 @@ def _resolver_entidades(intencao: str, texto: str, entidades_modelo: dict,
         # 1ª escolha: entidade do modelo; 2ª: heurística sobre o texto original.
         nome = _nome_vendedor(entidades_modelo) or _nome_por_heuristica(texto_original)
         if nome:
-            # templates.py espera o % do ILIKE já montado pela NLU
-            entidades["vendedor_nome"] = f"%{nome}%"
+            # templates.py espera o % do ILIKE já montado pela NLU. A busca é
+            # contra dim_vendedor.nome_norm, guardado SEM acento (norm_key):
+            # "%José%" nunca casava com "jose", e todo vendedor com acento
+            # (José, Fátima, Antônio) voltava "sem resultado".
+            entidades["vendedor_nome"] = f"%{_chave_busca(nome)}%"
         elif _pede_todos_vendedores(texto):
             # sem nome, mas pergunta por ranking/todos -> lista todos (ILIKE '%')
             entidades["vendedor_nome"] = "%"
