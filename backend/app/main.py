@@ -19,6 +19,8 @@ from app.limite import LimiteDeRequisicoes
 from app.models import Pergunta, ResultSet
 from app.nlu.regras import RuleBasedNLU, usar_referencia
 from app.periodo_dataset import data_referencia, tem_ano_explicito
+from app.planilhas import excluir as excluir_planilha
+from app.planilhas import listar as listar_planilhas
 from app.refino import pede_refino, refinar
 from app.resumo import montar_resumo
 from app.sql.executor import executar_template
@@ -251,3 +253,59 @@ async def import_planilha(arquivo: UploadFile, usuario: UsuarioAtual) -> dict:
                 "mensagem": "Serviço temporariamente indisponível. Tente novamente em instantes.",
             },
         )
+
+
+# ---- Minhas planilhas (migration 007) ---------------------------------------
+# Datasets importados pela conta logada. Exigem login mesmo com
+# AUTH_OBRIGATORIA=false: sem usuário não há "minhas".
+
+
+def _exigir_login(usuario: Usuario | None) -> Usuario:
+    if usuario is None:
+        raise HTTPException(
+            status_code=401,
+            detail={"tipo": "nao_autenticado", "mensagem": "Entre na sua conta para ver suas planilhas."},
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    return usuario
+
+
+def _banco_indisponivel() -> HTTPException:
+    return HTTPException(
+        status_code=503,
+        detail={
+            "tipo": "banco_indisponivel",
+            "mensagem": "Serviço temporariamente indisponível. Tente novamente em instantes.",
+        },
+    )
+
+
+@app.get("/planilhas")
+def minhas_planilhas(usuario: UsuarioAtual) -> dict:
+    """Planilhas importadas pelo usuário, da mais recente para a mais antiga."""
+    dono = _exigir_login(usuario)
+    try:
+        with get_connection() as conn:
+            return {"planilhas": listar_planilhas(conn, dono.id)}
+    except psycopg.OperationalError:
+        raise _banco_indisponivel()
+
+
+@app.delete("/planilhas/{empresa_id}")
+def apagar_planilha(empresa_id: str, usuario: UsuarioAtual) -> dict:
+    """Apaga um dataset importado pelo próprio usuário. De outra pessoa, da
+    base demo ou inexistente: o mesmo 404 (não revela quais ids existem)."""
+    dono = _exigir_login(usuario)
+    try:
+        with get_connection() as conn:
+            if not excluir_planilha(conn, empresa_id, dono.id):
+                raise HTTPException(
+                    status_code=404,
+                    detail={
+                        "tipo": "dataset_nao_encontrado",
+                        "mensagem": "Não encontrei essa planilha na sua conta.",
+                    },
+                )
+            return {"excluida": True, "empresa_id": empresa_id}
+    except psycopg.OperationalError:
+        raise _banco_indisponivel()

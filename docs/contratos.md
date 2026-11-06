@@ -179,6 +179,37 @@ Colunas obrigatórias: `data_venda`, `produto`, `quantidade` e pelo menos uma de
 em [`leitor_excel.py`](../backend/app/importacao/leitor_excel.py) — a mesma
 lista do frontend ([`importacao.js`](../frontend/src/servicos/importacao.js)).
 
+### `GET /planilhas` e `DELETE /planilhas/{empresa_id}` — minhas planilhas
+
+Exigem login (401 sem token, mesmo com `AUTH_OBRIGATORIA=false`). O dono é
+sempre o usuário do token; nunca vem do pedido. Dependem da migration
+`007_minhas_planilhas.sql`.
+
+`GET /planilhas` devolve as planilhas importadas pela conta, da mais recente
+para a mais antiga:
+
+```json
+{
+  "planilhas": [
+    {
+      "empresa_id": "145d7414-63e3-4278-a582-7fb0fa4d1017",
+      "nome_arquivo": "vendas_loja_2024.xlsx",
+      "importada_em": "2026-11-06T03:41:29.739696+00:00",
+      "linhas_validas": 2,
+      "linhas_rejeitadas": 0,
+      "primeira_venda": "2024-03-10",
+      "ultima_venda": "2024-05-02"
+    }
+  ]
+}
+```
+
+`DELETE /planilhas/{empresa_id}` apaga o dataset inteiro (vendas, staging,
+dimensões e auditoria) e responde `{"excluida": true, "empresa_id": "..."}`.
+Planilha de outra pessoa, a base de demonstração, id inexistente ou
+malformado: o mesmo 404 `dataset_nao_encontrado`, sem revelar quais ids
+existem.
+
 ### `GET /resumo` — panorama do mês (implementado)
 
 Alimenta a tela Início. Implementação em
@@ -228,6 +259,17 @@ Regras:
 O `ResultSet` do `/chat` também passou a trazer `intencao` (opcional), a
 chave do template que respondeu — o frontend usa para sugerir a próxima
 pergunta.
+
+E `mensagem` (opcional), presente quando a resposta certa é uma lista
+vazia: em "produtos sem saída", se todos os produtos venderam no período, o
+`/chat` devolve 200 com `linhas: []` e a frase pronta em `mensagem`, em vez
+do 404 `sem_resultado`.
+
+O `contexto` reenviado pelo frontend é filtrado antes de chegar ao SQL
+(`sanear_entidades` em `app/models.py`): datas que não são ISO válidas,
+`limite` fora de 1..100, listas, objetos e textos acima de 200 caracteres
+são descartados. Um valor impossível que ainda chegue ao banco vira 422
+`parametro_invalido`, nunca 500.
 
 ## Regra de ouro: a pergunta nunca vira SQL diretamente
 

@@ -100,6 +100,26 @@ def _melhor_mes(colunas: list[str], linhas: list[list[Any]], entidades: dict) ->
     return ["periodo", metrica], [[escolha[0], escolha[i]]], titulo, evolucao
 
 
+def _sem_produtos_parados(template: dict, colunas: list[str], interp: Interpretacao) -> ResultSet:
+    """Resposta de "produtos sem saída" quando todos venderam: 200, lista vazia
+    e a frase que explica. O título é o do template (com o recorte), como nas
+    demais respostas."""
+    recorte = descrever(interp.entidades, interp.intencao)
+    categoria = interp.entidades.get("categoria")
+    quem = f"Todos os produtos da categoria {categoria}" if categoria else "Todos os produtos"
+    return ResultSet(
+        titulo=f"{template['titulo']} · {recorte}" if recorte else template["titulo"],
+        colunas=colunas,
+        linhas=[],
+        tipo_visualizacao="tabela",
+        parametros=interp.entidades,
+        confianca=interp.confianca,
+        gerado_em=datetime.now(timezone.utc).isoformat(),
+        intencao=interp.intencao,
+        mensagem=f"{quem} tiveram pelo menos uma venda no período. Nenhum ficou parado.",
+    )
+
+
 def executar_template(interp: Interpretacao, empresa_id: str, conn: psycopg.Connection) -> ResultSet:
     template = TEMPLATES.get(interp.intencao)
     if template is None:
@@ -132,6 +152,18 @@ def executar_template(interp: Interpretacao, empresa_id: str, conn: psycopg.Conn
             cur.execute(template["sql"], parametros)
             colunas = [d.name for d in cur.description]
             linhas_brutas = cur.fetchall()
+    except psycopg.DataError:
+        # Parâmetro com valor impossível (data malformada, limite negativo):
+        # pede para reformular em vez de devolver 500. Os valores vêm da NLU
+        # ou do contexto reenviado pelo navegador (ver models.Contexto).
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "tipo": "parametro_invalido",
+                "mensagem": "Não consegui usar algum dado da pergunta. Tente reformular.",
+                "exemplos": EXEMPLOS_PADRAO,
+            },
+        )
     except psycopg.OperationalError:
         raise HTTPException(
             status_code=503,
@@ -145,6 +177,13 @@ def executar_template(interp: Interpretacao, empresa_id: str, conn: psycopg.Conn
     # linha: quando nao ha dados no periodo, essa linha vem toda NULL. Sem este
     # tratamento, "ticket médio de 2018" (sem vendas) virava 200 com valor null
     # em vez de 404 sem_resultado. Uma linha unica 100% NULL conta como vazio.
+    # "Quais produtos não venderam?": lista vazia é a RESPOSTA (nenhum produto
+    # parado), não falta de dados. Antes caía no 404 abaixo e o usuário lia
+    # "não há registros" justamente quando tudo tinha vendido (5 dos 17 erros
+    # da reavaliação de 05/11/2026 eram isso).
+    if interp.intencao == "produtos_sem_saida" and not linhas_brutas:
+        return _sem_produtos_parados(template, colunas, interp)
+
     sem_dados = not linhas_brutas or (
         len(linhas_brutas) == 1 and all(v is None for v in linhas_brutas[0])
     )

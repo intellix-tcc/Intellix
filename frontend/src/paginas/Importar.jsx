@@ -8,6 +8,7 @@ import {
   TAMANHO_MAX_MB,
 } from "../servicos/importacao";
 import { salvarDataset } from "../utils/dataset";
+import SuasPlanilhas from "../componentes/SuasPlanilhas";
 
 // Estados possíveis: vazio -> lendo -> lido -> enviando -> (enviado | pendente | erro)
 // "pendente" é o caso de hoje: o arquivo passou na validação, mas o endpoint
@@ -26,6 +27,8 @@ export default function Importar({ onIrParaChat }) {
   const [progresso, setProgresso] = useState(0);
   const [resultadoEnvio, setResultadoEnvio] = useState(null);
   const [arrastando, setArrastando] = useState(false);
+  // Troca a `key` da lista "Suas planilhas" para ela recarregar após importar.
+  const [versaoLista, setVersaoLista] = useState(0);
   const inputArquivo = useRef(null);
 
   function limpar() {
@@ -71,6 +74,7 @@ export default function Importar({ onIrParaChat }) {
       if (resposta?.empresa_id) salvarDataset(resposta.empresa_id, arquivo.name);
       setResultadoEnvio(resposta);
       setEstado("enviado");
+      setVersaoLista((v) => v + 1);
     } catch (err) {
       setErro(err?.mensagem || "Não consegui enviar a planilha.");
       // Sem endpoint não é falha da usuária nem do arquivo — é integração que
@@ -271,6 +275,8 @@ export default function Importar({ onIrParaChat }) {
           </div>
         )}
       </section>
+
+      <SuasPlanilhas key={versaoLista} onIrParaChat={onIrParaChat} />
     </div>
   );
 }

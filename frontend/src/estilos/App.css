@@ -4939,3 +4939,79 @@ kbd {
     display: none;
   }
 }
+
+/* ==========================================================
+   Importar · Suas planilhas (componentes/SuasPlanilhas.jsx)
+   ========================================================== */
+.planilhas-vazio {
+  font-size: 14px;
+  color: var(--text-3);
+  margin: 0;
+}
+.planilhas-lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+.planilha {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 0;
+  border-top: 1px solid var(--border);
+}
+.planilha:first-child {
+  border-top: none;
+  padding-top: 4px;
+}
+.planilha-icone {
+  flex-shrink: 0;
+  color: var(--text-3);
+}
+.planilha.em-uso .planilha-icone {
+  color: var(--accent);
+}
+.planilha-dados {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.planilha-nome {
+  font-size: 14.5px;
+  color: var(--text-h);
+  overflow-wrap: anywhere;
+}
+.planilha-etiqueta {
+  margin-left: 8px;
+  vertical-align: 1px;
+}
+.planilha-meta {
+  font-size: 13px;
+  color: var(--text-3);
+}
+.planilha-acoes {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+.planilha-excluir {
+  color: var(--erro-texto);
+}
+.planilhas-rodape {
+  margin-top: 14px;
+}
+/* Celular: as ações descem para baixo do nome, sem espremer o texto. */
+@media (max-width: 560px) {
+  .planilha {
+    flex-wrap: wrap;
+  }
+  .planilha-acoes {
+    width: 100%;
+    padding-left: 36px;
+  }
+}
