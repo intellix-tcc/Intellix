@@ -155,6 +155,29 @@ export async function buscarResumo({ ano, mes } = {}) {
 }
 
 /**
+ * Planilhas importadas pela conta logada (GET /planilhas). No modo mock não
+ * há backend nem importação de verdade: a lista vem vazia.
+ */
+export async function listarPlanilhas() {
+  if (MOCK) {
+    await new Promise((r) => setTimeout(r, 300));
+    return [];
+  }
+  const dados = await chamar("/planilhas");
+  return dados.planilhas || [];
+}
+
+/** Apaga uma planilha da conta (DELETE /planilhas/:id). */
+export async function excluirPlanilha(empresaId) {
+  if (MOCK) return { excluida: true, empresa_id: empresaId };
+  // o panorama em cache dessa planilha deixa de valer
+  for (const chave of cacheResumo.keys()) {
+    if (chave.startsWith(`${empresaId}:`)) cacheResumo.delete(chave);
+  }
+  return chamar(`/planilhas/${encodeURIComponent(empresaId)}`, { metodo: "DELETE" });
+}
+
+/**
  * Acorda o servidor do Render assim que o app abre. O plano gratuito hiberna
  * depois de um tempo parado e a primeira requisição leva vários segundos;
  * disparando /health enquanto a pessoa ainda está lendo a tela (ou digitando
