@@ -23,6 +23,8 @@ import { obterToken } from "./auth";
 const API = import.meta.env.VITE_API_URL;
 
 export const TAMANHO_MAX_MB = 10;
+// Mesmo teto do backend (leitor_excel.LIMITE_LINHAS): avisa antes do envio.
+export const LIMITE_LINHAS = 50000;
 const EXTENSOES = [".xlsx", ".xls"];
 
 // Nomes das colunas da staging_venda. A planilha pode usar acento, maiúscula
@@ -162,6 +164,13 @@ export async function analisarPlanilha(arquivo) {
   if (linhas.length === 1) {
     throw {
       mensagem: `A aba "${aba}" só tem o cabeçalho, sem nenhuma linha de venda.`,
+    };
+  }
+  if (linhas.length - 1 > LIMITE_LINHAS) {
+    throw {
+      mensagem:
+        `A planilha tem mais de ${LIMITE_LINHAS.toLocaleString("pt-BR")} linhas de venda. ` +
+        "Divida o arquivo (por exemplo, um por ano) e importe cada parte.",
     };
   }
 

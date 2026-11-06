@@ -18,6 +18,9 @@ import unicodedata
 from typing import Any
 
 TAMANHO_MAX_MB = 10
+# Teto de linhas de venda por arquivo. Uma pequena empresa raramente passa
+# disso num ano; acima, o arquivo é dividido. Protege a memória do servidor.
+LIMITE_LINHAS = 50_000
 
 # Colunas da staging_venda (001_schema.sql). A planilha pode vir com acento,
 # maiúscula ou espaço -- normalizamos antes de comparar.
@@ -149,14 +152,30 @@ def ler_planilha(conteudo: bytes, nome_arquivo: str = "") -> dict:
     aba = wb.sheetnames[0]
     ws = wb[aba]
 
-    linhas_brutas = list(ws.iter_rows(values_only=True))
-    wb.close()
-
     # descarta linhas totalmente vazias do fim/meio
     def _vazia(linha) -> bool:
         return all(c is None or str(c).strip() == "" for c in linha)
 
-    linhas_brutas = [linha for linha in linhas_brutas if not _vazia(linha)]
+    # (número da linha NO EXCEL, valores). O número é o da planilha, contando
+    # as linhas vazias: antes elas eram removidas antes da numeração e, com
+    # uma linha em branco no meio, o erro da linha 8 aparecia como "linha 7".
+    #
+    # Leitura em fluxo, com teto de linhas: um .xlsx de 10 MB comprimido pode
+    # ter centenas de milhares de linhas e, carregado inteiro, estourar os
+    # 512 MB do servidor gratuito antes de qualquer validação.
+    linhas_brutas: list[tuple[int, tuple]] = []
+    try:
+        for numero, linha in enumerate(ws.iter_rows(values_only=True), start=1):
+            if _vazia(linha):
+                continue
+            if len(linhas_brutas) > LIMITE_LINHAS:  # cabeçalho + LIMITE_LINHAS vendas
+                raise ErroImportacao(
+                    f"A planilha tem mais de {LIMITE_LINHAS:,} linhas de venda".replace(",", ".")
+                    + ". Divida o arquivo (por exemplo, um por ano) e importe cada parte."
+                )
+            linhas_brutas.append((numero, linha))
+    finally:
+        wb.close()
 
     if len(linhas_brutas) == 0:
         raise ErroImportacao(
@@ -167,7 +186,7 @@ def ler_planilha(conteudo: bytes, nome_arquivo: str = "") -> dict:
             f'A aba "{aba}" só tem o cabeçalho, sem nenhuma linha de venda.'
         )
 
-    cabecalho = list(linhas_brutas[0])
+    cabecalho = list(linhas_brutas[0][1])
     mapa = [mapear_coluna(c) for c in cabecalho]
     encontradas = [c for c in mapa if c]
 
@@ -185,8 +204,8 @@ def ler_planilha(conteudo: bytes, nome_arquivo: str = "") -> dict:
         )
 
     linhas: list[dict] = []
-    # linha_origem conta a partir de 1 = cabeçalho; dados começam em 2.
-    for n, linha in enumerate(linhas_brutas[1:], start=2):
+    # _linha = número da linha no Excel (a mesma que a pessoa vê na planilha).
+    for n, linha in linhas_brutas[1:]:
         registro: dict[str, Any] = {"_linha": n}
         for idx, coluna in enumerate(mapa):
             if coluna and idx < len(linha):
