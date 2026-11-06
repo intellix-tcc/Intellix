@@ -246,6 +246,7 @@ export default function Importar({ onIrParaChat }) {
               <li>{analise?.colunasEncontradas?.length ?? 0} colunas identificadas</li>
               <li>Dados prontos para análise</li>
             </ul>
+            <ResumoDaCarga resultado={resultadoEnvio} />
             <button type="button" className="botao-primario" onClick={onIrParaChat}>
               Fazer perguntas sobre esses dados
             </button>
@@ -277,6 +278,42 @@ export default function Importar({ onIrParaChat }) {
       </section>
 
       <SuasPlanilhas key={versaoLista} onIrParaChat={onIrParaChat} />
+    </div>
+  );
+}
+
+// O que o servidor deixou de fora, e por quê (POST /import: motivos_rejeicao
+// e linhas_agrupadas). Antes a tela só dizia quantas linhas entraram: uma
+// venda de 2019 ou um valor negativo sumiam sem explicação.
+function ResumoDaCarga({ resultado }) {
+  const motivos = Object.entries(resultado?.motivos_rejeicao || {});
+  const agrupadas = resultado?.linhas_agrupadas || 0;
+  if (!motivos.length && !agrupadas) return null;
+  return (
+    <div className="resumo-carga">
+      {motivos.length > 0 && (
+        <>
+          <p>
+            <strong>
+              {resultado.linhas_rejeitadas} {resultado.linhas_rejeitadas === 1 ? "linha ficou" : "linhas ficaram"} de
+              fora:
+            </strong>
+          </p>
+          <ul>
+            {motivos.map(([motivo, n]) => (
+              <li key={motivo}>
+                {n} × {motivo}
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+      {agrupadas > 0 && (
+        <p>
+          {agrupadas} {agrupadas === 1 ? "linha repetia" : "linhas repetiam"} um produto na mesma
+          venda e {agrupadas === 1 ? "foi somada" : "foram somadas"} ao item, sem perder valor.
+        </p>
+      )}
     </div>
   );
 }

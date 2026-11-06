@@ -116,3 +116,39 @@ def test_parse_int_arredonda():
     assert etl._parse_int("2") == 2
     assert etl._parse_int(3.0) == 3
     assert etl._parse_int(None) is None
+
+
+# ---- número da linha, teto de linhas e tamanho (sem banco) ----
+
+def test_numero_da_linha_e_o_do_excel_mesmo_com_linha_vazia_no_meio():
+    conteudo = _xlsx([
+        ["data_venda", "produto", "quantidade", "valor_total"],
+        ["2024-03-05", "A", 1, 10],
+        [None, None, None, None],          # linha 3 em branco
+        ["2024-03-06", "B", 1, 20],        # é a linha 4 no Excel
+    ])
+    r = ler_planilha(conteudo, "vendas.xlsx")
+    assert [linha["_linha"] for linha in r["linhas"]] == [2, 4]
+
+
+def test_planilha_acima_do_teto_de_linhas_e_recusada(monkeypatch):
+    from app.importacao import leitor_excel
+
+    monkeypatch.setattr(leitor_excel, "LIMITE_LINHAS", 3)
+    linhas = [["data_venda", "produto", "quantidade", "valor_total"]]
+    linhas += [["2024-03-05", f"P{i}", 1, 10] for i in range(4)]
+    with pytest.raises(ErroImportacao, match="mais de 3 linhas"):
+        ler_planilha(_xlsx(linhas), "vendas.xlsx")
+    # exatamente no teto ainda passa
+    assert ler_planilha(_xlsx(linhas[:4]), "vendas.xlsx")["total_linhas"] == 3
+
+
+def test_upload_acima_do_limite_e_recusado_antes_de_ler(monkeypatch):
+    from app import main
+    from fastapi.testclient import TestClient
+
+    monkeypatch.setenv("LIMITE_REQUISICOES", "0")
+    monkeypatch.setattr(main, "TAMANHO_MAX_MB", 0)  # qualquer byte passa do limite
+    r = TestClient(main.app).post("/import", files={"arquivo": ("v.xlsx", b"PK\x03\x04xx")})
+    assert r.status_code == 422
+    assert r.json()["detail"]["tipo"] == "planilha_invalida"

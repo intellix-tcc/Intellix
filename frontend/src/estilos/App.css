@@ -5015,3 +5015,17 @@ kbd {
     padding-left: 36px;
   }
 }
+
+/* O que ficou de fora na importação (Importar.jsx, ResumoDaCarga) */
+.resumo-carga {
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--text);
+}
+.resumo-carga p {
+  margin: 6px 0 2px;
+}
+.resumo-carga ul {
+  margin: 0;
+  padding-left: 18px;
+}
