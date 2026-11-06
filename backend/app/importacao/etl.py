@@ -136,6 +136,15 @@ def importar(
         # ---- valida/transforma cada linha em memória ----
         validas: list[dict] = []
         staging_rows: list[tuple] = []
+        motivos: dict[str, int] = {}
+
+        # Calendário do banco (dim_data). Carregado ANTES de validar as linhas
+        # para que uma data fora dele seja rejeitada com motivo, gravado em
+        # staging_venda.erros e devolvido na resposta. Antes a linha passava na
+        # validação e sumia na hora de montar a fato, sem explicação.
+        cur.execute("select id, data from dim_data")
+        data_id = {d: i for i, d in cur.fetchall()}
+        cal_ini, cal_fim = (min(data_id), max(data_id)) if data_id else (None, None)
 
         for reg in linhas:
             n = reg["_linha"]
@@ -155,11 +164,22 @@ def importar(
                 erro = "quantidade inválida"
             elif v_total is None and v_unit is None:
                 erro = "sem valor (unitário ou total)"
+            elif (v_total is not None and v_total < 0) or (v_unit is not None and v_unit < 0) or desconto < 0:
+                erro = "valor negativo"
+            elif cal_ini is None or not (cal_ini <= d <= cal_fim):
+                erro = (
+                    f"data fora do período aceito ({cal_ini.year} a {cal_fim.year})"
+                    if cal_ini else "calendário do banco vazio"
+                )
 
             if v_total is None and v_unit is not None and qtd is not None:
                 v_total = round(qtd * v_unit - desconto, 2)
             if v_unit is None and v_total is not None and qtd:
                 v_unit = round((v_total + desconto) / qtd, 2)
+            # total calculado do unitário pode sair negativo (desconto maior que
+            # o valor dos itens): faturamento negativo não é venda
+            if erro is None and v_total is not None and v_total < 0:
+                erro = "valor negativo"
 
             # venda_id: usa o informado ou sintetiza por linha (idempotente via hash)
             venda_id = _texto(reg.get("venda_id")) or f"XLS-{hash_arq[:8]}-{n}"
@@ -175,6 +195,7 @@ def importar(
             ))
 
             if erro:
+                motivos[erro] = motivos.get(erro, 0) + 1
                 continue
 
             validas.append({
@@ -239,17 +260,30 @@ def importar(
         cli_id = {nk: i for i, nk in cur.fetchall()}
         cur.execute("select id, nome_norm from dim_vendedor where empresa_id=%s", (empresa_id,))
         vend_id = {nk: i for i, nk in cur.fetchall()}
-        cur.execute("select id, data from dim_data")
-        data_id = {d: i for i, d in cur.fetchall()}
-
         # ---- fato ----
-        fato_rows = []
+        # Mesmo produto duas vezes na mesma venda (duas linhas na planilha):
+        # vira UM item com quantidade e valores somados. A chave única da fato
+        # é (empresa, venda, produto); antes a segunda linha era descartada em
+        # silêncio pelo "on conflict do nothing", contada como válida, e o
+        # faturamento ficava menor que o da planilha.
+        itens: dict[tuple[str, str], dict] = {}
         for r in validas:
-            did = data_id.get(r["data"])
-            if did is None:
-                # data válida mas fora do intervalo de dim_data (2023-2026):
-                # conta como rejeitada (linhas_lidas - linhas_validas)
+            chave = (r["venda_id"], _norm_key(r["produto"]))
+            atual = itens.get(chave)
+            if atual is None:
+                itens[chave] = dict(r)
                 continue
+            atual["quantidade"] += r["quantidade"]
+            atual["desconto"] = round(atual["desconto"] + r["desconto"], 2)
+            atual["valor_total"] = round(atual["valor_total"] + r["valor_total"], 2)
+            atual["valor_unitario"] = round(
+                (atual["valor_total"] + atual["desconto"]) / atual["quantidade"], 2
+            )
+        linhas_agrupadas = len(validas) - len(itens)
+
+        fato_rows = []
+        for r in itens.values():
+            did = data_id[r["data"]]  # garantido: datas fora do calendário já foram rejeitadas
             fato_rows.append((
                 empresa_id, r["venda_id"], did, prod_id[_norm_key(r["produto"])],
                 cli_id.get(_norm_key(r["cliente"])) if r["cliente"] else None,
@@ -270,7 +304,9 @@ def importar(
                 fato_rows,
             )
 
-        linhas_validas = len(fato_rows)
+        # linhas da planilha aproveitadas (as agrupadas contam: os valores delas
+        # estão no item somado)
+        linhas_validas = len(validas)
         linhas_rejeitadas = leitura["total_linhas"] - linhas_validas
 
         cur.execute(
@@ -295,4 +331,9 @@ def importar(
         "linhas_rejeitadas": linhas_rejeitadas,
         "colunas_encontradas": leitura["colunas_encontradas"],
         "colunas_ignoradas": leitura["extras"],
+        # por que cada grupo de linhas ficou de fora, para a tela explicar
+        # ("data fora do período aceito (2023 a 2032)": 12)
+        "motivos_rejeicao": motivos,
+        # linhas que repetiam produto na mesma venda e foram somadas
+        "linhas_agrupadas": linhas_agrupadas,
     }
