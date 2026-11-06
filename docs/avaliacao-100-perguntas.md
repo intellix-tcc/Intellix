@@ -133,9 +133,9 @@ Como os tempos se decompõem (medianas):
 
 A meta de tempo médio inferior a 3 s foi atingida também em produção (1,78 s), mas com
 margem menor. Uma resposta (1%) passou de 3 s (3.276 ms). **O principal custo é abrir uma
-conexão nova com o banco a cada pergunta**: o Render não tem região na América do Sul, e
-cada conexão nova exige várias idas e voltas de rede até São Paulo (TCP, TLS e
-autenticação). Com um pool de conexões, a conexão é aberta uma vez e reaproveitada, o que
+conexão nova com o banco a cada pergunta**: cada conexão nova exige várias idas e voltas
+de rede entre o Render e o banco `intellix-prod`, hospedado em us-west-2 (Oregon, EUA),
+para TCP, TLS e autenticação. Com um pool de conexões, a conexão é aberta uma vez e reaproveitada, o que
 eliminaria a maior parte desse segundo; o tempo típico esperado ficaria abaixo de 1 s.
 
 **Memória em produção.** O plano gratuito do Render não exibe métricas de memória
@@ -160,11 +160,16 @@ já que o pool não altera nenhuma resposta.
 | **Produção, com pool (20:34)** | **992 ms** | **960 ms** | 1.514 ms | 2.100 ms | **100/100** |
 
 Em produção, a resposta típica caiu quase pela metade (−46% na média) e nenhuma resposta
-passou de 3 s. O tempo que resta (~1 s) é latência de rede entre o Render e o banco em
-São Paulo: cada pergunta ainda faz quatro idas e voltas (verificação da conexão, `BEGIN`,
-consulta e `COMMIT`). Usar *autocommit* nas consultas de leitura eliminaria duas delas;
-isso fica como trabalho futuro, porque exige separar as conexões de leitura das usadas
-pela importação de planilhas, que precisa de transação.
+passou de 3 s. O tempo que resta (~1 s) é latência de rede entre o Render e o banco
+(us-west-2, Oregon): cada pergunta ainda faz quatro idas e voltas (verificação da conexão,
+`BEGIN`, consulta e `COMMIT`). A forma mais simples de reduzi-lo é manter o serviço do
+Render na mesma região do banco.
+
+*Nota de 06/11/2026.* Esta seção sugeria antes usar *autocommit* nas leituras para
+eliminar duas idas e voltas. A sugestão foi descartada com o C14 (migration 006): o
+isolamento por empresa depende de `set_config('app.empresa_id', ..., true)`, que só vale
+dentro de uma transação. A alternativa registrada é o modo *pipeline* do psycopg, que
+envia `BEGIN`, declaração da empresa, consulta e `COMMIT` numa única ida e volta.
 
 Observação: uma rodada às 20:31 coincidiu com a troca de versão no Render. As perguntas 1
 a 31 ainda foram atendidas pela versão antiga, a 32 recebeu HTTP 502 (instância antiga

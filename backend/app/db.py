@@ -11,9 +11,9 @@ load_dotenv()
 #
 # Antes, cada pergunta abria uma conexão nova com o Supabase. Medido nas 100
 # perguntas em produção (docs/avaliacao-100-perguntas.md, seção 3.3), só
-# abrir a conexão custava ~1,1 s por requisição no Render: o servidor fica
-# fora da América do Sul e cada conexão nova repete TCP + TLS + autenticação
-# até São Paulo. O pool abre a conexão uma vez e a reaproveita.
+# abrir a conexão custava ~1,1 s por requisição no Render: cada conexão nova
+# repete TCP + TLS + autenticação até o banco de prod (us-west-2, Oregon). O
+# pool abre a conexão uma vez e a reaproveita.
 #
 # prepare_threshold=None é OBRIGATÓRIO aqui: o Transaction pooler do Supabase
 # (porta 6543) não mantém prepared statements entre transações. Com conexão
