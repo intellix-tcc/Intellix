@@ -2179,9 +2179,14 @@ img.logo {
 /* Duas colunas: painel de marca (fixo, sempre escuro — não segue o tema
    claro/escuro do resto do site, é o único lugar da interface que não
    segue) + painel do formulário. Abaixo de 861px o painel de marca some
-   (ver media query) e a tela volta a ser só o card, centralizado. */
+   (ver media query) e a tela volta a ser só o card, centralizado.
+
+   `min-height`, não `height`: a tela ocupa pelo menos uma viewport, mas
+   cresce com o formulário. Com altura fixa + `overflow: hidden` no painel,
+   o cadastro (mais alto que a tela de um celular) ficava cortado e o botão
+   "Criar conta" sumia abaixo da dobra sem rolagem possível (iPhone 11). */
 .auth-tela {
-  height: 100svh;
+  min-height: 100svh;
   width: 100%;
   display: flex;
 }
@@ -3214,8 +3219,12 @@ h1.auth-sub {
   .auth-painel-marca {
     display: none;
   }
+  /* Em cima, não centralizado: o "← Voltar" (absoluto no canto) ganha uma
+     faixa própria acima do cartão em vez de ficar por cima dele. */
   .auth-formulario-painel {
     flex: 1 1 100%;
+    align-items: flex-start;
+    padding: 60px 16px 32px;
   }
 
   /* Landing: hero empilha (texto em cima, preview embaixo) em vez de lado
@@ -3416,6 +3425,10 @@ h1.auth-sub {
   .painel-acoes .botao-primario,
   .painel-acoes .botao-secundario {
     width: 100%;
+    /* Sem isto, o padding soma por cima dos 100% e o botão (um <a> no FAQ)
+       fica mais largo que a tela, abrindo rolagem lateral no celular. */
+    box-sizing: border-box;
+    justify-content: center;
   }
   .area-solta {
     padding: 30px 16px;
@@ -3423,6 +3436,11 @@ h1.auth-sub {
   .passos {
     flex-direction: column;
     gap: 12px;
+  }
+  /* Em coluna, o `flex-basis: 210px` de .passo (pensado como largura, em
+     linha) vira altura: cada passo ficava com ~210px e um vão enorme. */
+  .passo {
+    flex-basis: auto;
   }
   .aviso .botao-primario,
   .aviso .botao-secundario {
@@ -4014,7 +4032,9 @@ h1.auth-sub {
 @media (max-width: 860px) {
   .contato-grade {
     width: min(1180px, 100% - 36px);
-    grid-template-columns: 1fr;
+    /* minmax(0, 1fr), não 1fr: `1fr` não deixa a coluna encolher abaixo
+       do conteúdo, e numa tela de 320px os painéis vazavam da tela. */
+    grid-template-columns: minmax(0, 1fr);
   }
   .termos-sumario ol {
     columns: 1;
