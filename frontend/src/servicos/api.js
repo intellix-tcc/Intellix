@@ -196,6 +196,43 @@ export async function listarPlanilhas() {
   return dados.planilhas || [];
 }
 
+// --- Histórico de conversas na conta (migration 008) -------------------------
+// O localStorage continua sendo o espelho local (instantâneo, offline, mock);
+// com login, estas chamadas guardam e trazem as conversas do banco, para o
+// histórico seguir a pessoa entre aparelhos. A orquestração (buscar, mesclar,
+// migrar o que é só local) fica no App.
+
+/** Verdadeiro quando há backend de verdade para sincronizar (não mock). */
+export function historicoRemotoAtivo() {
+  return !MOCK && Boolean(API);
+}
+
+/** Conversas da conta (GET /conversas). No mock, null = "use só o local". */
+export async function listarConversas() {
+  if (!historicoRemotoAtivo()) return null;
+  const dados = await chamar("/conversas");
+  return dados.conversas || [];
+}
+
+/** Cria/atualiza uma conversa no banco (PUT /conversas/:id). */
+export async function salvarConversaRemota(conversa) {
+  if (!historicoRemotoAtivo()) return;
+  return chamar(`/conversas/${encodeURIComponent(conversa.id)}`, {
+    metodo: "PUT",
+    corpo: {
+      titulo: conversa.titulo || "Nova conversa",
+      mensagens: conversa.mensagens || [],
+      criadoEm: conversa.criadoEm,
+    },
+  });
+}
+
+/** Apaga uma conversa no banco (DELETE /conversas/:id). */
+export async function excluirConversaRemota(id) {
+  if (!historicoRemotoAtivo()) return;
+  return chamar(`/conversas/${encodeURIComponent(id)}`, { metodo: "DELETE" });
+}
+
 /** Apaga uma planilha da conta (DELETE /planilhas/:id). */
 export async function excluirPlanilha(empresaId) {
   if (MOCK) return { excluida: true, empresa_id: empresaId };

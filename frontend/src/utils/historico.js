@@ -1,6 +1,8 @@
-// Ainda não existe endpoint de histórico no backend, então guardamos as
-// conversas no localStorage — mesma lógica do modo mock: o frontend não
-// espera o servidor para ter uma funcionalidade completa.
+// O localStorage é o espelho local do histórico: resposta instantânea, modo
+// mock e funcionamento offline. Com a conta logada, as conversas também vão
+// para o banco (migration 008) e voltam em qualquer aparelho — a sincronização
+// mora no App (servicos/api.js: listarConversas/salvarConversaRemota/
+// excluirConversaRemota); aqui ficam só o armazenamento local e os utilitários.
 //
 // Uma chave POR USUÁRIO. Antes era uma chave só para o navegador inteiro e o
 // "Sair" não a apagava: quem entrasse depois no mesmo computador via as
@@ -68,8 +70,47 @@ export function salvarConversas(dono, conversas) {
   }
 }
 
+// UUID de verdade: é o id que vai para o banco (conversa.id uuid, migration
+// 008) quando o histórico sincroniza com a conta. crypto.randomUUID existe em
+// contexto seguro (https e localhost); o fallback cobre o resto.
 export function novoId() {
-  return `c_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+  try {
+    if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
+  } catch {
+    // sem crypto: usa o fallback abaixo
+  }
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    return (c === "x" ? r : (r & 0x3) | 0x8).toString(16);
+  });
+}
+
+const RE_UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** O id serve para o banco? (conversas locais antigas usavam outro formato.) */
+export function ehUuid(id) {
+  return typeof id === "string" && RE_UUID.test(id);
+}
+
+/** Momento para ordenar: a última atualização, ou a criação. */
+function quandoDe(c) {
+  return c?.atualizadoEm || c?.criadoEm || "";
+}
+
+/**
+ * Junta conversas de duas origens (servidor e local), sem duplicar por id —
+ * a primeira origem vence —, da mais recente para a mais antiga. Usado na
+ * sincronização do histórico com a conta.
+ */
+export function juntarConversas(preferida, outra) {
+  const vistos = new Set();
+  const todas = [];
+  for (const c of [...preferida, ...outra]) {
+    if (!c?.id || vistos.has(c.id)) continue;
+    vistos.add(c.id);
+    todas.push(c);
+  }
+  return todas.sort((a, b) => quandoDe(b).localeCompare(quandoDe(a)));
 }
 
 export function tituloFromPergunta(pergunta) {
