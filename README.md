@@ -8,6 +8,15 @@ montar relatório nem escrever consulta.
 
 Trabalho de Conclusão de Curso em Ciência da Computação, UNIP, 2026.
 
+**Equipe**
+
+| Nome | RA |
+|---|---|
+| Amanda Eleoterio Silva | N9514H5 |
+| Erik Alves Gonçalves | N2246A3 |
+| Ilana dos Santos Caetano da Silva | N0810C0 |
+| Maria Luiza dos Anjos Santos | F353478 |
+
 | | |
 |---|---|
 | Aplicação | <https://intellix-lilac.vercel.app> |
