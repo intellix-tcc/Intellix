@@ -1,7 +1,8 @@
 # Diagramas do TCC
 
 Cada figura do capítulo 4 tem a fonte versionada aqui e é gerada por
-ferramenta, a partir do código e do banco atuais (06/11/2026).
+ferramenta, a partir do código e do banco atuais (06/11/2026, com o histórico de
+conversas por conta da migration 008).
 
 | Figura | Fonte | Imagem | Como gerar |
 |---|---|---|---|
@@ -22,7 +23,12 @@ O que cada diagrama segue no código:
   Assinaturas resumidas, sem a conexão com o banco.
 - **Arquitetura:** só o que está implantado. A segurança em nível de linha e o
   usuário com privilégio mínimo (`006_rls_e_usuario_app.sql`) estão aplicados
-  no ambiente de desenvolvimento (ver `docs/migrations_aplicadas.md`).
+  em desenvolvimento e em produção; os bancos ficam em São Paulo (dev) e
+  Oregon (prod) (ver `docs/migrations_aplicadas.md`). As senhas ficam só no
+  Supabase Auth, como hash.
+- **DER:** inclui a tabela `conversa` (008). `empresa.dono_id` e
+  `conversa.dono_id` apontam para `auth.users`, em outro schema, e por isso
+  essas relações não são desenhadas.
 
 `arquitetura_hexagonal*.drawio` são a versão de outubro de 2026, anterior à
 importação de planilhas e ao login; ficam como histórico.
