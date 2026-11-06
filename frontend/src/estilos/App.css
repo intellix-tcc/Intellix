@@ -798,8 +798,8 @@ img.logo {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 9px 6px;
-  margin: 0 -6px;
+  padding: 9px 10px;
+  margin: 0 -10px;
   border-radius: 8px;
   border-bottom: 1px solid var(--border);
   font-size: 14px;
@@ -807,10 +807,7 @@ img.logo {
 }
 .painel-ranking li:hover {
   background: var(--hover-bg);
-  padding-left: 12px;
-}
-.painel-ranking li:first-child {
-  padding-top: 0;
+  padding-left: 16px;
 }
 .painel-ranking li:last-child {
   border-bottom: none;
@@ -1036,14 +1033,19 @@ img.logo {
 .sobre-cartao {
   display: flex;
   gap: 16px;
+  /* O hover acende fundo e sombra na própria caixa: sem padding, o ícone e o
+     texto encostavam na borda do contorno. A margem negativa do mesmo tamanho
+     devolve o texto, em repouso, ao alinhamento de antes. Ela não estoura a
+     tela: 18px é o menor padding lateral de .sobre-dupla (celular). */
+  padding: 18px;
+  margin: -18px;
   border-radius: 14px;
   transition: background-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
 }
-/* Sem margem negativa: a versão anterior "vazava" a caixa pra fora do
-   próprio grid pra ganhar respiro no hover, e isso é o tipo de técnica que
-   quebra fácil em telas estreitas (cartão colando no vizinho ou estourando
-   a largura da tela). Aqui o hover fica inteiramente contido na própria
-   caixa do cartão — sem contrapartida em nenhuma largura de tela. */
+/* O hover fica contido na caixa do cartão (padding + margem negativa
+   compensando, ver .sobre-cartao): a caixa avança no máximo 18px, menos que o
+   padding lateral de .sobre-dupla e que o gap de 28px entre os cartões. Então
+   não estoura a largura da tela nem encosta no vizinho. */
 .sobre-cartao:hover {
   background: var(--surface);
   box-shadow: var(--shadow);
@@ -1482,9 +1484,13 @@ img.logo {
   box-shadow: var(--shadow);
   transition: box-shadow 0.2s ease, border-color 0.2s ease;
 }
-.resultado:hover {
-  box-shadow: var(--shadow-2);
-  border-color: var(--border-2);
+/* Só em aparelho com mouse: no celular o :hover "gruda" depois do toque e a
+   resposta ganhava sombra e borda do nada ao trocar o formato ("Ver como"). */
+@media (hover: hover) {
+  .resultado:hover {
+    box-shadow: var(--shadow-2);
+    border-color: var(--border-2);
+  }
 }
 
 .resultado-titulo {
@@ -1514,9 +1520,13 @@ img.logo {
 .resultado-numero,
 .resultado-grafico {
   background: none;
-  border: none;
+  border-color: transparent;
   box-shadow: none;
-  padding: 4px 0;
+  /* Respiro interno: em repouso não aparece (sem fundo nem borda), mas no
+     hover o contorno surge com folga em volta do conteúdo. Com "4px 0" o
+     contorno colava no título, no selo de confiabilidade e nos botões
+     Copiar/Excel/PDF, e parecia pequeno demais para o que estava dentro. */
+  padding: 14px 18px 16px;
 }
 
 .resultado-abertura {
@@ -1539,8 +1549,8 @@ img.logo {
   display: flex;
   justify-content: space-between;
   gap: 12px;
-  padding: 7px 6px;
-  margin: 0 -6px;
+  padding: 7px 10px;
+  margin: 0 -10px;
   border-radius: 6px;
   border-bottom: 1px solid var(--border);
   font-size: 14.5px;
@@ -1551,9 +1561,6 @@ img.logo {
 }
 .resultado-lista li:hover .resultado-lista-rotulo {
   color: var(--accent);
-}
-.resultado-lista li:first-child {
-  padding-top: 0;
 }
 .resultado-lista li:last-child {
   border-bottom: none;
