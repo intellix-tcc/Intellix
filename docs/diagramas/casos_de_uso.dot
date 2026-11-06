@@ -12,7 +12,8 @@ digraph casos_de_uso {
     node [shape=ellipse, style=solid, width=2.6, height=0.62, fixedsize=false, margin="0.12,0.04"];
     perg   [label="Fazer pergunta em\nlinguagem natural"];
     resp   [label="Visualizar resposta\n(número, gráfico ou tabela)"];
-    hist   [label="Consultar histórico\nde conversas"];
+    hist   [label="Consultar histórico de conversas\n(guardado na conta)"];
+    capac  [label="Ver o que o agente\nsabe responder"];
     pan    [label="Ver panorama do mês\n(tela Início)"];
     imp    [label="Importar planilha\nde vendas"];
     plan   [label="Gerenciar minhas planilhas\n(escolher ou excluir)"];
@@ -27,7 +28,7 @@ digraph casos_de_uso {
   }
 
   edge [dir=none, color="#000000"];
-  gestor -> perg; gestor -> resp; gestor -> hist;
+  gestor -> perg; gestor -> resp; gestor -> hist; gestor -> capac;
   gestor -> pan; gestor -> imp; gestor -> plan; gestor -> login;
   {rank=same; gestor; supa;}
   supa -> login;

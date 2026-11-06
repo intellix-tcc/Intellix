@@ -9,7 +9,7 @@ digraph classes {
 
   api [pos="220,0!", label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="3">
     <TR><TD BGCOLOR="#D9D9D9"><FONT POINT-SIZE="9">«controlador»</FONT><BR/><B>API FastAPI</B><BR/><FONT POINT-SIZE="9" COLOR="#444444">main.py</FONT></TD></TR>
-    <TR><TD ALIGN="LEFT" BALIGN="LEFT">+ chat(pergunta): ResultSet<BR/>+ resumo(): dict<BR/>+ import_planilha(arquivo)<BR/>+ minhas_planilhas()<BR/>+ apagar_planilha(id)</TD></TR></TABLE>>];
+    <TR><TD ALIGN="LEFT" BALIGN="LEFT">+ chat(pergunta): ResultSet<BR/>+ resumo(): dict<BR/>+ import_planilha(arquivo)<BR/>+ minhas_planilhas()<BR/>+ apagar_planilha(id)<BR/>+ minhas_conversas()<BR/>+ gravar_conversa(id)<BR/>+ apagar_conversa(id)</TD></TR></TABLE>>];
 
   acesso [pos="0,0!", label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="3">
     <TR><TD BGCOLOR="#D9D9D9"><FONT POINT-SIZE="9">«módulos»</FONT><BR/><B>Autenticação e acesso</B><BR/><FONT POINT-SIZE="9" COLOR="#444444">auth.py · acesso.py</FONT></TD></TR>
@@ -73,6 +73,12 @@ digraph classes {
   api -> acesso; api -> auditoria;
   api -> nlu; api -> pos; api -> executor;
   api -> importacao;
+  api -> conversas;
+  conversas -> db [style=dashed];
+  conversas [pos="0,-545!", label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="3">
+    <TR><TD BGCOLOR="#D9D9D9"><FONT POINT-SIZE="9">«módulo»</FONT><BR/><B>Histórico de conversas</B><BR/><FONT POINT-SIZE="9" COLOR="#444444">conversas.py · tabela conversa</FONT></TD></TR>
+    <TR><TD ALIGN="LEFT" BALIGN="LEFT">+ listar(dono)<BR/>+ salvar(id, dono, mensagens)<BR/>+ excluir(id, dono)</TD></TR></TABLE>>];
+
   regras -> interp [style=dashed, label="cria"];
   treinado -> interp [style=dashed];
   executor -> templates [label="seleciona"];
