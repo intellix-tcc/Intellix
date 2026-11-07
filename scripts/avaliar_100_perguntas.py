@@ -10,7 +10,17 @@ Dois modos:
   api  (padrão) — envia cada pergunta para POST /chat de uma API no ar e
         avalia status HTTP + categoria obtida. É o teste ponta a ponta.
             python scripts/avaliar_100_perguntas.py --url http://127.0.0.1:8000
-            python scripts/avaliar_100_perguntas.py --url https://intellix-api.onrender.com
+            python scripts/avaliar_100_perguntas.py --url https://intellix-backend-3fu4.onrender.com --email voce@exemplo.com
+
+        Com o login obrigatório (AUTH_OBRIGATORIA=true, como em produção), o
+        /chat responde 401 sem token. Duas formas de autenticar:
+          --email      entra com uma conta do Intellix; a senha é pedida no
+                       terminal (não aparece na tela nem fica no histórico).
+                       Precisa de SUPABASE_URL e SUPABASE_ANON_KEY no ambiente
+                       ou, se faltarem, lê VITE_SUPABASE_URL e
+                       VITE_SUPABASE_ANON_KEY de frontend/.env.local.
+          INTELLIX_TOKEN=<token> no ambiente, se já tiver um token de acesso.
+        O token vale 1 hora, o suficiente para as 100 perguntas.
 
   nlu  — avalia só a classificação, importando o NLU direto (sem servidor e
         sem banco). Serve para comparar regras x modelo.
@@ -33,7 +43,9 @@ from __future__ import annotations
 import argparse
 import csv
 import datetime as dt
+import getpass
 import json
+import os
 import platform
 import re
 import statistics
@@ -102,10 +114,48 @@ def ler_perguntas(caminho: Path) -> list[dict]:
 # --------------------------------------------------------------------------- #
 # Modo API                                                                     #
 # --------------------------------------------------------------------------- #
-def _post(url: str, pergunta: str, timeout: float) -> tuple[int, dict, float]:
+def _config_supabase() -> tuple[str, str]:
+    """URL do Supabase e chave publishable (a mesma que o site usa)."""
+    url = os.environ.get("SUPABASE_URL", "")
+    chave = os.environ.get("SUPABASE_ANON_KEY", "")
+    env_front = RAIZ / "frontend" / ".env.local"
+    if (not url or not chave) and env_front.exists():
+        for linha in env_front.read_text(encoding="utf-8").splitlines():
+            nome, _, valor = linha.partition("=")
+            valor = valor.strip().strip('"').strip("'")
+            if nome.strip() == "VITE_SUPABASE_URL" and not url:
+                url = valor
+            elif nome.strip() == "VITE_SUPABASE_ANON_KEY" and not chave:
+                chave = valor
+    if not url or not chave:
+        sys.exit("Para entrar com --email, defina SUPABASE_URL e SUPABASE_ANON_KEY "
+                 "(ou preencha frontend/.env.local).")
+    return url.rstrip("/"), chave
+
+
+def obter_token(email: str) -> str:
+    """Entra no Supabase Auth com e-mail e senha e devolve o token de acesso.
+    A senha é pedida no terminal e não é gravada em lugar nenhum."""
+    url, chave = _config_supabase()
+    senha = getpass.getpass(f"Senha de {email}: ")
+    corpo = json.dumps({"email": email, "password": senha}).encode("utf-8")
+    req = urllib.request.Request(
+        f"{url}/auth/v1/token?grant_type=password", data=corpo, method="POST",
+        headers={"Content-Type": "application/json", "apikey": chave},
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=30) as r:
+            return json.loads(r.read().decode("utf-8"))["access_token"]
+    except urllib.error.HTTPError as e:
+        sys.exit(f"Login recusado pelo Supabase (HTTP {e.code}). Confira o e-mail e a senha.")
+
+
+def _post(url: str, pergunta: str, timeout: float, token: str = "") -> tuple[int, dict, float]:
     corpo = json.dumps({"pergunta": pergunta}).encode("utf-8")
-    req = urllib.request.Request(url, data=corpo, method="POST",
-                                 headers={"Content-Type": "application/json"})
+    cabecalhos = {"Content-Type": "application/json"}
+    if token:
+        cabecalhos["Authorization"] = f"Bearer {token}"
+    req = urllib.request.Request(url, data=corpo, method="POST", headers=cabecalhos)
     t0 = time.perf_counter()
     try:
         with urllib.request.urlopen(req, timeout=timeout) as r:
@@ -120,7 +170,7 @@ def _post(url: str, pergunta: str, timeout: float) -> tuple[int, dict, float]:
     return status, dados, ms
 
 
-def avaliar_api(perguntas: list[dict], base: str, timeout: float) -> list[dict]:
+def avaliar_api(perguntas: list[dict], base: str, timeout: float, token: str = "") -> list[dict]:
     base = base.rstrip("/")
     # aquece a instância (no Render free a 1ª chamada pode levar ~50 s)
     try:
@@ -130,7 +180,11 @@ def avaliar_api(perguntas: list[dict], base: str, timeout: float) -> list[dict]:
 
     resultados = []
     for p in perguntas:
-        status, dados, ms = _post(base + "/chat", p["pergunta"], timeout)
+        status, dados, ms = _post(base + "/chat", p["pergunta"], timeout, token)
+        if status == 401:
+            # sem isso, as 100 perguntas "errariam" e o relatório sairia falso
+            sys.exit("A API exige login (HTTP 401). Rode de novo com --email "
+                     "ou defina INTELLIX_TOKEN.")
         detalhe = dados.get("detail") if isinstance(dados.get("detail"), dict) else {}
         tipo_erro = detalhe.get("tipo", "")
         # O título pode vir com o recorte depois de " · " ("Faturamento no
@@ -310,6 +364,8 @@ def main() -> None:
     ap.add_argument("--backend", choices=["regras", "modelo"], default="regras", help="NLU (modo nlu)")
     ap.add_argument("--modelo", default=None,
                     help="arquivo .pt a avaliar (modo nlu); padrão: o que o backend usa")
+    ap.add_argument("--email", default=None,
+                    help="conta do Intellix para entrar (modo api); a senha é pedida no terminal")
     ap.add_argument("--timeout", type=float, default=60.0)
     ap.add_argument("--saida", default=str(RAIZ / "docs" / "evidencias"))
     args = ap.parse_args()
@@ -319,7 +375,9 @@ def main() -> None:
         print(f"aviso: {len(perguntas)} perguntas lidas (esperado 100)")
 
     if args.modo == "api":
-        resultados, alvo, rotulo = avaliar_api(perguntas, args.url, args.timeout), args.url, "api"
+        token = obter_token(args.email) if args.email else os.environ.get("INTELLIX_TOKEN", "")
+        resultados = avaliar_api(perguntas, args.url, args.timeout, token)
+        alvo, rotulo = args.url, "api"
     else:
         resultados = avaliar_nlu(perguntas, args.backend, args.modelo)
         alvo, rotulo = f"NLU `{args.backend}` (sem servidor, sem banco)", f"nlu-{args.backend}"
