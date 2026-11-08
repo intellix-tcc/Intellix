@@ -35,7 +35,7 @@ digraph arquitetura {
 
   persistencia [label=<<TABLE BORDER="1" CELLBORDER="1" CELLSPACING="4" CELLPADDING="4" COLOR="#333333">
     <TR><TD BGCOLOR="#333333" ALIGN="LEFT"><FONT COLOR="white"><B>Camada de persistência</B> · PostgreSQL gerenciado pelo Supabase</FONT></TD></TR>
-    <TR><TD>Esquema estrela · tabelas de importação · log_consulta · conversa<BR/>migrações versionadas · backups automáticos<BR/><FONT POINT-SIZE="9">desenvolvimento: São Paulo · produção: Oregon (EUA)</FONT></TD></TR>
+    <TR><TD>Esquema estrela · tabelas de importação · log_consulta · conversa<BR/>migrações versionadas · cópia lógica com restauração testada<BR/><FONT POINT-SIZE="9">desenvolvimento: São Paulo · produção: Oregon (EUA)</FONT></TD></TR>
     <TR><TD STYLE="dashed">Segurança em nível de linha por empresa e usuário com privilégio mínimo<BR/>(aplicados em desenvolvimento e em produção)</TD></TR></TABLE>>];
 
 
