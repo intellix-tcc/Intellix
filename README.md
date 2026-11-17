@@ -191,6 +191,8 @@ modelo treinado ativo, e lint e build do frontend.
 | [`docs/relatorio-execucao-testes.md`](docs/relatorio-execucao-testes.md) | execução dos testes automatizados |
 | [`docs/migrations_aplicadas.md`](docs/migrations_aplicadas.md) | o que está aplicado em cada banco |
 | [`docs/mapeamento_feedback_tc2.md`](docs/mapeamento_feedback_tc2.md) | cada ponto da orientação e onde está a evidência |
+| [`docs/mapeamento_parecer_banca_final.md`](docs/mapeamento_parecer_banca_final.md) | correções do parecer da banca final, achado por achado |
+| [`REPRODUZIR.md`](REPRODUZIR.md) | como reproduzir as evidências do zero, comando a comando |
 | [`ia training/README.md`](ia%20training/README.md) | como o modelo foi treinado |
 
 ## Licença
