@@ -40,10 +40,15 @@ exatamente conferível** (ticket, contagem, desempenho de vendedor, variação,
 canal); quando não entende, na maioria **recusa com segurança** (422), em vez de
 responder errado.
 
+### Pacote de reprodução  ✅ implementado
+- **`REPRODUZIR.md`** (guia validado, comando a comando, com resultados esperados)
+  e **`scripts/configurar_reproducao.sh`** (configura o banco e semeia em um
+  comando). Testados de ponta a ponta. É a contrapartida de repositório do F07.
+
 ### Ações não-código da Defesa (da equipe)
-- **Tornar o repositório recuperável pela banca** (o parecer diz que a consulta
-  externa não o recuperou): dar acesso à banca, ou publicar um *release* com o
-  pacote de reprodução. É a contrapartida humana do F07.
+- **Tornar o repositório acessível à banca** (o parecer diz que a consulta externa
+  não o recuperou): dar acesso ao repositório, ou publicar um *release* apontando
+  para o `REPRODUZIR.md`. A parte de repositório já está pronta; falta o acesso.
 - **Perguntas de autores externos:** para rigor máximo, coletar perguntas de
   pessoas de fora da equipe e reexecutar `avaliar_ineditas.py` (aceita qualquer
   `perguntas_ineditas.jsonl`).
