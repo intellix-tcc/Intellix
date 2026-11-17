@@ -50,18 +50,25 @@ responder errado.
 
 ---
 
-## Fase 2 — DEPÓSITO  ⏳ (depende do TCC no Google Docs)
+## Fase 2 — DEPÓSITO
+
+### Código  ✅ implementado
+
+| Achado | Pedido da banca | O que foi feito | Evidência | Status |
+|---|---|---|---|---|
+| **F03** | Repetir **ablação** na v1.2.0 com corpus externo e oráculo numérico | Ablação v1.2.0 sobre o conjunto inédito; cada aceito executado e valor conferido; cobertura × risco por configuração. **Cabeça BIO = +0** de valor; heurística +1 | `ia training/ablacao_nlu_externa.py`, `docs/evidencias/ablacao_nlu_v1.2_externa_*.md` | ✅ |
+| **F05** | Reteste de **carga em configuração normal** | Limitador LIGADO; partida fria (55 ms) × quente (17 ms); latência por estado; burst > 30/min → 429 (a proteção que o teste anterior desligou). Sem extrapolar vazão | `scripts/teste_carga_normal.py`, `docs/evidencias/teste_carga_normal_*.md` | ✅ |
+| **F06** | Grão da venda e **reconciliação** com planilha de teste | Planilha conhecida × banco: vendas, itens, faturamento, ticket, grão (repetido somado), integridade referencial (0 órfãs), idempotência. Teste no CI | `scripts/reconciliacao_carga.py`, `backend/tests/test_reconciliacao_carga.py`, `docs/evidencias/reconciliacao_carga_*.md` | ✅ |
+
+### Texto do TCC  ⏳ (depende do Google Docs)
 
 Documento: **"TCC entrega final"** (Google Docs, dono `intellix3@gmail.com`).
 Edição pelo conector exige permissão de escrita, ou a equipe cola os blocos que
-eu redigir.
+eu redigir. **A Fase 1 já produziu os números que esses textos precisam citar.**
 
 | Achado | Pedido da banca | Tipo | Status |
 |---|---|---|---|
-| **F03** | Repetir **ablação** na v1.2.0 com corpus externo e oráculo numérico | código | ⬜ a fazer |
-| **F06** | Grão da venda e **reconciliação** com planilha de teste | código + texto | ⬜ a fazer |
-| **F05** | Reteste de **carga em configuração normal** (limitador ligado, partida fria/quente) | código | ⬜ a fazer |
-| **F04 / D2 / D3** | Reescrever a **conclusão**: separar modelo inicial/final/agente; rotular 58% histórico e 88% regressão; qualificar números por versão | texto TCC | ⬜ a fazer |
+| **F04 / D2 / D3** | Reescrever a **conclusão**: separar modelo inicial/final/agente; rotular 58% histórico e 88% regressão; qualificar números por versão; encerrar o resultado da versão entregue | texto TCC | ⬜ a fazer |
 | **F09** | **Viabilidade comercial**: datar fontes dos planos, premissas, conclusão econômica como hipótese | texto TCC | ⬜ a fazer |
 | **F08** | **Errata** das remissões (Figuras 1–6 descritas como telas × listadas como diagramas); conferir ficha | texto + físico | ⬜ a fazer |
 | **F10** | **Declaração de IA** formalizada (4 autores + orientadora) | físico (texto preparável) | ⬜ a fazer |
