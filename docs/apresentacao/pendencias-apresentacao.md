@@ -29,6 +29,9 @@ Canva: https://www.canva.com/d/2HepJA1QKiZGqnJ
   - slide 21: frase "Contribuição: um agente de análise de vendas em português, leve, local e auditável, com custo zero por pergunta".
 - [ ] Slides escuros (17 e 23): o símbolo do logo é escuro e aparece com pouco contraste sobre o fundo petróleo. Avaliar uma versão clara do símbolo.
 - [ ] Slide 18: as barras de meta são ilustrativas (preenchimento proporcional ao valor; a de tamanho mostra 1,09 de 256 MB).
+- [x] Rodada 3: logos das ferramentas no slide 8 (Python, PyTorch, FastAPI, PostgreSQL, Supabase, React, Vite, Vercel, Render, GitHub Actions) e fitas 3D entrelaçadas nos slides 3, 4, 6, 18 e 22.
+- [ ] Confirmar se a "forma 3D" pedida é a fita entrelaçada da capa/slide 23 (foi o que replicamos).
+- [ ] Slide 8: Vercel e Render usam logo preto (cor oficial); avaliar se destoa da paleta.
 
 ## Dia da defesa
 
