@@ -227,8 +227,8 @@ def _sha_modelo():
     return h.hexdigest()
 
 
-def carregar():
-    return [json.loads(l) for l in ARQ.read_text(encoding="utf-8").splitlines() if l.strip()]
+def carregar(arq: Path = ARQ):
+    return [json.loads(l) for l in Path(arq).read_text(encoding="utf-8").splitlines() if l.strip()]
 
 
 def avaliar_app(perguntas):
@@ -405,9 +405,11 @@ def main():
     ap = argparse.ArgumentParser(description="Avaliação de generalização em perguntas inéditas (F01).")
     ap.add_argument("--modo", choices=["app", "nlu"], default="app")
     ap.add_argument("--saida", default=None)
+    ap.add_argument("--arquivo", default=str(ARQ),
+                    help="conjunto .jsonl a avaliar (padrão: perguntas_ineditas.jsonl)")
     args = ap.parse_args()
 
-    perguntas = carregar()
+    perguntas = carregar(args.arquivo)
     if args.modo == "app":
         if not os.environ.get("DATABASE_URL"):
             sys.exit("modo app precisa de DATABASE_URL (banco semeado) e NLU_BACKEND=modelo.")
