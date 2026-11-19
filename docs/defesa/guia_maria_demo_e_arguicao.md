@@ -24,6 +24,7 @@ faturamento, número de vendas, ticket médio etc. a partir da aba Vendas. É o
 > commit `bd34783`, modelo v1.2.0, banco com o seed da demo), importei as duas
 > planilhas pela tela e fiz todas as perguntas deste roteiro, na API e na interface.
 > Todos os números abaixo saíram dessa execução e batem com a aba Conferência.
+> Essa versão já inclui a melhoria mergeada em 19/11 (PR #54, sinônimos de domínio).
 > **Repitam o teste no sistema publicado na véspera** (seção 3.4): é ele que vai
 > estar na tela.
 
@@ -65,7 +66,31 @@ Tudo isso não cabe em 3:30, então dividi em duas camadas:
 5. **Algumas formulações falham.** Estão listadas na seção 3.3 ("não usem na demo").
    A mais perigosa: **"quanto vendi ontem?"** e **"faturamento da semana"** não são
    recusadas. O sistema responde o **ano inteiro**, porque dia e semana não são
-   períodos suportados. Não usem. Se a banca perguntar, a resposta está na seção 4.2.
+   períodos suportados. Não usem. Se a banca perguntar, a resposta está na seção 4.2
+   (pergunta 8).
+6. **A melhoria mergeada hoje (19/11, PR #54) muda números que estão nos slides.** Ela
+   acrescenta uma camada de sinônimos do domínio de vendas para as três intenções que o
+   modelo mais confundia: forma de pagamento, categoria e canal. Exemplos: "meio de
+   pagamento", "linha de produtos", "por onde eu vendi". Rodei de novo a bateria aqui
+   para confirmar o efeito:
+
+   | Medição | Antes do PR #54 | Depois (versão atual) |
+   |---|---:|---:|
+   | 100 perguntas (regressão) | 88/100 | **90/100** (reexecutado aqui em 19/11) |
+   | Inéditas, conjunto adversarial | 13/30 | **18/30** |
+   | Inéditas, conjunto representativo (novo) | — | **27/30** |
+
+   **O que fazer com isso:**
+   - O **88/100** continua certo como o número da versão descrita na monografia. Não
+     troquem o número nos slides 19 a 21 da Amanda na véspera, porque ele deixaria de
+     bater com o documento que a banca leu.
+   - Acrescentem **uma frase** no slide 19, depois do 88%: *"Depois disso, uma melhoria
+     publicada em 19 de novembro levou a mesma bateria a 90 de 100."*
+   - **Confirmem que o sistema publicado foi atualizado** (deploy no Render) com essa
+     versão. Se não foi, a demo vai rodar a versão antiga, e algumas perguntas de canal
+     e de pagamento podem se comportar diferente do gabarito.
+   - Preparem a pergunta "isso não é ajustar o sistema ao teste?" (seção 4.2,
+     pergunta 7).
 
 ---
 
@@ -350,7 +375,7 @@ Todas foram feitas na interface e na API com as duas planilhas importadas.
 | Isolamento sem contas reais | Na **segunda conta de teste**: abrir *Importar dados* | "Você ainda não importou nenhuma planilha": a outra conta não vê a A nem a B |
 | (complemento técnico) | Testamos também forçar o identificador da Empresa A estando logado na outra conta ([tela](telas/7_outro_usuario_bloqueado.png)) | O servidor responde "Não encontrei esses dados". Mesma resposta para "não existe" e "não é seu", de propósito, para não revelar quais empresas existem. No banco, o `scripts/demo_isolamento.py` confere 6/6 passos (RLS nega por padrão, A não vê B, o usuário do app não apaga vendas) |
 | Versão do código e hash do modelo | Abrir `docs/evidencias/manifesto_reproducao_*.md` | Modelo `intellix_nlu_v1.2.0.pt`, SHA-256 `ea30338e9626f4b6…`; fingerprint do dataset `58d126cf…`. **Gerem um manifesto novo no commit publicado** antes da defesa (`python scripts/manifesto_reproducao.py`), porque o último foi gerado num commit anterior |
-| Separar a medição conhecida do resultado da pergunta nova | Falar | "As 88 de 100 são regressão no repertório que guiou as correções. O que acabamos de ver é uma pergunta nova, numa base nova, com valor conferido à mão." |
+| Separar a medição conhecida do resultado da pergunta nova | Falar | "As 88 de 100 (90, com a melhoria de 19/11) são regressão no repertório que guiou as correções. O que acabamos de ver é uma pergunta nova, numa base nova, com valor conferido à mão." |
 
 **Se a banca ditar uma pergunta própria:** o operador digita exatamente o que foi
 dito.
@@ -360,11 +385,11 @@ dito.
   num conjunto representativo e 18 de 30 num conjunto feito para ser difícil. A
   formulação que ele conhece seria..."* e reformulem num formato da seção 3.3.
 
-### 4.2 Respostas para as 6 perguntas do parecer (seção 5)
+### 4.2 Respostas para as 6 perguntas do parecer (seção 5) e mais duas prováveis
 
 **1. O que 88 de 100 comprova?** *(Amanda)*
 Comprova que, nessas 100 perguntas, o sistema devolve o tipo de resposta e o estado
-esperados. Não comprova generalização, porque as mesmas perguntas guiaram as correções.
+esperados. Com a melhoria de 19/11, a mesma bateria dá 90 de 100. Não comprova generalização, porque as mesmas perguntas guiaram as correções.
 Por isso fizemos mais três medições: (a) **gabarito numérico**: as 14 consultas
 conferidas valor a valor contra um cálculo independente em Python, **19/19**; (b)
 **perguntas inéditas**, fora dos moldes e das 100: **27/30** no conjunto representativo
@@ -414,6 +439,25 @@ traz o commit, o SHA-256 dos pesos, o fingerprint do dataset e o hash das migra�
 dos templates. *(Antes da defesa: garantir que a banca tenha acesso ao repositório. O
 parecer diz que não conseguiu recuperá-lo.)*
 
+**7. A melhoria de 19/11 não é ajustar o sistema ao teste?** *(Maria Luiza)*
+É uma pergunta justa, e respondemos em duas partes. Primeiro, o que entrou são
+sinônimos reais do domínio de vendas ("meio de pagamento", "linha de produtos", "por
+onde vendi"), aplicados só a três intenções e só quando o termo é inequívoco. Não são
+frases copiadas de nenhum teste. Segundo, sabemos que o conjunto adversarial (13 → 18
+de 30) é o mesmo que mostrou o problema, então ele não prova generalização sozinho.
+Por isso medimos também num conjunto **novo**, escrito depois da mudança: 27 de 30, e o
+valor confere quando o sistema responde. E as 100 perguntas não regrediram (88 → 90).
+Isso também mostra que, nessas três intenções, a decisão não é só do modelo: uma regra
+de alta precisão corrige a escolha dele quando há um termo claro do domínio.
+
+**8. Por que "quanto vendi ontem?" responde o ano inteiro?** *(Maria Luiza)*
+Os períodos suportados são mês, trimestre, semestre e ano, e "ontem" e "semana" não estão
+entre eles. Quando a pergunta não traz um período reconhecido, o sistema usa o ano
+corrente como padrão. Ele não esconde isso: o painel "Como cheguei nessa resposta"
+mostra o período usado (01/01 a 31/12). Mesmo assim, é um ponto fraco. O comportamento
+certo seria pedir o período, como ele já faz quando falta o vendedor. Fica registrado
+como melhoria.
+
 ### 4.3 Os "[completar]" do roteiro que são da Maria Luiza
 
 Preenchidos com o que está no repositório. Confiram com a monografia antes de usar.
@@ -453,5 +497,6 @@ inéditas (27/30 e 18/30).
 
 ---
 
-*Testes executados em 19/11/2026 num ambiente local com o commit `bd34783` do `main`,
-modelo v1.2.0 e o banco de demonstração (`SEED=42`).*
+*Testes executados em 19/11/2026 num ambiente local com o commit `bd34783` do `main`
+(inclui o PR #54, mergeado em 19/11), modelo v1.2.0 e o banco de demonstração
+(`SEED=42`). Bateria de 100 perguntas reexecutada nessa versão: 90/100.*
