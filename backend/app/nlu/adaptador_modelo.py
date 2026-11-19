@@ -253,6 +253,43 @@ def _tem_termo_dominio(texto: str) -> bool:
     return bool(_TERMOS_DOMINIO.search(texto))
 
 
+# ---- desambiguação por sinônimos de domínio (robustez a paráfrases) ---------
+# Três intenções de "quebra por atributo" (forma de pagamento, categoria e
+# canal) concentram a confusão do modelo em formulações inéditas: "linha de
+# produtos" sai como top_produtos, "meio de pagamento" como quantidade, etc.
+# Quando a frase traz um desses termos de forma INEQUÍVOCA, a intenção é essa,
+# independentemente do rótulo do modelo. São sinônimos reais do domínio de
+# vendas (não ajustes a um conjunto de teste): a camada léxica complementa a
+# rede, no mesmo espírito do filtro de domínio e da resolução de slots por regra.
+def _sem_acento(s: str) -> str:
+    return "".join(c for c in unicodedata.normalize("NFD", s.lower())
+                   if not unicodedata.combining(c))
+
+
+_CUES_DOMINIO = [
+    ("vendas_por_pagamento", re.compile(
+        r"\b(form\w*|mei\w*|metod\w*|mod\w*) de pagamento\b"
+        r"|\bcomo (os |as )?(client\w+ )?pag(aram|ou|a|avam)\b"
+        r"|\bcomo foi pago\b|\b(meio|forma|metodo)s? de pagamento mais")),
+    ("vendas_por_categoria", re.compile(
+        r"\bpor categoria\b|\blinha de produtos?\b|\btipo de produtos?\b"
+        r"|\bgrupo de produtos?\b|\bdepartament\w*\b"
+        r"|\bcategorias?\b.{0,30}\b(mais|vend\w*|fatur\w*|lider\w*|lucrativ\w*)")),
+    ("vendas_por_canal", re.compile(
+        r"\bpor canal\b|\bcanal de venda\b|\bpor onde (eu |a gente |nos |n[óo]s )?vend"
+        r"|\bcanais?\b.{0,30}\b(mais|vend\w*|fatur\w*)")),
+]
+
+
+def _desambiguar_por_dominio(texto: str) -> str | None:
+    """Intenção imposta por sinal léxico de alta precisão, ou None se não houver."""
+    sa = _sem_acento(texto)
+    for alvo, rx in _CUES_DOMINIO:
+        if rx.search(sa):
+            return alvo
+    return None
+
+
 # ---- item 5: vendedor sem nome em perguntas de ranking/agregadas ------------
 # "Quem vendeu mais?" não traz nome, mas pede o ranking de todos; já "Como foi o
 # desempenho do vendedor?" (singular, sem nome) é ambíguo e deve pedir o nome.
@@ -334,6 +371,20 @@ class ModeloTreinadoNLU:
         # fallback do modelo (baixa confiança) ou nada reconhecido:
         # devolve confiança baixa e deixa o verificar_confianca/executor cuidarem.
         if r["fallback"] or r["intencao"] is None:
+            # Resgate por sinal léxico: se a rede ficou insegura mas a frase traz
+            # um termo de domínio inequívoco (ex.: "forma de pagamento"), a camada
+            # de regras aceita com essa intenção. A confiança reportada passa a
+            # refletir a certeza da REGRA léxica (>= limiar), não a da rede.
+            cue = _desambiguar_por_dominio(texto)
+            if cue and _tem_termo_dominio(texto):
+                entidades = _resolver_entidades(cue, texto.lower(), r["entidades"], texto)
+                return Interpretacao(
+                    intencao=cue,
+                    confianca=max(r["confianca"], 0.80),
+                    entidades=entidades,
+                    texto_original=texto,
+                    entidades_modelo=r["entidades"],
+                )
             # Os slots são resolvidos mesmo assim (é determinístico e barato):
             # a confiança baixa continua barrando a resposta, mas o contexto da
             # conversa e o refino (app/refino.py) podem completá-la.
@@ -359,9 +410,12 @@ class ModeloTreinadoNLU:
                 entidades_modelo=r["entidades"],
             )
 
-        entidades = _resolver_entidades(r["intencao"], texto.lower(), r["entidades"], texto)
+        # sinal léxico de domínio de alta precisão corrige a intenção quando o
+        # modelo confunde as quebras por atributo (pagamento/categoria/canal).
+        intencao = _desambiguar_por_dominio(texto) or r["intencao"]
+        entidades = _resolver_entidades(intencao, texto.lower(), r["entidades"], texto)
         return Interpretacao(
-            intencao=r["intencao"],
+            intencao=intencao,
             confianca=r["confianca"],
             entidades=entidades,
             texto_original=texto,

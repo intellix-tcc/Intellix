@@ -1,0 +1,30 @@
+{"id": "R01", "intencao": "total_vendas_periodo", "pergunta": "Em junho de 2025, qual foi o total de faturamento da loja?", "check": "faturamento", "params": {"ini": "2025-06-01", "fim": "2025-06-30"}}
+{"id": "R02", "intencao": "total_vendas_periodo", "pergunta": "Qual o faturamento acumulado do ano de 2025?", "check": "faturamento", "params": {"ini": "2025-01-01", "fim": "2025-12-31"}}
+{"id": "R03", "intencao": "top_produtos", "pergunta": "Quais foram os produtos mais vendidos em 2025?", "check": "top_produto", "params": {"ini": "2025-01-01", "fim": "2025-12-31"}}
+{"id": "R04", "intencao": "top_produtos", "pergunta": "Me mostra os cinco produtos que mais venderam no primeiro trimestre de 2025.", "check": "top_produto", "params": {"ini": "2025-01-01", "fim": "2025-03-31"}}
+{"id": "R05", "intencao": "ticket_medio", "pergunta": "Qual o ticket médio das vendas em 2025?", "check": "ticket", "params": {"ini": "2025-01-01", "fim": "2025-12-31"}}
+{"id": "R06", "intencao": "ticket_medio", "pergunta": "Em média, quanto saiu cada venda em 2025?", "check": "ticket", "params": {"ini": "2025-01-01", "fim": "2025-12-31"}}
+{"id": "R07", "intencao": "quantidade_vendas", "pergunta": "Quantas vendas foram feitas em março de 2025?", "check": "quantidade", "params": {"ini": "2025-03-01", "fim": "2025-03-31"}}
+{"id": "R08", "intencao": "quantidade_vendas", "pergunta": "Quantas vendas no total tivemos em 2025?", "check": "quantidade", "params": {"ini": "2025-01-01", "fim": "2025-12-31"}}
+{"id": "R09", "intencao": "top_clientes", "pergunta": "Quais clientes mais compraram em 2025?", "check": "top_cliente", "params": {"ini": "2025-01-01", "fim": "2025-12-31"}}
+{"id": "R10", "intencao": "top_clientes", "pergunta": "Quem mais gastou no segundo semestre de 2025?", "check": "top_cliente", "params": {"ini": "2025-07-01", "fim": "2025-12-31"}}
+{"id": "R11", "intencao": "desempenho_vendedor", "pergunta": "Como foi o desempenho da vendedora Patrícia em 2025?", "check": "faturamento_vendedor", "params": {"ini": "2025-01-01", "fim": "2025-12-31", "vendedor": "Patrícia Alves"}}
+{"id": "R12", "intencao": "desempenho_vendedor", "pergunta": "Quanto o vendedor Rodrigo vendeu em 2025?", "check": "faturamento_vendedor", "params": {"ini": "2025-01-01", "fim": "2025-12-31", "vendedor": "Rodrigo Melo"}}
+{"id": "R13", "intencao": "produtos_sem_saida", "pergunta": "Quais produtos não tiveram saída em fevereiro de 2025?", "check": "sem_saida", "params": {"ini": "2025-02-01", "fim": "2025-02-28"}}
+{"id": "R14", "intencao": "produtos_sem_saida", "pergunta": "Algum produto ficou sem vender o ano todo de 2025?", "check": "sem_saida", "params": {"ini": "2025-01-01", "fim": "2025-12-31"}}
+{"id": "R15", "intencao": "comparacao_periodos", "pergunta": "Compare o faturamento do primeiro e do segundo semestre de 2025.", "check": "comparacao", "params": {"ini": "2025-01-01", "fim": "2025-06-30", "ini2": "2025-07-01", "fim2": "2025-12-31"}}
+{"id": "R16", "intencao": "comparacao_periodos", "pergunta": "O faturamento de 2025 foi maior que o de 2024?", "check": "comparacao", "params": {"ini": "2025-01-01", "fim": "2025-12-31", "ini2": "2024-01-01", "fim2": "2024-12-31"}}
+{"id": "R17", "intencao": "variacao_periodo", "pergunta": "De abril para maio de 2025, quanto o faturamento cresceu em porcentagem?", "check": "variacao", "params": {"ini": "2025-05-01", "fim": "2025-05-31", "ini2": "2025-04-01", "fim2": "2025-04-30"}}
+{"id": "R18", "intencao": "variacao_periodo", "pergunta": "Qual a variação das vendas de 2025 em relação a 2024?", "check": "variacao", "params": {"ini": "2025-01-01", "fim": "2025-12-31", "ini2": "2024-01-01", "fim2": "2024-12-31"}}
+{"id": "R19", "intencao": "vendas_por_canal", "pergunta": "Qual foi o canal que mais vendeu em 2025?", "check": "top_canal", "params": {"ini": "2025-01-01", "fim": "2025-12-31"}}
+{"id": "R20", "intencao": "vendas_por_canal", "pergunta": "Quanto cada canal vendeu em 2025?", "check": "top_canal", "params": {"ini": "2025-01-01", "fim": "2025-12-31"}}
+{"id": "R21", "intencao": "vendas_por_categoria", "pergunta": "Quais categorias mais venderam em 2025?", "check": "top_categoria", "params": {"ini": "2025-01-01", "fim": "2025-12-31"}}
+{"id": "R22", "intencao": "vendas_por_categoria", "pergunta": "Qual categoria de produto mais faturou no primeiro trimestre de 2025?", "check": "top_categoria", "params": {"ini": "2025-01-01", "fim": "2025-03-31"}}
+{"id": "R23", "intencao": "vendas_por_pagamento", "pergunta": "Qual a forma de pagamento mais usada pelos clientes em 2025?", "check": "top_pagamento", "params": {"ini": "2025-01-01", "fim": "2025-12-31"}}
+{"id": "R24", "intencao": "vendas_por_pagamento", "pergunta": "Quanto vendemos em cada forma de pagamento em 2025?", "check": "top_pagamento", "params": {"ini": "2025-01-01", "fim": "2025-12-31"}}
+{"id": "R25", "intencao": "fora_de_escopo", "pergunta": "Qual a cotação do dólar hoje?", "check": "recusa", "params": {}}
+{"id": "R26", "intencao": "fora_de_escopo", "pergunta": "Quantos funcionários trabalham na empresa?", "check": "recusa", "params": {}}
+{"id": "R27", "intencao": "parametro_faltando", "pergunta": "Compare os períodos pra mim.", "check": "param_faltando", "params": {}}
+{"id": "R28", "intencao": "parametro_faltando", "pergunta": "Qual foi a variação?", "check": "param_faltando", "params": {}}
+{"id": "R29", "intencao": "sem_resultado", "pergunta": "Quanto faturei em agosto de 2019?", "check": "sem_resultado", "params": {}}
+{"id": "R30", "intencao": "sem_resultado", "pergunta": "Quantas vendas tivemos em 2032?", "check": "sem_resultado", "params": {}}
