@@ -53,7 +53,7 @@ Tudo isso não cabe em 3:30, então dividi em duas camadas:
    resposta"**, com o período analisado, o filtro, o agrupamento e a métrica. A fala
    da demonstração foi ajustada para isso.
 2. **O "99,3%" do slide 14 só confere com o ponto de interrogação.** "quanto vendi de
-   camiseta branca em abril**?**" dá 99,33% no modelo publicado (v1.2.0). Sem o "?",
+   camiseta branca em abril?" (com o ponto de interrogação) dá 99,33% no modelo publicado (v1.2.0). Sem o "?",
    dá 98,3%. Se a frase do slide estiver sem "?", acrescentem. Se a banca digitar
    sem "?", a diferença é essa.
 3. **O "99,99%" do slide 16 confere:** "quais os 5 produtos mais vendidos em março?"
@@ -203,15 +203,62 @@ importa. Combinem um sinal (um aceno) para "pode digitar a próxima".
 
 ### 3.2 Passo a passo
 
-| Tempo | Operador faz | O que aparece na tela | Maria Luiza fala |
-|---|---|---|---|
-| **0:00–0:35** | Em *Importar dados*, clica **Escolher arquivo** → `Empresa_A_Loja_Estacao_Moda.xlsx`. Depois **Enviar para análise**. | Prévia com as 12 colunas reconhecidas. Depois: "Planilha enviada. 14 linhas foram aceitas" e "1 linha repetia um produto na mesma venda e foi somada ao item, sem perder valor." ([tela](telas/1_relatorio_empresa_A.png)) | "Esta é a planilha de uma loja fictícia, no formato do nosso modelo de importação: uma linha por item vendido. O Intellix confere o arquivo antes de enviar. Achou as 12 colunas. [enviou] Catorze linhas aceitas. E reparem neste aviso: uma venda tinha o mesmo produto em duas linhas, e ele somou num item só, sem duplicar e sem perder valor." |
-| **0:35–1:15** | Clica **Fazer perguntas sobre esses dados**. Digita **`quanto vendi em outubro?`**. Depois abre **Como cheguei nessa resposta**. | **R$ 1.000,00**, gráfico mês a mês (set R$ 0,8 mil, out R$ 1 mil), "vs set/26 ↑ 25%". No painel: "Período analisado: 01/10/2026 a 31/10/2026 · Métrica: Faturamento". Selo "Alta confiabilidade". ([tela](telas/2_A_outubro_como_cheguei.png)) | "Mil reais. Na planilha, as cinco vendas de outubro somam exatamente mil. [abre o painel] Aqui ele mostra o que entendeu: de 1º a 31 de outubro, métrica faturamento. E o selo verde diz que a confiança foi alta." |
-| **1:15–1:35** | Digita **`e em setembro?`** | **R$ 800,00** | "Agora uma pergunta incompleta. Ele lembrou que eu estava falando de faturamento e só trocou o mês: oitocentos reais." |
-| **1:35–2:05** | Digita **`qual foi o ticket médio em outubro?`** | **R$ 200,00** | "Ticket médio: duzentos reais, que são mil reais divididos por cinco vendas. Um detalhe: outubro tem oito linhas na planilha, mas só cinco vendas. Se dividisse por linha, daria cento e vinte e cinco, que está errado. O ticket é por venda, e é assim que ele calcula." |
-| **2:05–2:20** | Digita **`qual a previsão do tempo?`** | "Não entendi a pergunta. Tente reformular." com duas perguntas de exemplo clicáveis. ([tela](telas/4_fora_do_dominio.png)) | "E uma pergunta fora do assunto. Ele não inventa: pede para reformular e sugere o que dá para perguntar." |
-| **2:20–3:05** | Clica **Importar dados** no menu → **Escolher arquivo** → `Empresa_B_Papelaria_Traco_Fino.xlsx` → **Enviar para análise** → **Fazer perguntas sobre esses dados**. Digita **`quanto vendi em outubro?`** | Relatório: "12 linhas foram aceitas · 13 linhas lidas · 1 linha ficou de fora: 1 × data inválida ou ausente" ([tela](telas/5_relatorio_empresa_B.png)). No chat, a faixa "Respondendo sobre Empresa_B_Papelaria_Traco_Fino.xlsx" e **R$ 600,00**. | "Agora uma segunda empresa, uma papelaria. Deixamos de propósito uma linha sem data: ele aceita as outras doze e diz exatamente qual problema deixou uma de fora. [no chat] A mesma pergunta de antes: quanto vendi em outubro? Seiscentos reais. Mesma pergunta, outra empresa, outro número: cada empresa só enxerga os próprios dados." |
-| **3:05–3:30** | Volta para os slides (QR code). | — | "Quem quiser acompanhar, o QR code leva ao sistema publicado, e o código e a documentação estão no GitHub. A Amanda agora apresenta os resultados que medimos." |
+#### Passo 1 · 0:00–0:35
+
+**Operador:** Em *Importar dados*, clica **Escolher arquivo** → `Empresa_A_Loja_Estacao_Moda.xlsx`. Depois **Enviar para análise**.
+
+**Na tela:** Prévia com as 12 colunas reconhecidas. Depois: "Planilha enviada. 14 linhas foram aceitas" e "1 linha repetia um produto na mesma venda e foi somada ao item, sem perder valor." ([tela](telas/1_relatorio_empresa_A.png))
+
+> **Maria Luiza:** "Esta é a planilha de uma loja fictícia, no formato do nosso modelo de importação: uma linha por item vendido. O Intellix confere o arquivo antes de enviar. Achou as 12 colunas. [enviou] Catorze linhas aceitas. E reparem neste aviso: uma venda tinha o mesmo produto em duas linhas, e ele somou num item só, sem duplicar e sem perder valor."
+
+#### Passo 2 · 0:35–1:15
+
+**Operador:** Clica **Fazer perguntas sobre esses dados**. Digita **`quanto vendi em outubro?`**. Depois abre **Como cheguei nessa resposta**.
+
+**Na tela:** **R$ 1.000,00**, gráfico mês a mês (set R$ 0,8 mil, out R$ 1 mil), "vs set/26 ↑ 25%". No painel: "Período analisado: 01/10/2026 a 31/10/2026 · Métrica: Faturamento". Selo "Alta confiabilidade". ([tela](telas/2_A_outubro_como_cheguei.png))
+
+> **Maria Luiza:** "Mil reais. Na planilha, as cinco vendas de outubro somam exatamente mil. [abre o painel] Aqui ele mostra o que entendeu: de 1º a 31 de outubro, métrica faturamento. E o selo verde diz que a confiança foi alta."
+
+#### Passo 3 · 1:15–1:35
+
+**Operador:** Digita **`e em setembro?`**
+
+**Na tela:** **R$ 800,00**
+
+> **Maria Luiza:** "Agora uma pergunta incompleta. Ele lembrou que eu estava falando de faturamento e só trocou o mês: oitocentos reais."
+
+#### Passo 4 · 1:35–2:05
+
+**Operador:** Digita **`qual foi o ticket médio em outubro?`**
+
+**Na tela:** **R$ 200,00**
+
+> **Maria Luiza:** "Ticket médio: duzentos reais, que são mil reais divididos por cinco vendas. Um detalhe: outubro tem oito linhas na planilha, mas só cinco vendas. Se dividisse por linha, daria cento e vinte e cinco, que está errado. O ticket é por venda, e é assim que ele calcula."
+
+#### Passo 5 · 2:05–2:20
+
+**Operador:** Digita **`qual a previsão do tempo?`**
+
+**Na tela:** "Não entendi a pergunta. Tente reformular." com duas perguntas de exemplo clicáveis. ([tela](telas/4_fora_do_dominio.png))
+
+> **Maria Luiza:** "E uma pergunta fora do assunto. Ele não inventa: pede para reformular e sugere o que dá para perguntar."
+
+#### Passo 6 · 2:20–3:05
+
+**Operador:** Clica **Importar dados** no menu → **Escolher arquivo** → `Empresa_B_Papelaria_Traco_Fino.xlsx` → **Enviar para análise** → **Fazer perguntas sobre esses dados**. Digita **`quanto vendi em outubro?`**
+
+**Na tela:** Relatório: "12 linhas foram aceitas · 13 linhas lidas · 1 linha ficou de fora: 1 × data inválida ou ausente" ([tela](telas/5_relatorio_empresa_B.png)). No chat, a faixa "Respondendo sobre Empresa_B_Papelaria_Traco_Fino.xlsx" e **R$ 600,00**.
+
+> **Maria Luiza:** "Agora uma segunda empresa, uma papelaria. Deixamos de propósito uma linha sem data: ele aceita as outras doze e diz exatamente qual problema deixou uma de fora. [no chat] A mesma pergunta de antes: quanto vendi em outubro? Seiscentos reais. Mesma pergunta, outra empresa, outro número: cada empresa só enxerga os próprios dados."
+
+#### Passo 7 · 3:05–3:30
+
+**Operador:** Volta para os slides (QR code).
+
+**Na tela:** —
+
+> **Maria Luiza:** "Quem quiser acompanhar, o QR code leva ao sistema publicado, e o código e a documentação estão no GitHub. A Amanda agora apresenta os resultados que medimos."
+
 
 **Se estiver atrasado, cortem nesta ordem:** (1) a previsão do tempo, já explicada no
 slide 13; (2) o "e em setembro?". **Não cortem** a conferência do ticket nem a segunda
