@@ -65,18 +65,19 @@ responder errado.
 | **F05** | Reteste de **carga em configuração normal** | Limitador LIGADO; partida fria (55 ms) × quente (17 ms); latência por estado; burst > 30/min → 429 (a proteção que o teste anterior desligou). Sem extrapolar vazão | `scripts/teste_carga_normal.py`, `docs/evidencias/teste_carga_normal_*.md` | ✅ |
 | **F06** | Grão da venda e **reconciliação** com planilha de teste | Planilha conhecida × banco: vendas, itens, faturamento, ticket, grão (repetido somado), integridade referencial (0 órfãs), idempotência. Teste no CI | `scripts/reconciliacao_carga.py`, `backend/tests/test_reconciliacao_carga.py`, `docs/evidencias/reconciliacao_carga_*.md` | ✅ |
 
-### Texto do TCC  ⏳ (depende do Google Docs)
+### Texto do TCC
 
-Documento: **"TCC entrega final"** (Google Docs, dono `intellix3@gmail.com`).
-Edição pelo conector exige permissão de escrita, ou a equipe cola os blocos que
-eu redigir. **A Fase 1 já produziu os números que esses textos precisam citar.**
+Documento: **"TCC entrega final"** (Google Docs, dono `intellix3@gmail.com`). Com
+permissão de escrita, as correções de texto foram aplicadas como **sugestões** —
+a equipe revisa e aceita no próprio documento. Os blocos completos ficam em
+`docs/blocos_texto_tcc_banca_final.md`.
 
 | Achado | Pedido da banca | Tipo | Status |
 |---|---|---|---|
-| **F04 / D2 / D3** | Reescrever a **conclusão**: separar modelo inicial/final/agente; rotular 58% histórico e 88% regressão; qualificar números por versão; encerrar o resultado da versão entregue | texto TCC | ⬜ a fazer |
-| **F09** | **Viabilidade comercial**: datar fontes dos planos, premissas, conclusão econômica como hipótese | texto TCC | ⬜ a fazer |
-| **F08** | **Errata** das remissões (Figuras 1–6 descritas como telas × listadas como diagramas); conferir ficha | texto + físico | ⬜ a fazer |
-| **F10** | **Declaração de IA** formalizada (4 autores + orientadora) | físico (texto preparável) | ⬜ a fazer |
+| **F04 / D2 / D3** | Conclusão: separar versões; rotular 58% histórico e 88% regressão; reportar a generalização | texto TCC | 🟡 3 sugestões no doc — falta **aceitar** |
+| **F09** | **Viabilidade** econômica como hipótese; datar fontes dos planos | texto TCC | 🟡 Hipótese + datação do Quadro 10 como sugestões — falta **aceitar** |
+| **F08** | **Errata** das remissões de figuras; conferir ficha | texto + físico | 🟢 Remissões **já corretas** no doc atual (Figura 1 = diagrama; §5.9 cita telas 11/19/20); ⬜ ficha com a Biblioteca (físico) |
+| **F10** | **Declaração de IA** formalizada (4 autores + orientadora) | físico | ⬜ Assinaturas e datas (físico) |
 
 ---
 
