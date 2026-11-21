@@ -25,7 +25,7 @@ faturamento, número de vendas, ticket médio etc. a partir da aba Vendas. É o
 > planilhas pela tela e fiz todas as perguntas deste roteiro, na API e na interface.
 > Todos os números abaixo saíram dessa execução e batem com a aba Conferência.
 > Essa versão já inclui a melhoria mergeada em 19/11 (PR #54, sinônimos de domínio).
-> **Repitam o teste no sistema publicado na véspera** (seção 3.4): é ele que vai
+> **Repitam o teste no sistema publicado na véspera** (seção 3.5): é ele que vai
 > estar na tela.
 
 ---
@@ -38,9 +38,10 @@ banca provavelmente vai pedir para ver ("importar planilha sintética em duas
 empresas, formular pergunta inédita e conferir total e ticket manualmente...").
 Tudo isso não cabe em 3:30, então dividi em duas camadas:
 
-- **Demonstração principal (3:30, dentro da apresentação):** importa as duas
-  planilhas, confere faturamento e ticket à mão, mostra a recusa fora do domínio e
-  mostra que uma empresa não vê a outra. Já responde a maior parte do pedido.
+- **Demonstração principal (3:30, dentro da apresentação):** um tour rápido pela
+  aplicação e, como parte principal, os testes: importa as duas planilhas, confere
+  faturamento e ticket à mão, faz duas perguntas mais elaboradas, mostra a recusa fora
+  do domínio e mostra que uma empresa não vê a outra. Já responde a maior parte do pedido.
 - **Kit da arguição (seção 4):** o resto (falta de parâmetro × retorno vazio,
   histórico, isolamento entre usuários, versão e hash, pergunta ditada pela banca),
   pronto para mostrar se pedirem.
@@ -63,7 +64,7 @@ Tudo isso não cabe em 3:30, então dividi em duas camadas:
    **moldes** de frase. O gerador sorteou valores e marcou as etiquetas sozinho. Se
    a banca perguntar "vocês anotaram 4.800 frases à mão?", a resposta honesta é não.
    A fala do slide 12 foi ajustada (detalhes na pergunta 8 da seção 4.3).
-5. **Algumas formulações falham.** Estão listadas na seção 3.3 ("não usem na demo").
+5. **Algumas formulações falham.** Estão listadas na seção 3.4 ("não usem na demo").
    A mais perigosa: **"quanto vendi ontem?"** e **"faturamento da semana"** não são
    recusadas. O sistema responde o **ano inteiro**, porque dia e semana não são
    períodos suportados. Não usem. Se a banca perguntar, a resposta está na seção 4.2
@@ -207,98 +208,235 @@ A fala completa, sincronizada com o operador, está na seção 3.2.
 
 ## 3. Roteiro da demonstração ao vivo (3:30)
 
-### 3.1 Antes de começar (checklist)
+A demonstração tem quatro blocos. O peso está no bloco C, os testes com perguntas.
 
-- [ ] **Uma conta de teste só para a demo**, sem nenhuma planilha importada. Se já
-      houver, excluam em *Importar dados → Suas planilhas → Excluir*.
-- [ ] **Uma segunda conta de teste** logada em outro navegador ou aba anônima, para o
-      teste de isolamento da arguição (seção 4.1).
-- [ ] As duas planilhas na **Área de Trabalho** do computador da apresentação, com o
-      nome original (o nome do arquivo aparece na tela).
-- [ ] Abrir o sistema **10 minutos antes** e fazer uma pergunta qualquer nos dados de
-      exemplo: o Render gratuito "dorme" e a primeira resposta pode levar uns 30 s.
-      Depois, clicar em **Nova conversa**.
-- [ ] Deixar a tela em **Importar dados** antes de passar para o slide 17.
-- [ ] Zoom do navegador em 110–125% para a banca enxergar os números.
-- [ ] Vídeo de plano B gravado **com estas mesmas planilhas e perguntas**.
-- [ ] As perguntas da demo num papel ao lado do operador, para digitar sem pensar.
+| Bloco | Tempo | O que é |
+|---|---|---|
+| A. Troca de tela | 0:00–0:10 | Sair dos slides e mostrar o navegador |
+| B. Tour rápido | 0:10–0:50 | Conta, tela de Início e menu. Só para situar a banca |
+| **C. Testes com perguntas** | **0:50–3:20** | **Importar as duas empresas e fazer as perguntas. É a parte principal** |
+| D. Volta aos slides | 3:20–3:30 | QR code e passagem para a Amanda |
 
-**Divisão:** o operador só digita e clica. A Maria Luiza narra e aponta o que
-importa. Combinem um sinal (um aceno) para "pode digitar a próxima".
+Este roteiro parte do princípio de que **você mesma opera o computador** e que a defesa é
+**por videochamada**, com a tela compartilhada. Se for presencial, com projetor, é igual:
+só troque "compartilhar a guia" por "mostrar a janela do navegador no projetor".
+
+### 3.1 Antes de começar (no dia, antes da banca entrar)
+
+**No computador**
+- ☐ Ativar o modo **Não perturbe** (Windows: *Assistente de foco*; Mac: *Foco*) e fechar
+  WhatsApp, e-mail e qualquer outro programa que solte notificação.
+- ☐ Carregador ligado.
+- ☐ As duas planilhas na **Área de Trabalho**, com o nome original.
+- ☐ Uma folha impressa com as perguntas do bloco C, para digitar sem pensar.
+
+**No navegador (Chrome)**
+- ☐ Uma janela **só com a aba do Intellix** (sistema publicado), já logada na **conta da demo**.
+- ☐ A conta da demo **sem planilhas importadas**: em *Importar dados → Suas planilhas*,
+  excluir o que houver. No Início deve aparecer "Base de demonstração".
+- ☐ **10 minutos antes**, aquecer o servidor: em *Perguntar*, fazer "quanto vendi em
+  outubro?" (o Render gratuito "dorme" e a primeira resposta pode levar uns 30 s).
+  Depois clicar em **Nova conversa**.
+- ☐ Deixar a aba aberta na tela **Início**, no topo da página.
+- ☐ Zoom de 110% a 125% (**Ctrl** e **+**) e barra de favoritos escondida (**Ctrl+Shift+B**).
+- ☐ Uma janela anônima com a **segunda conta de teste** logada, para o teste de isolamento
+  da arguição (seção 4.1).
+- ☐ O vídeo de plano B aberto num player, minimizado.
+
+**Com a equipe**
+- ☐ Ensaiar a troca de compartilhamento na mesma plataforma da defesa: quem passa os
+  slides para de compartilhar no slide 17, você compartilha, e depois devolve.
 
 ### 3.2 Passo a passo
 
-#### Passo 1 · 0:00–0:35
+#### Bloco A · Troca de tela · 0:00–0:10
 
-**Operador:** Em *Importar dados*, clica **Escolher arquivo** → `Empresa_A_Loja_Estacao_Moda.xlsx`. Depois **Enviar para análise**.
+**Você faz:**
+1. Quando o slide 17 aparecer, quem está passando os slides **para de compartilhar**.
+2. Você clica em compartilhar e escolhe **só a guia do Intellix**, não a tela inteira
+   (assim nenhuma notificação aparece):
+   - **Google Meet:** botão **Apresentar agora** (seta para cima, na barra de baixo) →
+     **Uma guia** → clica na guia do Intellix → **Compartilhar**.
+   - **Microsoft Teams:** botão **Compartilhar** → **Janela** → clica na janela do Chrome.
+3. Confira na miniatura da chamada que a tela do Intellix está aparecendo.
 
-**Na tela:** Prévia com as 12 colunas reconhecidas. Depois: "Planilha enviada. 14 linhas foram aceitas" e "1 linha repetia um produto na mesma venda e foi somada ao item, sem perder valor." ([tela](telas/1_relatorio_empresa_A.png))
+> **Você fala:** "Agora vamos ver o Intellix funcionando, no sistema publicado."
 
-> **Maria Luiza:** "Esta é a planilha de uma loja fictícia, no formato do nosso modelo de importação: uma linha por item vendido. O Intellix confere o arquivo antes de enviar. Achou as 12 colunas. [enviou] Catorze linhas aceitas. E reparem neste aviso: uma venda tinha o mesmo produto em duas linhas, e ele somou num item só, sem duplicar e sem perder valor."
+#### Bloco B · Tour rápido · 0:10–0:50
 
-#### Passo 2 · 0:35–1:15
+**B1 · A conta (0:10–0:15)**
 
-**Operador:** Clica **Fazer perguntas sobre esses dados**. Digita **`quanto vendi em outubro?`**. Depois abre **Como cheguei nessa resposta**.
+**Você faz:** passa o mouse sobre o nome da conta, no canto inferior esquerdo da barra lateral.
 
-**Na tela:** **R$ 1.000,00**, gráfico mês a mês (set R$ 0,8 mil, out R$ 1 mil), "vs set/26 ↑ 25%". No painel: "Período analisado: 01/10/2026 a 31/10/2026 · Métrica: Faturamento". Selo "Alta confiabilidade". ([tela](telas/2_A_outubro_como_cheguei.png))
+**Na tela:** a barra lateral com o menu e, embaixo, o nome da conta e "Minha conta".
 
-> **Maria Luiza:** "Mil reais. Na planilha, as cinco vendas de outubro somam exatamente mil. [abre o painel] Aqui ele mostra o que entendeu: de 1º a 31 de outubro, métrica faturamento. E o selo verde diz que a confiança foi alta."
+> **Você fala:** "Eu já entrei com a minha conta. O acesso é por e-mail e senha, e cada
+> conta só enxerga os próprios dados."
 
-#### Passo 3 · 1:15–1:35
+**B2 · A tela de Início (0:15–0:35)**
 
-**Operador:** Digita **`e em setembro?`**
+**Você faz:** fica no topo por 3 segundos, depois rola a página devagar por duas telas e
+volta ao topo.
 
-**Na tela:** **R$ 800,00**
+**Na tela:** "Aqui está como sua loja foi em [mês]", com cinco indicadores (Faturamento,
+Ticket médio, Vendas, Itens vendidos, Clientes), cada um com a variação contra o mês
+anterior. À direita, o seletor de mês e o botão **Exportar PDF**. Rolando: "O mês em
+resumo", vendas por dia, produtos que mais faturaram, canais e formas de pagamento,
+evolução dos últimos 12 meses.
 
-> **Maria Luiza:** "Agora uma pergunta incompleta. Ele lembrou que eu estava falando de faturamento e só trocou o mês: oitocentos reais."
+> **Você fala:** "Esta é a tela de Início. Sem digitar nada, o gestor vê os indicadores do
+> mês comparados com o mês anterior e um resumo do que puxou o resultado. Tudo é calculado
+> no servidor com consultas fixas, e cada destaque desta tela vira uma pergunta no chat com
+> um clique."
 
-#### Passo 4 · 1:35–2:05
+**B3 · O menu (0:35–0:50)**
 
-**Operador:** Digita **`qual foi o ticket médio em outubro?`**
+**Você faz:** clica em **O que posso perguntar**, no menu da esquerda. Rola uma vez.
+
+**Na tela:** "São 14 tipos de análise", agrupados (Faturamento e resultado, Produtos e
+categorias...), com exemplos que viram pergunta ao clicar, e o que ele **não** faz.
+
+> **Você fala:** "No menu ficam o chat, esta página com os 14 tipos de análise que ele
+> responde, cada um com exemplos clicáveis, e a importação de planilhas, que é por onde a
+> gente começa agora."
+
+#### Bloco C · Testes com perguntas · 0:50–3:20
+
+**C1 · Importar a Empresa A (0:50–1:15)**
+
+**Você faz:**
+1. Clica em **Importar dados**, no menu.
+2. Clica no botão **Escolher arquivo**.
+3. Na janela do Windows que abre, clica em **Área de Trabalho**, seleciona
+   `Empresa_A_Loja_Estacao_Moda.xlsx` e clica em **Abrir**. *(Se você compartilhou só a
+   guia, a banca não vê essa janela; tudo bem.)*
+4. Espera a prévia aparecer e clica em **Enviar para análise**.
+
+**Na tela:** a prévia com as 12 colunas reconhecidas. Depois do envio: "Planilha
+enviada. 14 linhas foram aceitas" e "1 linha repetia um produto na mesma venda e foi
+somada ao item, sem perder valor."
+
+> **Você fala:** "Esta é a planilha de uma loja fictícia, no formato do nosso modelo de
+> importação: uma linha por item vendido. O Intellix confere o arquivo antes de enviar.
+> Achou as 12 colunas. [clica em enviar] Catorze linhas aceitas. E reparem neste aviso:
+> uma venda tinha o mesmo produto em duas linhas, e ele somou num item só, sem duplicar e
+> sem perder valor."
+
+**C2 · Faturamento (1:15–1:40)**
+
+**Você faz:**
+1. Clica no botão **Fazer perguntas sobre esses dados**.
+2. Clica no campo "Pergunte sobre suas vendas...", digita **`quanto vendi em outubro?`** e
+   aperta **Enter**.
+3. Quando a resposta aparecer, clica em **Como cheguei nessa resposta**, logo abaixo do gráfico.
+
+**Na tela:** no topo, a faixa "Respondendo sobre Empresa_A_Loja_Estacao_Moda.xlsx".
+**R$ 1.000,00**, "vs set/26 ↑ 25%" e o gráfico mês a mês. No painel: "Período analisado:
+01/10/2026 a 31/10/2026 · Métrica: Faturamento". Selo verde "Alta confiabilidade".
+
+> **Você fala:** "Mil reais. Na planilha, as cinco vendas de outubro somam exatamente mil.
+> [abre o painel] Aqui ele mostra o que entendeu: de 1º a 31 de outubro, métrica
+> faturamento. E o selo verde diz que a confiança foi alta."
+
+**C3 · Ticket médio (1:40–2:00)**
+
+**Você faz:** digita **`qual foi o ticket médio em outubro?`** e aperta **Enter**.
 
 **Na tela:** **R$ 200,00**
 
-> **Maria Luiza:** "Ticket médio: duzentos reais, que são mil reais divididos por cinco vendas. Um detalhe: outubro tem oito linhas na planilha, mas só cinco vendas. Se dividisse por linha, daria cento e vinte e cinco, que está errado. O ticket é por venda, e é assim que ele calcula."
+> **Você fala:** "Ticket médio: duzentos reais, que são mil reais divididos por cinco
+> vendas. Um detalhe: outubro tem oito linhas na planilha, mas só cinco vendas. Se
+> dividisse por linha, daria cento e vinte e cinco, que está errado. O ticket é por venda,
+> e é assim que ele calcula."
 
-#### Passo 5 · 2:05–2:20
+**C4 · Pergunta mais elaborada: produto + unidades (2:00–2:20)** *(nova)*
 
-**Operador:** Digita **`qual a previsão do tempo?`**
+**Você faz:** digita **`quantas camisetas vendi em outubro?`** e aperta **Enter**.
 
-**Na tela:** "Não entendi a pergunta. Tente reformular." com duas perguntas de exemplo clicáveis. ([tela](telas/4_fora_do_dominio.png))
+**Na tela:** "Unidades vendidas · Camiseta básica", **7**, "vs set/26 ↑ 250%" e o gráfico de
+unidades mês a mês (2 em setembro, 7 em outubro).
 
-> **Maria Luiza:** "E uma pergunta fora do assunto. Ele não inventa: pede para reformular e sugere o que dá para perguntar."
+> **Você fala:** "Agora uma pergunta mais difícil, por três motivos. Eu escrevi
+> 'camisetas', no plural, e ele achou o produto certo no cadastro da loja: Camiseta
+> básica. Ele entendeu que eu quero unidades, e não reais. E o número é sete porque aquela
+> venda com camiseta em duas linhas foi somada: uma, mais quatro, mais duas."
 
-#### Passo 6 · 2:20–3:05
+**C5 · Pergunta mais elaborada: dois períodos (2:20–2:35)** *(nova)*
 
-**Operador:** Clica **Importar dados** no menu → **Escolher arquivo** → `Empresa_B_Papelaria_Traco_Fino.xlsx` → **Enviar para análise** → **Fazer perguntas sobre esses dados**. Digita **`quanto vendi em outubro?`**
+**Você faz:** digita **`quanto cresci em outubro em relação a setembro?`** e aperta **Enter**.
 
-**Na tela:** Relatório: "12 linhas foram aceitas · 13 linhas lidas · 1 linha ficou de fora: 1 × data inválida ou ausente" ([tela](telas/5_relatorio_empresa_B.png)). No chat, a faixa "Respondendo sobre Empresa_B_Papelaria_Traco_Fino.xlsx" e **R$ 600,00**.
+**Na tela:** "Variação entre períodos", **25%**, "De R$ 800,00 para R$ 1.000,00."
 
-> **Maria Luiza:** "Agora uma segunda empresa, uma papelaria. Deixamos de propósito uma linha sem data: ele aceita as outras doze e diz exatamente qual problema deixou uma de fora. [no chat] A mesma pergunta de antes: quanto vendi em outubro? Seiscentos reais. Mesma pergunta, outra empresa, outro número: cada empresa só enxerga os próprios dados."
+> **Você fala:** "E dois períodos na mesma frase: ele separou outubro e setembro, somou
+> cada um e calculou a variação. De oitocentos para mil, vinte e cinco por cento."
 
-#### Passo 7 · 3:05–3:30
+**C6 · Fora do domínio (2:35–2:45)**
 
-**Operador:** Volta para os slides (QR code).
+**Você faz:** digita **`qual a previsão do tempo?`** e aperta **Enter**.
 
-**Na tela:** —
+**Na tela:** "Não entendi a pergunta. Tente reformular." com duas perguntas de exemplo
+clicáveis.
 
-> **Maria Luiza:** "Quem quiser acompanhar, o QR code leva ao sistema publicado, e o código e a documentação estão no GitHub. A Amanda agora apresenta os resultados que medimos."
+> **Você fala:** "E uma pergunta fora do assunto. Ele não inventa: pede para reformular e
+> sugere o que dá para perguntar."
 
+**C7 · A segunda empresa (2:45–3:20)**
 
-**Se estiver atrasado, cortem nesta ordem:** (1) a previsão do tempo, já explicada no
-slide 13; (2) o "e em setembro?". **Não cortem** a conferência do ticket nem a segunda
-empresa: são os dois pedidos centrais do parecer.
+**Você faz:**
+1. Clica em **Importar dados**, no menu.
+2. **Escolher arquivo** → Área de Trabalho → `Empresa_B_Papelaria_Traco_Fino.xlsx` → **Abrir**.
+3. **Enviar para análise**.
+4. Clica em **Fazer perguntas sobre esses dados**, digita **`quanto vendi em outubro?`** e
+   aperta **Enter**.
 
-**Se der tempo sobrando** (só se sobrar): clicar em **Início** com a Empresa B ativa. O
-painel mostra os indicadores do mês sem digitar nada ([exemplo com a A](telas/8_inicio_empresa_A.png)).
+**Na tela:** "Planilha enviada. 12 linhas foram aceitas · 13 linhas lidas · 1 linha ficou
+de fora: 1 × data inválida ou ausente". No chat, a faixa muda para "Respondendo sobre
+Empresa_B_Papelaria_Traco_Fino.xlsx" e a resposta é **R$ 600,00**.
+
+> **Você fala:** "Agora uma segunda empresa, uma papelaria. Deixamos de propósito uma
+> linha sem data: ele aceita as outras doze e diz exatamente qual problema deixou uma de
+> fora. [no chat] A mesma pergunta de antes: quanto vendi em outubro? Seiscentos reais.
+> Mesma pergunta, outra empresa, outro número: cada empresa só enxerga os próprios dados."
+
+#### Bloco D · Volta aos slides · 3:20–3:30
+
+**Você faz:** clica em **Parar apresentação** (Meet) ou **Parar compartilhamento** (Teams).
+Quem passa os slides volta a compartilhar, no slide 17.
+
+> **Você fala:** "Quem quiser acompanhar, o QR code leva ao sistema publicado, e o código e
+> a documentação estão no GitHub. A Amanda agora apresenta os resultados que medimos."
+
+**Se estiver atrasado, cortem nesta ordem:** (1) o B3, "O que posso perguntar"; (2) a
+previsão do tempo, que já foi explicada no slide 13; (3) o C5, "quanto cresci". **Não
+cortem** o ticket médio, as camisetas nem a segunda empresa.
 
 **Se algo falhar ao vivo:**
-- Resposta demorando mais de 10 s: "o servidor gratuito está acordando", esperem uma
-  vez. Se não vier, vão para o vídeo sem pedir desculpas.
-- Pergunta recusada por erro de digitação: o operador apaga e digita de novo, sem
-  comentário.
+- **Resposta demorando mais de 10 s:** "o servidor gratuito está acordando". Espere uma
+  vez. Se não vier, vá para o vídeo de plano B sem pedir desculpas.
+- **Pergunta recusada por erro de digitação:** apague e digite de novo, sem comentário.
+- **O compartilhamento não aparece para a banca:** pare e compartilhe a **tela inteira**
+  em vez da guia.
 
-### 3.3 Gabarito das perguntas (testadas)
+### 3.3 Mapa da aplicação (para saber, não para falar)
+
+Se a banca perguntar "o que mais o sistema faz?", aqui está tudo o que existe na
+aplicação, com o detalhe técnico de cada parte.
+
+| Área | O que faz | Se a banca perguntar |
+|---|---|---|
+| **Página pública, cadastro e login** | Página de apresentação com **Criar conta** e **Entrar**. Cadastro com confirmação por e-mail, "Esqueci minha senha" e aceite dos termos. | Login pelo Supabase Auth. O servidor confere o token (JWT) em toda chamada. A sessão dura 12 horas e depois desconecta sozinha. |
+| **Início** (painel do mês) | Cinco indicadores com variação contra o mês anterior, seletor de mês, **Exportar PDF**, "O mês em resumo" (o resultado, o que puxou, por quê), observações, vendas por dia e por dia da semana, ranking de produtos, categorias, canais e pagamentos, evolução de 12 meses e atividade recente. | Não usa o modelo: é calculado no servidor com consultas SQL fixas. Clicar num destaque, num produto do ranking ou num item de categoria, canal ou pagamento abre a análise daquele recorte no chat. |
+| **Perguntar** (chat) | Resposta em número, gráfico ou tabela (dá para alternar entre Barras, Rosca e Tabela). Comparação automática com o mês anterior, "Como cheguei nessa resposta", selo de confiabilidade e sugestões em "Continue a análise". Botões **Copiar**, **Excel** e **PDF**. | Selo verde = confiança de 80% ou mais. Amarelo = entre 70% e 80%. Abaixo de 70%, ele recusa. Excel e PDF são gerados no próprio navegador, para não pesar no servidor gratuito. |
+| **Histórico de conversas** | Lista na barra lateral, com busca e **Nova conversa**. Clicar numa conversa antiga reabre as respostas. | Fica salvo na conta (migração 008), então aparece em qualquer aparelho. Cada usuário só vê o próprio histórico. |
+| **O que posso perguntar** | Os 14 tipos de análise, com exemplos clicáveis, e o que ele **não** faz (previsões, assuntos fora de vendas). | São as 12 intenções do modelo mais 2 refinamentos feitos por regra: unidades vendidas e mês de maior venda. |
+| **Importar dados** | Envio de `.xlsx` (até 10 MB e 50 mil linhas), modelo de planilha para baixar, prévia e conferência das colunas antes de enviar, e relatório do que entrou e do que ficou de fora. | Obrigatórias: data, produto, quantidade e um valor (unitário ou total). Aceita sinônimos no cabeçalho ("qtd", "preço"...). Linha inválida é rejeitada com o motivo, sem derrubar o arquivo. Cada importação vira um conjunto de dados isolado. |
+| **Suas planilhas** | Lista do que a conta já importou: **Usar esta**, **Excluir** e **Voltar aos dados de exemplo**. | É assim que se troca de empresa no chat e no Início. |
+| **Busca rápida (Ctrl+K)** | Caixa "Buscar ou perguntar…" no topo: vai para qualquer tela, abre uma conversa recente, troca o tema ou já faz uma pergunta. | Navegável só pelo teclado (setas, Enter, Esc). |
+| **Tema claro/escuro** | Botão da lua, no canto superior direito. | — |
+| **Minha conta** | Trocar nome, foto e senha. Botão de sair ao lado do nome. | Ao sair, a planilha ativa é limpa e o histórico fica guardado por usuário: quem entrar depois no mesmo computador não vê os dados de quem saiu. |
+| **Sobre, Ajuda, Fale conosco, Termos** | Arquitetura e diferenciais; 13 perguntas frequentes; formulário que abre o Gmail com a mensagem pronta; termos de uso. | — |
+
+### 3.4 Gabarito das perguntas (testadas)
 
 Todas foram feitas na interface e na API com as duas planilhas importadas.
 
@@ -350,10 +488,10 @@ Todas foram feitas na interface e na API com as duas planilhas importadas.
 | quanto vendi ontem? / faturamento da semana | **responde o ano inteiro** (R$ 1.800 na A) | sempre citar mês ou ano |
 | quanto a loja faturou em outubro? | responde o total (R$ 1.000) e não só o canal "loja" | vendas por canal em outubro |
 
-### 3.4 Ensaio na véspera, no sistema publicado
+### 3.5 Ensaio na véspera, no sistema publicado
 
-1. Logar com a conta da demo, importar a A, fazer as 5 perguntas da tabela 3.2 e
-   conferir os números com a seção 3.3. Importar a B e conferir R$ 600.
+1. Fazer a demonstração inteira, do bloco A ao D, **cronometrando**, na mesma
+   plataforma de videochamada da defesa. Conferir cada número com a seção 3.4.
 2. Se algum número não bater, avisem: pode ser que a versão publicada não seja a do
    `main` testada aqui.
 3. **Excluir as duas planilhas da conta da demo** no fim, para começar limpa no dia.
@@ -383,7 +521,7 @@ dito.
 - Se recusar, digam: *"Esse é o comportamento projetado: abaixo de 70% de confiança ele
   recusa em vez de arriscar um número errado. Em perguntas inéditas, medimos 27 de 30
   num conjunto representativo e 18 de 30 num conjunto feito para ser difícil. A
-  formulação que ele conhece seria..."* e reformulem num formato da seção 3.3.
+  formulação que ele conhece seria..."* e reformulem num formato da seção 3.4.
 
 ### 4.2 Respostas para as 6 perguntas do parecer (seção 5) e mais duas prováveis
 
