@@ -60,8 +60,8 @@ Tudo isso não cabe em 3:30, então dividi em duas camadas:
    sem "?", a diferença é essa.
 3. **O "99,99%" do slide 16 confere:** "quais os 5 produtos mais vendidos em março?"
    dá 99,99%, com número = 5 e período = março.
-4. **"4.800 frases rotuladas pela equipe" é impreciso.** A equipe escreveu cerca de 200
-   **moldes** de frase. O gerador sorteou valores e marcou as etiquetas sozinho. Se
+4. **"4.800 frases rotuladas pela equipe" é impreciso.** A equipe escreveu **moldes** de
+   frase (387 na v1.0.0 e 561 na v1.2.0, a versão publicada). O gerador sorteou valores e marcou as etiquetas sozinho. Se
    a banca perguntar "vocês anotaram 4.800 frases à mão?", a resposta honesta é não.
    A fala do slide 12 foi ajustada (detalhes na pergunta 8 da seção 4.3).
 5. **Algumas formulações falham.** Estão listadas na seção 3.4 ("não usem na demo").
@@ -605,8 +605,9 @@ experimento com Transformer. **Confirmem com a equipe.** Se não houve, a respos
 honesta é: "Não testamos. Descartamos pelo tamanho, e comparar com um Transformer
 pequeno é continuidade."
 
-**Pergunta 8 (como as 4.800 frases foram criadas):** a equipe escreveu cerca de 200
-moldes de frase (15 a 20 por intenção, cada integrante com 3 intenções), por exemplo
+**Pergunta 8 (como as 4.800 frases foram criadas):** a equipe escreveu moldes de
+frase (387 na v1.0.0, 423 na v1.1.0 e 561 na v1.2.0, divididos por intenção entre os
+integrantes), por exemplo
 "quanto faturei em {periodo}". O gerador (`ia training/gerar_dataset.py`) sorteia
 valores para os espaços e já marca as etiquetas BIO sozinho. Um validador confere as
 etiquetas. As intenções foram balanceadas em 400 exemplos cada (12 × 400 = 4.800),
