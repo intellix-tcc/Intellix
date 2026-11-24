@@ -77,3 +77,4 @@ docs/wizard_upload_mockup.html
 
 # backups de dados (gerados por scripts/backup_db.py)
 scripts/backups/*.sql
+.claude/
